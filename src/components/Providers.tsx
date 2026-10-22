@@ -25,7 +25,15 @@ import AutoShopifySignIn from "@/components/AutoShopifySignIn";
 // tab bar) has no business showing up on the internal /admin tool — it
 // visually overlaps the admin panel and has nothing to do with managing
 // promos.
-const BARE = ["/admin", "/chat", "/campaigns", "/flash-sale", "/account/complete-profile", "/account/login"];
+const BARE = [
+  "/admin",
+  "/chat",
+  "/campaigns",
+  "/flash-sale",
+  "/account/complete-profile",
+  "/account/login",
+  "/staff",
+];
 const isUnder = (pathname: string | null, base: string) =>
   pathname === base || Boolean(pathname?.startsWith(`${base}/`));
 
@@ -58,6 +66,11 @@ export function StorefrontWidgets({ tabs }: { tabs?: MobileTab[] }) {
   // /account/complete-profile is off by path and back on by where the customer
   // is headed: finishing a profile on the way back to a campaign is not a
   // moment to hand someone this site's tab bar.
+  // /staff is the employee shop, which has its own cart and its own
+  // checkout. The tab bar's cart badge counts the ordinary basket, so the
+  // two sat on screen together showing different numbers for "your cart" —
+  // and the gift popups belong to customer promotions, not to a round at
+  // cost. The staff cart takes that strip instead.
   if (BARE.some((p) => isUnder(pathname, p))) return null;
   return (
     <>

@@ -49,6 +49,7 @@ type PendingOrder = {
   id: string;
   subtotal_thb: number;
   expires_at: string;
+  payment_url: string | null;
   lines: { variant_id: string; product_slug: string; qty: number; staff_price: number }[];
 };
 
@@ -93,6 +94,7 @@ export default function StaffShop() {
   const [justPaid, setJustPaid] = useState(false);
   const [category, setCategory] = useState<string>("all");
   const [query, setQuery] = useState("");
+  const [cartOpen, setCartOpen] = useState(false);
 
   // Read straight off the URL rather than through useSearchParams: that hook
   // puts the whole page behind a Suspense boundary, for one boolean that
@@ -139,6 +141,8 @@ export default function StaffShop() {
       return sum + (item ? item.staff_price * qty : 0);
     }, 0);
   }, [cart, shop]);
+
+  const cartCount = Object.values(cart).reduce((n, q) => n + q, 0);
 
   const grouped = useMemo(() => {
     if (!shop) return [];
@@ -354,17 +358,53 @@ export default function StaffShop() {
               </div>
             )}
 
-            {/* The rules of the round, where they can be read before
-                anything is chosen. Finding out at checkout that a cart is
-                not allowed is finding out too late. */}
+            {/* The allowance and the round's rules, together, where they
+                can be read before anything is chosen. On a phone this is the
+                only place they appear until the bottom bar lights up —
+                finding out at checkout that a cart was never allowed is
+                finding out too late. */}
+            {shop.canOrder && !shop.pending && (
+              <div className="mb-5 rounded-xl2 bg-surface-soft p-3 lg:hidden">
+                <p className="flex items-baseline justify-between gap-2">
+                  <span className="text-[12px] font-medium text-slate-500">วงเงินที่เหลือ</span>
+                  <span className="text-[17px] font-bold text-brand-ink">
+                    ฿{baht(shop.standing.left_thb)}
+                    <span className="ml-1 text-[11px] font-normal text-slate-400">
+                      จาก ฿{baht(shop.standing.cap_thb)}
+                    </span>
+                  </span>
+                </p>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white">
+                  <div
+                    className="h-full rounded-full bg-brand-700"
+                    style={{
+                      width: `${Math.min(100, Math.round(((shop.standing.cap_thb - shop.standing.left_thb) / shop.standing.cap_thb) * 100))}%`,
+                    }}
+                  />
+                </div>
+                {(shop.round.max_orders || shop.round.max_per_item) && (
+                  <p className="mt-2 text-[11px] text-slate-500">
+                    {[
+                      shop.round.max_orders ? `ซื้อได้ ${shop.round.max_orders} ครั้งต่อรอบ` : null,
+                      shop.round.max_per_item
+                        ? `ไม่เกิน ${shop.round.max_per_item} ชิ้นต่อสินค้า`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                )}
+              </div>
+            )}
+
             {shop.canOrder && !shop.pending && (shop.round.max_orders || shop.round.max_per_item) && (
-              <p className="mb-5 text-[12px] text-slate-500">
+              <p className="mb-5 hidden text-[12px] text-slate-500 lg:block">
                 {[
                   shop.round.max_orders ? `ซื้อได้ ${shop.round.max_orders} ครั้งต่อรอบ` : null,
                   shop.round.max_per_item
                     ? `ไม่เกิน ${shop.round.max_per_item} ชิ้นต่อสินค้า`
                     : null,
-                  shop.standing ? `รวมไม่เกิน ฿${baht(shop.standing.cap_thb)}` : null,
+                  `รวมไม่เกิน ฿${baht(shop.standing.cap_thb)}`,
                 ]
                   .filter(Boolean)
                   .join(" · ")}
@@ -540,7 +580,11 @@ export default function StaffShop() {
 
           {/* The allowance, the cart and the button. Sticky on desktop only —
               on a phone it sits under the products, where the thumb is. */}
-          <aside className="mt-6 space-y-3 lg:sticky lg:top-24 lg:mt-0">
+          {/* Desktop only. On a phone the same two things live where a
+              thumb is: the allowance on a strip under the heading, and the
+              cart on a bar fixed to the bottom of the screen. A column of
+              this below eighty products is a column nobody scrolls to. */}
+          <aside className="hidden lg:sticky lg:top-24 lg:block lg:space-y-3">
             <div className="rounded-xl2 bg-surface-soft p-4">
               <p className="flex items-center gap-1.5 text-[12px] font-medium text-slate-500">
                 <Wallet className="h-3.5 w-3.5" aria-hidden />
@@ -640,6 +684,143 @@ export default function StaffShop() {
           </aside>
         </div>
       )}
+      {/* The staff cart, on the strip the site's own tab bar used to hold.
+          That bar's basket badge counts the ordinary cart, so the two sat
+          on screen together showing different numbers for "your cart" —
+          see the /staff entry in Providers' BARE list.
+
+          Phone only: on a desktop the same thing is the column on the right,
+          already in view. */}
+      {shop && shop.canOrder && (
+        <>
+          {/* The page needs somewhere to end that is not underneath the bar. */}
+          <div className="h-24 lg:hidden" aria-hidden />
+
+          <div className="fixed inset-x-0 bottom-0 z-90 border-t border-surface-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+            {shop.pending ? (
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-bold text-brand-ink">
+                    รอชำระ ฿{baht(shop.pending.subtotal_thb)}
+                  </p>
+                  <p className="text-[11px] text-amber-700">{remaining(shop.pending.expires_at)}</p>
+                </div>
+                {shop.pending.payment_url && (
+                  <a
+                    href={shop.pending.payment_url}
+                    className="flex h-12 shrink-0 items-center justify-center rounded-full bg-brand-800 px-6 text-sm font-semibold text-white"
+                  >
+                    ชำระเงินต่อ
+                  </a>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 px-4 py-3">
+                {/* The left half opens the cart. A total with no way to see
+                    what is in it means scrolling the whole round back to
+                    find the one line that is wrong. */}
+                <button
+                  type="button"
+                  onClick={() => cartCount > 0 && setCartOpen((v) => !v)}
+                  disabled={cartCount === 0}
+                  aria-expanded={cartOpen}
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-default"
+                >
+                  <span className="relative grid size-10 shrink-0 place-items-center rounded-full bg-surface-soft">
+                    <ShoppingBag className="h-4 w-4 text-brand-800" aria-hidden />
+                    {cartCount > 0 && (
+                      <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-800 px-1 text-[10px] font-bold text-white">
+                        {cartCount}
+                      </span>
+                    )}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[15px] font-bold leading-tight text-brand-ink">
+                      ฿{baht(subtotal)}
+                    </span>
+                    <span
+                      className={`block text-[11px] leading-tight ${
+                        subtotal > shop.standing.left_thb ? "text-rose-600" : "text-slate-500"
+                      }`}
+                    >
+                      {cartCount === 0
+                        ? `เลือกสินค้าได้ถึง ฿${baht(shop.standing.left_thb)}`
+                        : subtotal > shop.standing.left_thb
+                          ? `เกินวงเงิน ฿${baht(subtotal - shop.standing.left_thb)}`
+                          : `เหลืออีก ฿${baht(shop.standing.left_thb - subtotal)} · แตะเพื่อดูตะกร้า`}
+                    </span>
+                  </span>
+                </button>
+
+                <Button
+                  className="h-12 shrink-0 px-6"
+                  onPress={checkout}
+                  isDisabled={
+                    busy ||
+                    cartCount === 0 ||
+                    subtotal > shop.standing.left_thb ||
+                    !shop.shipTo ||
+                    !shop.shipTo.hasPhone
+                  }
+                >
+                  ไปชำระเงิน
+                </Button>
+              </div>
+            )}
+
+            {/* Opened from the bar, closed by choosing or by the handle.
+                Capped at 45vh so the products stay visible behind it. */}
+            {cartOpen && cartCount > 0 && !shop.pending && (
+              <div className="max-h-[45vh] overflow-y-auto border-t border-slate-100 px-4 py-3">
+                <ul className="space-y-2">
+                  {Object.entries(cart).map(([variantId, qty]) => {
+                    const item = shop.items.find((i) => i.variant_id === variantId);
+                    if (!item) return null;
+                    return (
+                      <li key={variantId} className="flex items-center gap-2 text-[13px]">
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-slate-700">{item.name}</span>
+                          <span className="block text-[11px] text-slate-400">
+                            ฿{baht(item.staff_price)} × {qty}
+                          </span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          <button
+                            onClick={() => setQty(item, qty - 1)}
+                            aria-label={`ลดจำนวน ${item.name}`}
+                            className="grid size-9 place-items-center rounded-full bg-surface-soft text-slate-600"
+                          >
+                            <Minus className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                          <span className="w-5 text-center font-semibold">{qty}</span>
+                          <button
+                            onClick={() => setQty(item, qty + 1)}
+                            aria-label={`เพิ่มจำนวน ${item.name}`}
+                            className="grid size-9 place-items-center rounded-full bg-surface-soft text-slate-600"
+                          >
+                            <Plus className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {!shop.shipTo ? (
+                  <p className="mt-3 text-[12px] text-amber-700">
+                    ยังไม่มีที่อยู่จัดส่ง —{" "}
+                    <Link href="/account/addresses" className="font-semibold underline">
+                      เพิ่มที่อยู่ก่อนสั่งซื้อ
+                    </Link>
+                  </p>
+                ) : (
+                  <p className="mt-3 text-[11px] text-slate-400">ส่งไปที่ {shop.shipTo.summary}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
       <span className="hidden" aria-hidden>
         {tick}
       </span>
