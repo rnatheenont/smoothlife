@@ -184,7 +184,44 @@ export default function StaffShop() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `matches` closes over q, which is in the deps
   }, [grouped, category, q]);
 
-  const shownCount = shownItems.length;
+  /**
+   * One card per product, not per variant.
+   *
+   * The price list is keyed by variant because that is what is bought, but
+   * three colours of the same toothbrush were three identical cards in a
+   * row with one word different. Grouped here, in the order the variants
+   * first appeared, so the shelf still reads the way the tabs left it.
+   */
+  const shownProducts = useMemo(() => {
+    const by = new Map<string, { slug: string; name: string; brand: string; variants: StaffShopVariant[] }>();
+    for (const item of shownItems) {
+      const row = by.get(item.product_slug);
+      if (row) row.variants.push(item);
+      else by.set(item.product_slug, { slug: item.product_slug, name: item.name, brand: item.brand, variants: [item] });
+    }
+    return [...by.values()];
+  }, [shownItems]);
+
+  const shownCount = shownProducts.length;
+
+  /**
+   * Which option each card is showing.
+   *
+   * Only holds what somebody has chosen; a card nobody has touched falls
+   * back to its first option that is actually buyable, so a product whose
+   * first colour is sold out does not open on a dead card.
+   */
+  const [chosenVariant, setChosenVariant] = useState<Record<string, string>>({});
+
+  function variantOf(product: { slug: string; variants: StaffShopVariant[] }): StaffShopVariant {
+    const picked = chosenVariant[product.slug];
+    const found = picked && product.variants.find((v) => v.variant_id === picked);
+    if (found) return found;
+    return (
+      product.variants.find((v) => v.in_stock && v.left !== 0) ??
+      product.variants[0]
+    );
+  }
 
   function setQty(item: StaffShopVariant, qty: number) {
     // Clamped against both ceilings here as well as in the database, so the
@@ -460,8 +497,24 @@ export default function StaffShop() {
                     aria-label="หมวดสินค้า"
                     className="scrollbar-none -mx-4 flex gap-1 overflow-x-auto border-b border-surface-line px-4 md:mx-0 md:px-0"
                   >
-                    {([["all", "ทั้งหมด", shop.items.length]] as [string, string, number][])
-                      .concat(grouped.map((g) => [g.key, g.label, g.items.length]))
+                    {/* Counted in products, because products are what the
+                        grid shows: three colours of one toothbrush are one
+                        card, and a tab promising 387 next to 240 cards is a
+                        tab that looks broken. */}
+                    {(
+                      [["all", "ทั้งหมด", new Set(shop.items.map((i) => i.product_slug)).size]] as [
+                        string,
+                        string,
+                        number,
+                      ][]
+                    )
+                      .concat(
+                        grouped.map((g) => [
+                          g.key,
+                          g.label,
+                          new Set(g.items.map((i) => i.product_slug)).size,
+                        ]),
+                      )
                       .map(([key, label, count]) => (
                         <button
                           key={key}
@@ -515,7 +568,8 @@ export default function StaffShop() {
                     card uses @container because it is dropped into shelves
                     of wildly different widths, and this grid has one home. */}
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">
-                  {shownItems.map((item) => {
+                  {shownProducts.map((product) => {
+                    const item = variantOf(product);
                     const qty = cart[item.variant_id] ?? 0;
                     // Out of stock in Shopify counts as sold out even when
                     // the round's quota still has room: the warehouse has
@@ -528,16 +582,26 @@ export default function StaffShop() {
                       item.regular_price > 0
                         ? Math.round((1 - item.staff_price / item.regular_price) * 100)
                         : 0;
+                    // Only worth showing options when there is a choice, and
+                    // only when they have names: a product with one variant
+                    // calls it "Default Title", which is not an option, it
+                    // is the absence of one.
+                    const options =
+                      product.variants.length > 1 ? product.variants.filter((v) => v.size) : [];
+                    const inCart = product.variants.reduce(
+                      (n, v) => n + (cart[v.variant_id] ?? 0),
+                      0,
+                    );
                     return (
                       <article
-                        key={item.variant_id}
+                        key={product.slug}
                         className="flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 hover:shadow-cardHover"
                       >
                         <div className="relative aspect-square overflow-hidden bg-white">
                           {item.image && (
                             <Image
                               src={shopifyImage(item.image, 560)}
-                              alt={item.name}
+                              alt={product.name}
                               fill
                               sizes="(max-width: 768px) 50vw, 25vw"
                               className={`object-cover ${soldOut ? "opacity-60 grayscale" : ""}`}
@@ -550,19 +614,57 @@ export default function StaffShop() {
                               </span>
                             </div>
                           )}
+                          {/* What is in the cart across every option of this
+                              product, since the stepper below only ever
+                              shows the one on screen. */}
+                          {inCart > 0 && (
+                            <span className="absolute right-2 top-2 grid h-6 min-w-6 place-items-center rounded-full bg-brand-800 px-1.5 text-[11px] font-bold text-white">
+                              {inCart}
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex flex-1 flex-col gap-1.5 p-3">
                           <span translate="no" className="truncate text-[13px] font-bold uppercase text-brand-ink">
-                            {item.brand}
+                            {product.brand}
                           </span>
                           <h3
                             translate="no"
                             className="line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-slate-500"
                           >
-                            {item.name}
-                            {item.size ? <span className="text-slate-400"> · {item.size}</span> : null}
+                            {product.name}
                           </h3>
+
+                          {options.length > 0 && (
+                            <div className="flex flex-wrap gap-1" role="group" aria-label={`ตัวเลือกของ ${product.name}`}>
+                              {options.map((v) => {
+                                const on = v.variant_id === item.variant_id;
+                                const gone = v.left === 0 || !v.in_stock;
+                                const picked = cart[v.variant_id] ?? 0;
+                                return (
+                                  <button
+                                    key={v.variant_id}
+                                    type="button"
+                                    onClick={() =>
+                                      setChosenVariant((cur) => ({ ...cur, [product.slug]: v.variant_id }))
+                                    }
+                                    aria-pressed={on}
+                                    title={gone ? `${v.size} — สินค้าหมด` : v.size}
+                                    className={`rounded-full px-2 py-1 text-[11px] font-medium transition-colors ${
+                                      on
+                                        ? "bg-brand-800 text-white"
+                                        : gone
+                                          ? "bg-slate-50 text-slate-400 line-through"
+                                          : "bg-surface-soft text-slate-600 hover:text-brand-800"
+                                    }`}
+                                  >
+                                    {v.size}
+                                    {picked > 0 && <span className="ml-1 font-bold">·{picked}</span>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
 
                           <div className="mt-auto pt-1.5">
                             <span className="block text-[17px] font-bold tabular-nums text-brand-800">
@@ -600,7 +702,7 @@ export default function StaffShop() {
                                 <button
                                   onClick={() => setQty(item, qty - 1)}
                                   disabled={qty === 0}
-                                  aria-label={`ลดจำนวน ${item.name}`}
+                                  aria-label={`ลดจำนวน ${product.name}${item.size ? ` ${item.size}` : ""}`}
                                   className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-ink ring-1 ring-slate-300 transition-colors hover:ring-brand-600 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                                 >
                                   <Minus className="h-4 w-4" aria-hidden />
@@ -611,7 +713,7 @@ export default function StaffShop() {
                                 <button
                                   onClick={() => setQty(item, qty + 1)}
                                   disabled={atLimit || (item.left !== null && qty >= item.left)}
-                                  aria-label={`เพิ่มจำนวน ${item.name}`}
+                                  aria-label={`เพิ่มจำนวน ${product.name}${item.size ? ` ${item.size}` : ""}`}
                                   className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-ink ring-1 ring-slate-300 transition-colors hover:ring-brand-600 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                                 >
                                   <Plus className="h-4 w-4" aria-hidden />
@@ -684,7 +786,8 @@ export default function StaffShop() {
                       return (
                         <li key={variantId} className="flex justify-between gap-2 text-[12px]">
                           <span className="min-w-0 flex-1 truncate text-slate-600">
-                            {item.name} × {qty}
+                            {item.name}
+                            {item.size ? ` · ${item.size}` : ""} × {qty}
                           </span>
                           <span className="font-mono text-slate-700">
                             {baht(item.staff_price * qty)}
@@ -838,7 +941,10 @@ export default function StaffShop() {
                     return (
                       <li key={variantId} className="flex items-center gap-2 text-[13px]">
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-slate-700">{item.name}</span>
+                          <span className="block truncate text-slate-700">
+                            {item.name}
+                            {item.size ? ` · ${item.size}` : ""}
+                          </span>
                           <span className="block text-[11px] text-slate-400">
                             ฿{baht(item.staff_price)} × {qty}
                           </span>
