@@ -8,6 +8,7 @@ import {
   BadgeCheck,
   Clock,
   Mail,
+  Check,
   Minus,
   Plus,
   Search,
@@ -212,6 +213,8 @@ export default function StaffShop() {
    * first colour is sold out does not open on a dead card.
    */
   const [chosenVariant, setChosenVariant] = useState<Record<string, string>>({});
+  /** The card that just took something, so it can say so for a moment. */
+  const [justAdded, setJustAdded] = useState<string | null>(null);
 
   function variantOf(product: { slug: string; variants: StaffShopVariant[] }): StaffShopVariant {
     const picked = chosenVariant[product.slug];
@@ -238,6 +241,20 @@ export default function StaffShop() {
       else copy[item.variant_id] = next;
       return copy;
     });
+  }
+
+  /**
+   * Picking one up.
+   *
+   * setQty does the clamping, so this cannot push past a per-person limit
+   * or past what the shelf has; the tick is only so the card says something
+   * happened — on a grid this dense the cart is far from the thumb that
+   * pressed the button.
+   */
+  function add(item: StaffShopVariant) {
+    setQty(item, (cart[item.variant_id] ?? 0) + 1);
+    setJustAdded(item.variant_id);
+    window.setTimeout(() => setJustAdded((cur) => (cur === item.variant_id ? null : cur)), 1200);
   }
 
   async function checkout() {
@@ -697,28 +714,54 @@ export default function StaffShop() {
                                     .join(" · ")}
                             </p>
 
+                            {/* One button, the way the rest of the shop
+                                adds things. A stepper on the card asks
+                                somebody to settle on a number before they
+                                have seen the total; picking things up and
+                                counting them in the basket is the order
+                                people actually shop in. Quantities are
+                                edited in the cart, where the running total
+                                and the allowance are. */}
                             {!soldOut && !shop.pending && shop.canOrder && (
-                              <div className="mt-2 flex items-center justify-between gap-2">
-                                <button
-                                  onClick={() => setQty(item, qty - 1)}
-                                  disabled={qty === 0}
-                                  aria-label={`ลดจำนวน ${product.name}${item.size ? ` ${item.size}` : ""}`}
-                                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-ink ring-1 ring-slate-300 transition-colors hover:ring-brand-600 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
-                                >
-                                  <Minus className="h-4 w-4" aria-hidden />
-                                </button>
-                                <span className="min-w-[1.75rem] text-center text-[15px] font-bold tabular-nums text-brand-ink">
-                                  {qty}
-                                </span>
-                                <button
-                                  onClick={() => setQty(item, qty + 1)}
-                                  disabled={atLimit || (item.left !== null && qty >= item.left)}
-                                  aria-label={`เพิ่มจำนวน ${product.name}${item.size ? ` ${item.size}` : ""}`}
-                                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-ink ring-1 ring-slate-300 transition-colors hover:ring-brand-600 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
-                                >
-                                  <Plus className="h-4 w-4" aria-hidden />
-                                </button>
-                              </div>
+                              <>
+                                {(() => {
+                                  const full =
+                                    atLimit || (item.left !== null && qty >= item.left);
+                                  const added = justAdded === item.variant_id;
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => add(item)}
+                                      disabled={full}
+                                      aria-label={`หยิบ ${product.name}${item.size ? ` ${item.size}` : ""} ใส่ตะกร้า`}
+                                      className={`mt-2 flex h-10 w-full items-center justify-center gap-1.5 rounded-full text-[13px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 ${
+                                        added
+                                          ? "bg-brand-600 text-white"
+                                          : "bg-brand-800 text-white hover:bg-brand-1000"
+                                      } disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200`}
+                                    >
+                                      {added ? (
+                                        <>
+                                          <Check className="h-4 w-4" aria-hidden />
+                                          เพิ่มแล้ว
+                                        </>
+                                      ) : full ? (
+                                        "ครบจำนวนแล้ว"
+                                      ) : (
+                                        <>
+                                          <ShoppingBag className="h-4 w-4" aria-hidden />
+                                          หยิบใส่ตะกร้า
+                                        </>
+                                      )}
+                                    </button>
+                                  );
+                                })()}
+                                {qty > 0 && (
+                                  <p className="mt-1 text-center text-[11px] text-slate-500">
+                                    ในตะกร้า {qty} ชิ้น · แก้จำนวนได้ในตะกร้า
+                                  </p>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>
@@ -783,13 +826,44 @@ export default function StaffShop() {
                     {Object.entries(cart).map(([variantId, qty]) => {
                       const item = shop.items.find((i) => i.variant_id === variantId);
                       if (!item) return null;
+                      const full =
+                        (item.per_person_limit !== null &&
+                          item.mine + qty >= item.per_person_limit) ||
+                        (item.left !== null && qty >= item.left);
                       return (
-                        <li key={variantId} className="flex justify-between gap-2 text-[12px]">
-                          <span className="min-w-0 flex-1 truncate text-slate-600">
-                            {item.name}
-                            {item.size ? ` · ${item.size}` : ""} × {qty}
+                        <li key={variantId} className="flex items-center gap-2 text-[12px]">
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-slate-600">
+                              {item.name}
+                              {item.size ? ` · ${item.size}` : ""}
+                            </span>
+                            <span className="block font-mono text-[11px] text-slate-400">
+                              {baht(item.staff_price)} × {qty}
+                            </span>
                           </span>
-                          <span className="font-mono text-slate-700">
+                          {/* The card hands things over; the counting
+                              happens here, next to the total it changes. */}
+                          <span className="flex shrink-0 items-center gap-1">
+                            <button
+                              onClick={() => setQty(item, qty - 1)}
+                              aria-label={`ลดจำนวน ${item.name}`}
+                              className="grid size-7 place-items-center rounded-full bg-surface-soft text-slate-600 transition-colors hover:text-brand-800"
+                            >
+                              <Minus className="h-3 w-3" aria-hidden />
+                            </button>
+                            <span className="w-4 text-center font-bold tabular-nums text-brand-ink">
+                              {qty}
+                            </span>
+                            <button
+                              onClick={() => setQty(item, qty + 1)}
+                              disabled={full}
+                              aria-label={`เพิ่มจำนวน ${item.name}`}
+                              className="grid size-7 place-items-center rounded-full bg-surface-soft text-slate-600 transition-colors hover:text-brand-800 disabled:opacity-35"
+                            >
+                              <Plus className="h-3 w-3" aria-hidden />
+                            </button>
+                          </span>
+                          <span className="w-14 shrink-0 text-right font-mono text-slate-700">
                             {baht(item.staff_price * qty)}
                           </span>
                         </li>
