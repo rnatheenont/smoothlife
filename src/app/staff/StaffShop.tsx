@@ -517,7 +517,11 @@ export default function StaffShop() {
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">
                   {shownItems.map((item) => {
                     const qty = cart[item.variant_id] ?? 0;
-                    const soldOut = item.left === 0;
+                    // Out of stock in Shopify counts as sold out even when
+                    // the round's quota still has room: the warehouse has
+                    // none, so the plus button would only lead to a refusal
+                    // at checkout.
+                    const soldOut = item.left === 0 || !item.in_stock;
                     const atLimit =
                       item.per_person_limit !== null && item.mine + qty >= item.per_person_limit;
                     const off =
@@ -579,7 +583,7 @@ export default function StaffShop() {
 
                             <p className="mt-1 text-[11px] text-slate-500">
                               {soldOut
-                                ? "หมดแล้ว"
+                                ? "สินค้าหมด"
                                 : [
                                     item.left !== null ? `เหลือ ${item.left} ชิ้น` : null,
                                     item.per_person_limit !== null

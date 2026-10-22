@@ -27,10 +27,15 @@ export type StaffShopVariant = {
   regular_price: number;
   staff_price: number;
   per_person_limit: number | null;
-  /** Null when the round sets no quota for this line. */
+  /**
+   * How many may still be taken: the round's own quota and what Shopify has
+   * on the shelf, whichever is smaller. Null only when neither is limited.
+   */
   left: number | null;
   /** How many of this line the person already holds, paid or awaiting payment. */
   mine: number;
+  /** False when Shopify has none of this variant left. */
+  in_stock: boolean;
 };
 
 /**

@@ -219,6 +219,21 @@ export async function staffShopItems(
     // rule shows up is a refusal at checkout.
     const itemLimit = i.per_person_limit == null ? null : Number(i.per_person_limit);
     const limits = [itemLimit, round.max_per_item].filter((n): n is number => n != null);
+
+    // What the shop actually has. The round's quota says how many of these
+    // are *for* staff; Shopify says how many exist. A line the warehouse is
+    // out of is sold out whatever the quota allows — reserveStock would
+    // refuse it at checkout, and a plus button that works right up to the
+    // payment page is a worse way to find that out.
+    //
+    // `quantity` is only a number when the shop publishes it; where it does
+    // not, `inStock` is all there is to go on.
+    const inStock = variant ? variant.inStock : product.inStock;
+    const shopifyLeft =
+      variant && typeof variant.quantity === "number" ? Math.max(variant.quantity, 0) : null;
+    const quotaLeft =
+      quota === null ? null : Math.max(quota - Number(i.sold_qty) - Number(i.reserved_qty), 0);
+    const remaining = [quotaLeft, shopifyLeft].filter((n): n is number => n != null);
     out.push({
       variant_id: i.variant_id,
       product_slug: i.product_slug,
@@ -230,8 +245,9 @@ export async function staffShopItems(
       regular_price: Number(i.regular_price),
       staff_price: Number(i.staff_price),
       per_person_limit: limits.length ? Math.min(...limits) : null,
-      left: quota === null ? null : Math.max(quota - Number(i.sold_qty) - Number(i.reserved_qty), 0),
+      left: inStock ? (remaining.length ? Math.min(...remaining) : null) : 0,
       mine: held.get(i.variant_id) ?? 0,
+      in_stock: inStock,
     });
   }
   return out;
