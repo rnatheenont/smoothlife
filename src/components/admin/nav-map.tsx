@@ -3,6 +3,7 @@
 import { createContext, useContext } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
+  BadgePercent,
   Bot,
   Award,
   BookOpen,
@@ -161,6 +162,13 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Receipt,
         desc: "ตรวจใบเสร็จและผู้ร่วมแคมเปญ",
         permission: "receipts.view",
+      },
+      {
+        href: "/admin/staff-sale",
+        label: "ร้านพนักงาน",
+        icon: BadgePercent,
+        desc: "รอบการซื้อ ราคาพนักงาน วงเงิน และสิทธิ์",
+        permission: "staff_sale.view",
       },
       {
         href: "/admin/free-gifts",
