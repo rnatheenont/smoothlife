@@ -47,6 +47,11 @@
   --color-brand-action: #00a87b;
   --color-brand-action-hover: #00956d;
 
+  /* The page itself. White cards on a white page have nothing to sit on —
+     a shadow carries a card only so far, and the shop is mostly cards. A
+     tint this faint reads as paper rather than as a colour, which is the
+     point: it is a background, not a decision. */
+  --color-surface-page: #f8faf9;
   --color-surface-soft: #f4faf8;
   --color-surface-muted: #eef3f2;
   --color-surface-mist: #eef5f1;

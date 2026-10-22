@@ -60,7 +60,10 @@
 
   body {
     color: #0f172a;
-    background: #ffffff;
+    /* Every page, including the admin — a card that reads well on the shop
+       reads well there too, and two different page colours in one codebase
+       is how a component ends up only looking right in one of them. */
+    background: var(--color-surface-page);
   }
 
   /* Tailwind v4's preflight makes every form field transparent; under v3
