@@ -26,6 +26,22 @@ import { Button } from "@/components/ui";
 
 type OrderWithTracking = ShopifyOrderSummary & { storeLabel?: string; tracking?: ReturnType<typeof buildTracking> };
 
+type StaffPendingOrder = {
+  id: string;
+  subtotal_thb: number;
+  expires_at: string;
+  payment_url: string | null;
+  lines: { product_slug: string; qty: number; staff_price: number }[];
+};
+
+/** "เหลือ 18 นาที", or nothing left to say. */
+function minutesLeft(iso: string): string {
+  const ms = new Date(iso).getTime() - Date.now();
+  if (ms <= 0) return "หมดเวลาแล้ว";
+  const mins = Math.ceil(ms / 60_000);
+  return mins < 60 ? `เหลือ ${mins} นาที` : `เหลือ ${Math.floor(mins / 60)} ชม. ${mins % 60} นาที`;
+}
+
 function Heading({ embedded }: { embedded: boolean }) {
   return embedded ? (
     <h2 className="mb-2 text-lg font-bold text-brand-ink">คำสั่งซื้อของฉัน</h2>
@@ -48,6 +64,10 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
   const bySlug = new Map(orderProducts.map((p) => [p.slug, p]));
   /** Orders Shopify counts but will not hand to this app — see the API route. */
   const [hidden, setHidden] = useState(0);
+  // A staff order waiting to be paid lives only in our own tables — it has
+  // no Shopify order yet, so the list above cannot show it. Without this it
+  // is an allowance held by something the person cannot see or cancel.
+  const [staffPending, setStaffPending] = useState<StaffPendingOrder[]>([]);
   const [error, setError] = useState(false);
   const [linking, setLinking] = useState(false);
   const [linkAttempted, setLinkAttempted] = useState(false);
@@ -68,6 +88,25 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
   }, [orders]);
   const shown = stage === "all" ? orders : orders.filter((o) => orderStage(o) === stage);
 
+  function loadStaffPending() {
+    return fetch("/api/staff/my-orders")
+      .then((r) => r.json())
+      .then((data) => setStaffPending(Array.isArray(data.orders) ? data.orders : []))
+      // Silent: the employee shop is a side door, and most people loading
+      // this page have nothing to do with it.
+      .catch(() => setStaffPending([]));
+  }
+
+  async function cancelStaffOrder(id: string) {
+    if (!confirm("ยกเลิกคำสั่งซื้อพนักงานที่รอชำระเงิน? วงเงินและสินค้าจะถูกคืนให้")) return;
+    await fetch("/api/staff/orders/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    }).catch(() => {});
+    void loadStaffPending();
+  }
+
   function loadOrders() {
     return fetch("/api/account/orders")
       .then((r) => r.json())
@@ -83,6 +122,7 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
     loadOrders()
       .catch(() => setError(true))
       .finally(() => setLoading(false));
+    void loadStaffPending();
   }, []);
 
   async function handleRetryLink() {
@@ -138,6 +178,37 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
           แต่ยอดสะสมด้านบนนับรวมไว้ครบแล้ว หากต้องการรายละเอียดคำสั่งซื้อเก่า ติดต่อทีมงานได้เลยค่ะ
         </p>
       )}
+      {/* Above the tabs on purpose: this is the one row on the page with a
+          clock running on it. Everything below it is history. */}
+      {staffPending.map((o) => (
+        <div key={o.id} className="mb-5 rounded-xl2 border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-bold text-amber-900">
+            คำสั่งซื้อราคาพนักงาน · รอชำระเงิน · {minutesLeft(o.expires_at)}
+          </p>
+          <p className="mt-1 text-xs text-amber-800">
+            {o.lines.reduce((n, l) => n + l.qty, 0)} ชิ้น รวม {formatTHB(o.subtotal_thb)} ·
+            ถ้าไม่ชำระภายในเวลา วงเงินและสินค้าจะถูกคืนให้อัตโนมัติ
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {o.payment_url && (
+              <a
+                href={o.payment_url}
+                className="inline-flex h-11 items-center justify-center rounded-full bg-brand-800 px-5 text-sm font-semibold text-white hover:bg-brand-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
+              >
+                ชำระเงินต่อ
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => cancelStaffOrder(o.id)}
+              className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-slate-600 ring-1 ring-amber-200 hover:text-brand-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
+            >
+              ยกเลิกคำสั่งซื้อนี้
+            </button>
+          </div>
+        </div>
+      ))}
+
       {/* Marketplace-style tabs: one scrolling row, the active one underlined
           rather than filled, so six states fit a phone without wrapping.
           Shown even with no orders yet, so the page has its real shape from
@@ -236,6 +307,15 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
                     <span className="text-sm font-bold text-brand-ink group-hover:text-brand-800">{o.name}</span>
                     <ChevronRight size={14} className="text-slate-300 transition-transform group-hover:translate-x-0.5" />
                   </Link>
+                  {/* Bought at the employee price. Without this the order
+                      reads as an ordinary one charged the wrong amount. A
+                      tone of its own, because it answers a different
+                      question from the status pill beside it. */}
+                  {o.tags?.includes("staff-purchase") && (
+                    <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 align-middle text-[11px] font-semibold text-brand-800">
+                      ราคาพนักงาน
+                    </span>
+                  )}
                   {/* Orders from the group's other stores say where they were placed. */}
                   {o.store && o.store !== "smoothlife" && o.storeLabel && (
                     <span className="ml-2 rounded-full bg-surface-mist px-2 py-0.5 align-middle text-[11px] font-semibold text-brand-800">

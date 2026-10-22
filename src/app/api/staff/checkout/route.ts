@@ -212,6 +212,16 @@ export async function POST(req: NextRequest) {
       // the reservation behind it is the flash sale's late-refund bug.
       paymentExpiry: expiresAt,
     });
+
+    // Kept so an employee who closes the tab can come back to the same
+    // payment page instead of a second invoice for one order. It dies with
+    // the hold, because paymentExpiry is the hold's own deadline.
+    await supabaseRest(`staff_orders?id=eq.${pgValue(orderId)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({ payment_url: result.webPaymentUrl }),
+    }).catch(() => {});
+
     return NextResponse.json({
       ok: true,
       webPaymentUrl: result.webPaymentUrl,

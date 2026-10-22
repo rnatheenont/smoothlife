@@ -6,7 +6,7 @@
 -- here touches real data — but it does run against the real database, so
 -- read the cleanup at the bottom of each block before running it.
 --
--- Last run: 22 October 2026 — all 32 steps as expected.
+-- Last run: 22 October 2026 — all 44 steps as expected.
 --
 -- The one thing this cannot do from a single connection is two genuinely
 -- simultaneous carts. What stands in for it: step 5 proves one person cannot
@@ -224,3 +224,73 @@ begin
 end $$;
 
 select step, got from staff_test3 order by step;
+
+-- ===========================================================================
+-- Block 4 — the acceptance list in §9 of the plan: lookalike domains, the
+-- cap to the satang, a round that moves, and a webhook that arrives twice
+-- ===========================================================================
+do $$
+declare v_round uuid; v_a uuid; v_b uuid; v_res jsonb;
+begin
+  create temp table if not exists s9(step text, got text) on commit drop;
+  delete from s9;
+
+  insert into public.users (id) values (gen_random_uuid()) returning id into v_a;
+  insert into public.users (id) values (gen_random_uuid()) returning id into v_b;
+  insert into public.staff_rounds (name, starts_at, ends_at, cap_thb, status)
+  values ('TEST s9', now() - interval '1 hour', now() + interval '1 hour', 2000, 'open')
+  returning id into v_round;
+  insert into public.staff_round_items (round_id, variant_id, product_slug, regular_price, staff_price)
+  values (v_round, 'gid://test/E1', 'test-e1', 3000, 2000),
+         (v_round, 'gid://test/E2', 'test-e2', 100, 0.01);
+  insert into public.staff_eligibility (kind, value) values ('allow_domain','smooth-e.com') on conflict do nothing;
+
+  v_res := public.staff_verify(v_round, v_a, 'x@smooth-e.com.evil.com');
+  insert into s9 values ('1 smooth-e.com.evil.com', coalesce(v_res->>'reason', v_res->>'ok'));
+  v_res := public.staff_verify(v_round, v_a, 'x@sub.smooth-e.com');
+  insert into s9 values ('2 sub.smooth-e.com', coalesce(v_res->>'reason', v_res->>'ok'));
+  v_res := public.staff_verify(v_round, v_a, 'x@notsmooth-e.com');
+  insert into s9 values ('3 notsmooth-e.com', coalesce(v_res->>'reason', v_res->>'ok'));
+  v_res := public.staff_verify(v_round, v_a, 'x@SMOOTH-E.COM');
+  insert into s9 values ('4 the real domain, shouting', coalesce(v_res->>'email', v_res->>'reason'));
+
+  v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/E1","qty":1}]'::jsonb);
+  insert into s9 values ('5 exactly 2,000', v_res->>'ok' || ' / ' || coalesce(v_res->>'reason', v_res->>'subtotal_thb'));
+
+  update public.staff_orders set payment_reference='S9-1' where round_id=v_round and user_id=v_a;
+  perform public.staff_confirm_payment('S9-1', 2000);
+  v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/E2","qty":1}]'::jsonb);
+  insert into s9 values ('6 then 0.01 more', v_res->>'ok' || ' / ' || coalesce(v_res->>'reason','') || ' / left ' || coalesce(v_res->'detail'->>'remaining_thb',''));
+
+  -- The cap is copied onto the entitlement at verification, so moving the
+  -- round's dates or raising its cap leaves the people already in it alone.
+  update public.staff_rounds set ends_at = now() + interval '3 hours', cap_thb = 5000 where id = v_round;
+  insert into s9 values ('7 spent after extending',
+    (select spent_thb || ' spent, cap still ' || cap_thb from public.staff_entitlements
+     where round_id=v_round and user_id=v_a));
+
+  update public.staff_rounds set starts_at = now() + interval '1 hour' where id = v_round;
+  v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/E2","qty":1}]'::jsonb);
+  insert into s9 values ('8 before it opens', v_res->>'ok' || ' / ' || coalesce(v_res->>'reason',''));
+
+  update public.staff_rounds set starts_at = now() - interval '3 hours', ends_at = now() - interval '1 minute' where id = v_round;
+  v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/E2","qty":1}]'::jsonb);
+  insert into s9 values ('9 after it closes', v_res->>'ok' || ' / ' || coalesce(v_res->>'reason',''));
+
+  update public.staff_rounds set ends_at = now() + interval '1 hour' where id = v_round;
+  insert into public.staff_eligibility (kind, value) values ('block_email','x@smooth-e.com');
+  v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/E2","qty":1}]'::jsonb);
+  insert into s9 values ('10 blocked after verifying', v_res->>'ok' || ' / ' || coalesce(v_res->>'reason',''));
+
+  v_res := public.staff_confirm_payment('S9-1', 2000);
+  insert into s9 values ('11 confirm the same reference again', v_res->>'ok' || ' / already_paid=' || coalesce(v_res->>'already_paid',''));
+  insert into s9 values ('12 orders in this round',
+    (select count(*)::text || ' row(s), ' || count(*) filter (where status='paid')::text || ' paid'
+     from public.staff_orders where round_id = v_round));
+
+  delete from public.staff_rounds where id = v_round;
+  delete from public.staff_eligibility where value in ('smooth-e.com','x@smooth-e.com');
+  delete from public.users where id in (v_a, v_b);
+end $$;
+
+select step, got from s9 order by length(step), step;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, RotateCcw, XCircle } from "lucide-react";
+import { AlertTriangle, RefreshCw, RotateCcw, XCircle } from "lucide-react";
 import { Button } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import { FilterChip, Panel, adminTable } from "@/components/admin/layout-kit";
@@ -88,13 +88,18 @@ export default function OrdersTab({
     void load();
   }, [load]);
 
-  async function act(order: AdminStaffOrder, action: "refund_restore" | "cancel" | "clear_flag") {
+  async function act(
+    order: AdminStaffOrder,
+    action: "refund_restore" | "cancel" | "clear_flag" | "retry_shopify",
+  ) {
     const confirmText =
       action === "refund_restore"
         ? `คืนวงเงินและสต็อกของออร์เดอร์นี้ (${baht(order.subtotal_thb)} บาท)?\nคืนเงินจริงให้ทำใน Shopify หรือ 2C2P ก่อน — ปุ่มนี้แค่คืนสิทธิ์ให้พนักงาน`
         : action === "cancel"
           ? "ยกเลิกออร์เดอร์นี้และคืนของที่จองไว้?"
-          : "ปิดธง “ต้องคืนเงิน” ของออร์เดอร์นี้?";
+          : action === "retry_shopify"
+            ? "ลองสร้างออร์เดอร์นี้ใน Shopify อีกครั้ง?"
+            : "ปิดธง “ต้องคืนเงิน” ของออร์เดอร์นี้?";
     if (!confirm(confirmText)) return;
 
     setBusyId(order.id);
@@ -245,6 +250,17 @@ export default function OrdersTab({
                       >
                         <XCircle className="h-3.5 w-3.5" aria-hidden />
                         ยกเลิก
+                      </Button>
+                    )}
+                    {o.status === "paid" && !o.shopify_order_id && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onPress={() => act(o, "retry_shopify")}
+                        isDisabled={busyId === o.id}
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                        สร้างใน Shopify อีกครั้ง
                       </Button>
                     )}
                     {o.needs_refund && (

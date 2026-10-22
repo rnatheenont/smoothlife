@@ -3,6 +3,7 @@ import { pgValue, supabaseRest } from "@/lib/supabase-server";
 import { auditStaffSale, badRequest, guard } from "@/lib/staff-sale-admin";
 import { ORDER_COLUMNS, reasonTh, type StaffOrder, type StaffOrderStatus } from "@/lib/staff-sale";
 import { staffRpc, type RpcResult } from "@/lib/staff-sale-rpc";
+import { syncStaffOrderToShopify } from "@/lib/staff-order-shopify";
 
 // Admin: staff orders, and the two things an admin can do to one — give the
 // allowance back after a refund, or cancel one that is stuck unpaid.
@@ -98,6 +99,33 @@ export async function PATCH(req: NextRequest) {
       subtotal_thb: Number(order.subtotal_thb),
     });
     return NextResponse.json({ ok: true });
+  }
+
+  if (action === "retry_shopify") {
+    // The money and the allowance are already settled; what failed was
+    // Shopify. Re-runs exactly the step the webhook runs, and refuses to
+    // make a second order for one that already has one.
+    if (order.shopify_order_id) {
+      return badRequest("ออร์เดอร์นี้มีใน Shopify อยู่แล้ว");
+    }
+    if (order.status !== "paid") {
+      return badRequest("สร้างออร์เดอร์ Shopify ได้เฉพาะรายการที่ชำระเงินแล้ว");
+    }
+    const sync = await syncStaffOrderToShopify(id);
+    await auditStaffSale(req, "staff_sale.retry_shopify", id, {
+      round_id: order.round_id,
+      staff_email: order.staff_email,
+      ok: sync.ok,
+      shopify_order_id: sync.shopifyOrderId,
+      note: sync.note,
+    });
+    if (!sync.ok) {
+      return NextResponse.json(
+        { ok: false, error: `สร้างออร์เดอร์ใน Shopify ไม่สำเร็จ: ${sync.note ?? "ไม่ทราบสาเหตุ"}` },
+        { status: 502 },
+      );
+    }
+    return NextResponse.json({ ok: true, shopify_order_id: sync.shopifyOrderId });
   }
 
   if (action === "clear_flag") {

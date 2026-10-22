@@ -103,6 +103,8 @@ export type StaffOrder = {
   subtotal_thb: number;
   expires_at: string;
   payment_reference: string | null;
+  /** 2C2P's own payment page, kept so an abandoned payment can be finished. */
+  payment_url: string | null;
   shopify_order_id: string | null;
   shopify_sync_status: "pending" | "synced" | "failed";
   needs_refund: boolean;
@@ -113,7 +115,7 @@ export type StaffOrder = {
 
 export const ORDER_COLUMNS =
   "id,round_id,user_id,staff_email,status,lines,subtotal_thb,expires_at," +
-  "payment_reference,shopify_order_id,shopify_sync_status,needs_refund,note,created_at,paid_at";
+  "payment_reference,payment_url,shopify_order_id,shopify_sync_status,needs_refund,note,created_at,paid_at";
 
 /**
  * The same canonicalisation the database does, in TypeScript.

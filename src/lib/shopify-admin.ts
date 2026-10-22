@@ -980,6 +980,14 @@ export type ShopifyOrderSummary = {
   refunded: string;
   currency: string;
   items: { title: string; quantity: number; slug: string | null; imageUrl: string | null }[];
+  /**
+   * The order's Shopify tags.
+   *
+   * Read for `staff-purchase`: an employee's order at cost sits in the same
+   * history as their ordinary ones, at a price that would look like a
+   * mistake without a badge saying what it is.
+   */
+  tags: string[];
   trackingNumbers: string[];
   /** One entry per parcel — an order split across boxes has several. */
   shipments: ShopifyShipment[];
@@ -1010,6 +1018,7 @@ export async function getCustomerOrders(
               displayFinancialStatus: string | null;
               displayFulfillmentStatus: string | null;
               cancelledAt: string | null;
+              tags: string[];
               currentTotalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
               totalPriceSet: { shopMoney: { amount: string } };
               totalRefundedSet: { shopMoney: { amount: string } } | null;
@@ -1045,6 +1054,7 @@ export async function getCustomerOrders(
                 displayFinancialStatus
                 displayFulfillmentStatus
                 cancelledAt
+                tags
                 currentTotalPriceSet { shopMoney { amount currencyCode } }
                 totalPriceSet { shopMoney { amount } }
                 totalRefundedSet { shopMoney { amount } }
@@ -1072,6 +1082,7 @@ export async function getCustomerOrders(
       financialStatus: node.displayFinancialStatus,
       fulfillmentStatus: node.displayFulfillmentStatus,
       cancelledAt: node.cancelledAt,
+      tags: node.tags ?? [],
       total: node.currentTotalPriceSet.shopMoney.amount,
       originalTotal: node.totalPriceSet.shopMoney.amount,
       refunded: node.totalRefundedSet?.shopMoney.amount ?? "0",
