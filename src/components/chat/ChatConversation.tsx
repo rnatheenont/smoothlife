@@ -275,8 +275,12 @@ export default function ChatConversation({
                     className={`${ui.mascot} -mt-0.5 shrink-0 rounded-full bg-brand-50 ring-1 ring-brand-100`}
                   />
                 ) : (
-                  <span className={`relative ${ui.mascot} -mt-0.5 shrink-0`}>
-                    <Image src="/mascot/smoothie-say.png" alt="" fill sizes="44px" className="object-contain" />
+                  // The rig's own picture in the same round frame, so older
+                  // replies look like the moving one, just standing still.
+                  <span
+                    className={`relative ${ui.mascot} -mt-0.5 shrink-0 overflow-hidden rounded-full bg-brand-50 ring-1 ring-brand-100`}
+                  >
+                    <Image src="/mascot/rig/avatar.webp" alt="" fill sizes="44px" className="object-cover" />
                   </span>
                 )}
                 <div
