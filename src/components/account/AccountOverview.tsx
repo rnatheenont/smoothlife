@@ -33,6 +33,7 @@ import SkinScanSummaryCard from "@/components/account/SkinScanSummaryCard";
 import OrdersList from "@/components/account/OrdersList";
 import { orderStage, type OrderStage } from "@/lib/order-status";
 import { useStaffAccess } from "@/lib/use-staff-access";
+import Countdown from "@/components/staff/Countdown";
 
 // The account overview, laid out the way Thai shoppers already read a
 // marketplace account page: who you are at the top, then the four order
@@ -198,9 +199,16 @@ export default function AccountOverview() {
               <span className="block text-sm font-bold text-brand-ink">ร้านพนักงาน</span>
               <span className="block text-xs text-slate-600">
                 {staff.roundName ?? "ซื้อสินค้าราคาพนักงาน"}
-                {staff.ends_at
-                  ? ` · ถึง ${new Date(staff.ends_at).toLocaleDateString("th-TH", { day: "numeric", month: "short" })}`
-                  : ""}
+                {/* The same clock as the shop's own, not a closing date: a
+                    round people have to come back for is one they need to
+                    know is running out, and "ถึง 30 ต.ค." said the same thing
+                    for nine days. */}
+                {staff.ends_at && (
+                  <>
+                    {" · "}
+                    <Countdown to={staff.ends_at} className="font-semibold text-brand-800" />
+                  </>
+                )}
               </span>
             </span>
             <ChevronRight size={16} className="shrink-0 text-slate-300" />
