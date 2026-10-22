@@ -94,6 +94,47 @@ const CHECKOUT_BUTTON =
   "disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200 " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2";
 
+/**
+ * The payment window, draining.
+ *
+ * A number counting down says how long is left; a strip says it without
+ * being read, which is what somebody glancing at the bottom of a phone
+ * needs. One state flip and a CSS transition rather than a timer: the
+ * browser animates the width over exactly the time remaining, costing
+ * nothing per frame, and the page re-mounts this whenever it comes back
+ * from the payment page so it never drifts.
+ */
+function WindowStrip({ to, windowMin }: { to: string; windowMin: number }) {
+  const [width, setWidth] = useState<string | null>(null);
+  const [leftMs, setLeftMs] = useState(0);
+
+  useEffect(() => {
+    const ms = Math.max(0, new Date(to).getTime() - Date.now());
+    const total = Math.max(windowMin, 1) * 60_000;
+    setLeftMs(ms);
+    setWidth(`${Math.min(100, (ms / total) * 100)}%`);
+    // Next frame, so the browser has the starting width before it is asked
+    // to leave it.
+    const id = requestAnimationFrame(() => setWidth("0%"));
+    return () => cancelAnimationFrame(id);
+  }, [to, windowMin]);
+
+  if (width === null) return null;
+  // Under five minutes it stops being information and starts being a
+  // deadline, so it changes colour with the clock above it.
+  const urgent = leftMs < 5 * 60_000;
+  return (
+    <span aria-hidden className="block h-1 w-full overflow-hidden bg-amber-100">
+      <span
+        className={`block h-full transition-[width] ease-linear motion-reduce:transition-none ${
+          urgent ? "bg-rose-500" : "bg-amber-400"
+        }`}
+        style={{ width, transitionDuration: `${leftMs}ms` }}
+      />
+    </span>
+  );
+}
+
 export default function StaffShop() {
   const [data, setData] = useState<State>({ state: "loading" });
   const [error, setError] = useState<string | null>(null);
@@ -1087,7 +1128,13 @@ export default function StaffShop() {
           {/* The page needs somewhere to end that is not underneath the bar. */}
           <div className="h-24 lg:hidden" aria-hidden />
 
-          <div className="fixed inset-x-0 bottom-0 z-90 border-t border-surface-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+          <div
+            className={`fixed inset-x-0 bottom-0 z-90 pb-[env(safe-area-inset-bottom)] lg:hidden ${
+              shop.pending
+                ? "shadow-[0_-8px_24px_rgba(15,23,42,.12)]"
+                : "border-t border-surface-line bg-white/95 backdrop-blur-md"
+            }`}
+          >
             {shop.pending ? (
               // The whole unpaid order, on the bar.
               //
@@ -1095,51 +1142,73 @@ export default function StaffShop() {
               // line down here, which meant the one thing with a clock on it
               // was also the one thing you had to scroll up to act on. The
               // card stays on a desktop, where there is no bar.
-              <div className="bg-amber-50 px-4 py-3">
-                <p className="flex items-center gap-1.5 text-[13px] font-bold text-amber-900">
-                  <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  รอชำระเงิน · <Countdown to={shop.pending.expires_at} />
-                </p>
-                <p className="mt-0.5 text-[12px] text-amber-800">
-                  {shop.pending.lines.length} รายการ รวม {baht(shop.pending.subtotal_thb)} บาท
-                </p>
-                <div className="mt-2.5 flex items-center gap-2">
-                  {shop.pending.payment_url ? (
+              //
+              // Three rows, each with one job: what is waiting and what it
+              // comes to, the two ways forward, and the way out. They were
+              // one row of three buttons, where the primary took most of the
+              // width and squeezed "ยกเลิก" against the edge — a destructive
+              // action pressed into the corner beside the one everybody is
+              // aiming for.
+              <div className="overflow-hidden rounded-t-2xl bg-amber-50 motion-safe:animate-slideUp">
+                <WindowStrip
+                  to={shop.pending.expires_at}
+                  windowMin={shop.round.payment_window_min ?? 30}
+                />
+                <div className="flex items-start justify-between gap-3 px-4 pt-2.5">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+                      <Clock className="h-3 w-3 shrink-0" aria-hidden />
+                      รอชำระเงิน
+                    </p>
+                    <p className="mt-0.5 text-[15px] font-bold text-amber-900">
+                      <Countdown to={shop.pending.expires_at} />
+                    </p>
+                  </div>
+                  {/* Facing the clock across the bar, the way a receipt puts
+                      the total opposite what it is for. */}
+                  <div className="shrink-0 text-right">
+                    <p className="text-[11px] text-amber-700">
+                      {shop.pending.lines.length} รายการ
+                    </p>
+                    <p className="text-[15px] font-bold tabular-nums text-amber-900">
+                      ฿{baht(shop.pending.subtotal_thb)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-2.5 flex items-center gap-2 px-4">
+                  {shop.pending.payment_url && (
                     <a
                       href={shop.pending.payment_url}
-                      className="flex h-12 flex-1 items-center justify-center rounded-full bg-brand-800 px-5 text-sm font-bold text-white"
+                      className="flex h-12 flex-1 items-center justify-center rounded-full bg-brand-800 text-sm font-bold text-white transition-colors hover:bg-brand-1000"
                     >
                       ชำระเงินต่อ
                     </a>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => editPending(shop.pending!)}
-                      disabled={busy}
-                      className="flex h-12 flex-1 items-center justify-center rounded-full bg-brand-800 px-5 text-sm font-bold text-white disabled:bg-slate-200 disabled:text-slate-500"
-                    >
-                      แก้ไขรายการ
-                    </button>
-                  )}
-                  {shop.pending.payment_url && (
-                    <button
-                      type="button"
-                      onClick={() => editPending(shop.pending!)}
-                      disabled={busy}
-                      className="flex h-12 shrink-0 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-slate-600 ring-1 ring-amber-200 disabled:opacity-50"
-                    >
-                      แก้ไขรายการ
-                    </button>
                   )}
                   <button
                     type="button"
-                    onClick={() => cancelPending(shop.pending!.id)}
+                    onClick={() => editPending(shop.pending!)}
                     disabled={busy}
-                    className="flex h-12 shrink-0 items-center justify-center rounded-full px-3 text-sm font-semibold text-slate-500 disabled:opacity-50"
+                    className={`flex h-12 flex-1 items-center justify-center rounded-full text-sm font-bold transition-colors disabled:opacity-50 ${
+                      shop.pending.payment_url
+                        ? "bg-white text-brand-800 ring-1 ring-amber-300 hover:ring-brand-800/40"
+                        : "bg-brand-800 text-white hover:bg-brand-1000"
+                    }`}
                   >
-                    ยกเลิก
+                    แก้ไขรายการ
                   </button>
                 </div>
+
+                {/* Quiet, and on its own line. Nothing anybody reaches for by
+                    accident sits next to the button they were aiming at. */}
+                <button
+                  type="button"
+                  onClick={() => cancelPending(shop.pending!.id)}
+                  disabled={busy}
+                  className="mb-1 mt-1 grid h-9 w-full place-items-center text-[12px] font-medium text-amber-800 underline-offset-2 hover:underline disabled:opacity-50"
+                >
+                  ยกเลิกคำสั่งซื้อนี้
+                </button>
               </div>
             ) : (
               <div className="flex items-center gap-3 px-4 py-3">
