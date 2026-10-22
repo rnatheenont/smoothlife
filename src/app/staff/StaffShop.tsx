@@ -89,9 +89,9 @@ const CATEGORY_TH = new Map(categories.map((c) => [c.slug as string, c.nameTh]))
  * brand when it works, flat grey when it does not.
  */
 const CHECKOUT_BUTTON =
-  "grid h-12 place-items-center rounded-full px-6 text-sm font-bold transition-colors " +
-  "bg-brand-800 text-white hover:bg-brand-1000 " +
-  "disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200 " +
+  "grid h-12 place-items-center rounded-full px-6 text-sm font-bold transition-[filter,background-color] " +
+  "bg-brand-gradient text-white hover:brightness-105 " +
+  "disabled:cursor-not-allowed disabled:bg-slate-200 disabled:bg-none disabled:text-slate-500 " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2";
 
 /**
@@ -1009,11 +1009,14 @@ export default function StaffShop() {
                                       ? `${product.name}${item.size ? ` ${item.size}` : ""} ครบจำนวนแล้ว`
                                       : `หยิบ ${product.name}${item.size ? ` ${item.size}` : ""} ใส่ตะกร้า`
                                   }
-                                  className={`absolute bottom-3 right-3 grid size-10 place-items-center rounded-full shadow-card transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 ${
-                                    added
-                                      ? "bg-brand-600 text-white"
-                                      : "bg-brand-800 text-white hover:bg-brand-1000"
-                                  } disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none disabled:hover:bg-slate-200`}
+                                  // The shop's own call-to-action colour,
+                                  // the one on ดำเนินการชำระเงิน. The
+                                  // confirmation stays flat: "added" is a
+                                  // state, and a state that keeps moving
+                                  // reads as still busy.
+                                  className={`absolute bottom-3 right-3 grid size-10 place-items-center rounded-full text-white shadow-card transition-[filter,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 ${
+                                    added ? "bg-brand-emerald" : "bg-brand-gradient hover:brightness-105"
+                                  } disabled:cursor-not-allowed disabled:bg-slate-200 disabled:bg-none disabled:text-slate-500 disabled:shadow-none`}
                                 >
                                   {added ? (
                                     <Check className="h-5 w-5" strokeWidth={2.75} aria-hidden />
@@ -1340,7 +1343,7 @@ export default function StaffShop() {
                   {shop.pending.payment_url && (
                     <a
                       href={shop.pending.payment_url}
-                      className="flex h-12 flex-1 items-center justify-center rounded-full bg-brand-800 text-sm font-bold text-white transition-colors hover:bg-brand-1000"
+                      className="flex h-12 flex-1 items-center justify-center rounded-full bg-brand-gradient text-sm font-bold text-white transition-[filter] hover:brightness-105"
                     >
                       ชำระเงินต่อ
                     </a>
@@ -1352,7 +1355,7 @@ export default function StaffShop() {
                     className={`flex h-12 flex-1 items-center justify-center rounded-full text-sm font-bold transition-colors disabled:opacity-50 ${
                       shop.pending.payment_url
                         ? "bg-white text-brand-800 ring-1 ring-amber-300 hover:ring-brand-800/40"
-                        : "bg-brand-800 text-white hover:bg-brand-1000"
+                        : "bg-brand-gradient text-white hover:brightness-105"
                     }`}
                   >
                     แก้ไขรายการ
@@ -1378,7 +1381,7 @@ export default function StaffShop() {
               </div>
             ) : (
               <div
-                className={`flex items-center gap-3 bg-brand-800 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] motion-safe:animate-slideUp ${
+                className={`flex items-center gap-3 bg-brand-gradient px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] motion-safe:animate-slideUp ${
                   cartOpen && cartCount > 0 ? "" : "rounded-t-2xl"
                 }`}
               >
