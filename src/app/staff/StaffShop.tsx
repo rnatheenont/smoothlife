@@ -509,11 +509,16 @@ export default function StaffShop() {
                     name, price with the struck-through retail beside it and
                     the red discount chip next to the number it is a
                     percentage of. */}
-                {/* Plain breakpoints, not a container query: the main card
-                    uses @container because it is dropped into shelves of
-                    wildly different widths, and this grid only ever has one
-                    home. */}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {/* The shop's own grid shape (two, three, then more), but it
+                    reaches five a step earlier than /shop does: these cards
+                    carry no rating and no sold count, so they read fine at
+                    the ~170px five across leaves in this column once the
+                    allowance rail has taken its 320px.
+
+                    Plain breakpoints rather than a container query: the main
+                    card uses @container because it is dropped into shelves
+                    of wildly different widths, and this grid has one home. */}
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">
                   {group.items.map((item) => {
                     const qty = cart[item.variant_id] ?? 0;
                     const soldOut = item.left === 0;
