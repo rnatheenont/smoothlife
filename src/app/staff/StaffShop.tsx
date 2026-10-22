@@ -75,6 +75,20 @@ const baht = (n: number) =>
 
 const CATEGORY_TH = new Map(categories.map((c) => [c.slug as string, c.nameTh]));
 
+/**
+ * The checkout button, in both of its states.
+ *
+ * Written out rather than taken from the shared Button because its disabled
+ * state is the brand gradient at half opacity — which on a page this pale
+ * reads as a pale green button, not as one that cannot be pressed. Solid
+ * brand when it works, flat grey when it does not.
+ */
+const CHECKOUT_BUTTON =
+  "mt-3 grid h-12 w-full place-items-center rounded-full text-sm font-bold transition-colors " +
+  "bg-brand-800 text-white hover:bg-brand-1000 " +
+  "disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200 " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2";
+
 function remaining(iso: string): string {
   const ms = new Date(iso).getTime() - Date.now();
   if (ms <= 0) return "หมดเวลาแล้ว";
@@ -374,9 +388,9 @@ export default function StaffShop() {
                     </span>
                   </span>
                 </p>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white">
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
                   <div
-                    className="h-full rounded-full bg-brand-700"
+                    className="h-full rounded-full bg-brand-600"
                     style={{
                       width: `${Math.min(100, Math.round(((shop.standing.cap_thb - shop.standing.left_thb) / shop.standing.cap_thb) * 100))}%`,
                     }}
@@ -398,7 +412,7 @@ export default function StaffShop() {
             )}
 
             {shop.canOrder && !shop.pending && (shop.round.max_orders || shop.round.max_per_item) && (
-              <p className="mb-5 hidden text-[12px] text-slate-500 lg:block">
+              <p className="mb-5 hidden text-[12px] font-medium text-slate-600 lg:block">
                 {[
                   shop.round.max_orders ? `ซื้อได้ ${shop.round.max_orders} ครั้งต่อรอบ` : null,
                   shop.round.max_per_item
@@ -483,7 +497,7 @@ export default function StaffShop() {
             {sections.map((group) => (
               <section key={group.key} className="mb-7">
                 {group.label && (
-                  <h2 className="mb-3 text-[15px] font-bold text-brand-ink">{group.label}</h2>
+                  <h2 className="mb-3 text-[16px] font-bold text-brand-ink">{group.label}</h2>
                 )}
                 <div className="grid gap-3 sm:grid-cols-2">
                   {group.items.map((item) => {
@@ -498,7 +512,7 @@ export default function StaffShop() {
                     return (
                       <article
                         key={item.variant_id}
-                        className="flex gap-3 rounded-xl2 bg-surface-soft p-3"
+                        className="flex gap-3 rounded-xl2 bg-white p-3 ring-1 ring-surface-line transition-shadow hover:ring-brand-200"
                       >
                         {item.image && (
                           <Image
@@ -510,29 +524,29 @@ export default function StaffShop() {
                           />
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-semibold leading-snug text-brand-ink">
+                          <p className="text-[14px] font-semibold leading-snug text-brand-ink">
                             {item.name}
                           </p>
-                          <p className="text-[11px] text-slate-400">
+                          <p className="text-[12px] text-slate-500">
                             {item.brand}
                             {item.size ? ` · ${item.size}` : ""}
                           </p>
                           <p className="mt-1 flex items-baseline gap-1.5">
-                            <span className="text-[15px] font-bold text-brand-800">
+                            <span className="text-[18px] font-extrabold text-brand-1000">
                               ฿{baht(item.staff_price)}
                             </span>
                             {item.regular_price > item.staff_price && (
                               <>
-                                <span className="text-[12px] text-slate-400 line-through">
+                                <span className="text-[12px] text-slate-500 line-through">
                                   ฿{baht(item.regular_price)}
                                 </span>
-                                <span className="text-[11px] font-semibold text-emerald-700">
+                                <span className="rounded-full bg-sale px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
                                   -{off}%
                                 </span>
                               </>
                             )}
                           </p>
-                          <p className="mt-0.5 text-[11px] text-slate-400">
+                          <p className="mt-1 text-[12px] text-slate-600">
                             {soldOut
                               ? "หมดแล้ว"
                               : [
@@ -552,20 +566,20 @@ export default function StaffShop() {
                                 onClick={() => setQty(item, qty - 1)}
                                 disabled={qty === 0}
                                 aria-label={`ลดจำนวน ${item.name}`}
-                                className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-ink ring-1 ring-slate-300 transition-colors hover:ring-brand-600 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                               >
-                                <Minus className="h-3.5 w-3.5" aria-hidden />
+                                <Minus className="h-4 w-4" aria-hidden />
                               </button>
-                              <span className="min-w-[1.5rem] text-center text-[13px] font-semibold">
+                              <span className="min-w-[1.75rem] text-center text-[15px] font-bold text-brand-ink">
                                 {qty}
                               </span>
                               <button
                                 onClick={() => setQty(item, qty + 1)}
                                 disabled={atLimit || (item.left !== null && qty >= item.left)}
                                 aria-label={`เพิ่มจำนวน ${item.name}`}
-                                className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-ink ring-1 ring-slate-300 transition-colors hover:ring-brand-600 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                               >
-                                <Plus className="h-3.5 w-3.5" aria-hidden />
+                                <Plus className="h-4 w-4" aria-hidden />
                               </button>
                             </div>
                           )}
@@ -585,32 +599,32 @@ export default function StaffShop() {
               cart on a bar fixed to the bottom of the screen. A column of
               this below eighty products is a column nobody scrolls to. */}
           <aside className="hidden lg:sticky lg:top-24 lg:block lg:space-y-3">
-            <div className="rounded-xl2 bg-surface-soft p-4">
-              <p className="flex items-center gap-1.5 text-[12px] font-medium text-slate-500">
+            <div className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
+              <p className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-600">
                 <Wallet className="h-3.5 w-3.5" aria-hidden />
                 วงเงินของคุณในรอบนี้
               </p>
-              <p className="mt-1 text-xl font-bold text-brand-ink">
+              <p className="mt-1 text-2xl font-extrabold text-brand-ink">
                 ฿{baht(shop.standing.left_thb)}
-                <span className="ml-1 text-[12px] font-normal text-slate-400">
+                <span className="ml-1 text-[12px] font-normal text-slate-500">
                   จาก ฿{baht(shop.standing.cap_thb)}
                 </span>
               </p>
               {/* A number plus a bar, because "เหลือ 500 จาก 2,000" and a
                   quarter-full bar answer two different glances. */}
               <div
-                className="mt-2 h-1.5 overflow-hidden rounded-full bg-white"
+                className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200"
                 role="img"
                 aria-label={`ใช้ไปแล้ว ${baht(shop.standing.cap_thb - shop.standing.left_thb)} บาท จาก ${baht(shop.standing.cap_thb)} บาท`}
               >
                 <div
-                  className="h-full rounded-full bg-brand-700"
+                  className="h-full rounded-full bg-brand-600"
                   style={{
                     width: `${Math.min(100, Math.round(((shop.standing.cap_thb - shop.standing.left_thb) / shop.standing.cap_thb) * 100))}%`,
                   }}
                 />
               </div>
-              <p className="mt-2 flex items-center gap-1 text-[11px] text-slate-400">
+              <p className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
                 <BadgeCheck className="h-3 w-3" aria-hidden />
                 ยืนยันแล้วด้วย {shop.standing.staff_email}
               </p>
@@ -618,7 +632,7 @@ export default function StaffShop() {
 
             {!shop.pending && shop.canOrder && (
               <div className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
-                <p className="text-[13px] font-bold text-brand-ink">ตะกร้าพนักงาน</p>
+                <p className="text-[14px] font-bold text-brand-ink">ตะกร้าพนักงาน</p>
                 {Object.keys(cart).length === 0 ? (
                   <p className="mt-2 text-[12px] text-slate-400">ยังไม่ได้เลือกสินค้า</p>
                 ) : (
@@ -640,14 +654,14 @@ export default function StaffShop() {
                   </ul>
                 )}
 
-                <div className="mt-3 flex justify-between border-t border-slate-100 pt-3 text-[13px] font-bold text-brand-ink">
+                <div className="mt-3 flex items-baseline justify-between border-t border-surface-line pt-3 text-[14px] font-bold text-brand-ink">
                   <span>รวม</span>
-                  <span className="font-mono">฿{baht(subtotal)}</span>
+                  <span className="text-[18px] font-extrabold">฿{baht(subtotal)}</span>
                 </div>
 
                 {subtotal > shop.standing.left_thb && (
-                  <p className="mt-2 text-[12px] text-rose-600">
-                    เกินวงเงินที่เหลือ ฿{baht(subtotal - shop.standing.left_thb)}
+                  <p className="mt-2 rounded-xl bg-rose-50 px-2.5 py-1.5 text-[12px] font-semibold text-rose-700">
+                    เกินวงเงินที่เหลือ ฿{baht(subtotal - shop.standing.left_thb)} — ลดจำนวนลงก่อน
                   </p>
                 )}
 
@@ -662,19 +676,20 @@ export default function StaffShop() {
                   </p>
                 )}
 
-                <Button
-                  className="mt-3 w-full"
-                  onPress={checkout}
-                  isDisabled={
+                <button
+                  type="button"
+                  onClick={checkout}
+                  disabled={
                     busy ||
                     Object.keys(cart).length === 0 ||
                     subtotal > shop.standing.left_thb ||
                     !shop.shipTo ||
                     !shop.shipTo.hasPhone
                   }
+                  className={CHECKOUT_BUTTON}
                 >
                   ไปชำระเงิน
-                </Button>
+                </button>
                 <p className="mt-2 text-[11px] text-slate-400">
                   ชำระเงินแยกจากตะกร้าปกติ · มีเวลาชำระ {shop.round.payment_window_min ?? 30} นาที
                   หลังกดปุ่มนี้ ถ้าไม่ชำระ วงเงินจะคืนให้อัตโนมัติ
@@ -752,19 +767,20 @@ export default function StaffShop() {
                   </span>
                 </button>
 
-                <Button
-                  className="h-12 shrink-0 px-6"
-                  onPress={checkout}
-                  isDisabled={
+                <button
+                  type="button"
+                  onClick={checkout}
+                  disabled={
                     busy ||
                     cartCount === 0 ||
                     subtotal > shop.standing.left_thb ||
                     !shop.shipTo ||
                     !shop.shipTo.hasPhone
                   }
+                  className={`${CHECKOUT_BUTTON} mt-0 w-auto shrink-0 px-6`}
                 >
                   ไปชำระเงิน
-                </Button>
+                </button>
               </div>
             )}
 
