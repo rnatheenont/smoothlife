@@ -18,7 +18,58 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (stop) return stop;
   const { id } = await params;
 
-  const body = (await req.json().catch(() => null)) as { items?: unknown[] } | null;
+  const body = (await req.json().catch(() => null)) as
+    | { items?: unknown[]; copyFrom?: string }
+    | null;
+
+  // Starting a round from the last one. Each round carries its own products
+  // at its own prices — that is the point of keeping them per round — but
+  // in practice the next round is the last one with a few changes, and
+  // retyping sixty prices to make those changes is how a price gets typed
+  // wrong.
+  if (body?.copyFrom) {
+    const source = await supabaseRest<StaffRoundItem[]>(
+      `staff_round_items?round_id=eq.${pgValue(body.copyFrom)}&select=${ITEM_COLUMNS}&limit=2000`,
+    ).catch(() => []);
+    if (!source?.length) return badRequest("รอบต้นทางยังไม่มีสินค้า");
+
+    const existing = await supabaseRest<{ variant_id: string }[]>(
+      `staff_round_items?round_id=eq.${pgValue(id)}&select=variant_id&limit=2000`,
+    ).catch(() => []);
+    const have = new Set((existing ?? []).map((r) => r.variant_id));
+
+    // Copied, never counted: sold_qty and reserved_qty belong to the round
+    // that sold them.
+    const fresh = source
+      .filter((i) => !have.has(i.variant_id))
+      .map((i) => ({
+        round_id: id,
+        variant_id: i.variant_id,
+        product_slug: i.product_slug,
+        collection_handle: i.collection_handle,
+        regular_price: Number(i.regular_price),
+        staff_price: Number(i.staff_price),
+        per_person_limit: i.per_person_limit,
+        total_quota: i.total_quota,
+        enabled: i.enabled,
+        updated_at: new Date().toISOString(),
+      }));
+
+    if (fresh.length === 0) return badRequest("สินค้าทั้งหมดของรอบนั้นอยู่ในรอบนี้แล้ว");
+
+    await supabaseRest(`staff_round_items`, {
+      method: "POST",
+      returning: false,
+      body: JSON.stringify(fresh),
+    });
+    await auditStaffSale(req, "staff_sale.items_copy", id, {
+      from_round: body.copyFrom,
+      count: fresh.length,
+      skipped: source.length - fresh.length,
+    });
+    return NextResponse.json({ ok: true, count: fresh.length, skipped: source.length - fresh.length });
+  }
+
   if (!body || !Array.isArray(body.items) || body.items.length === 0) {
     return badRequest("ยังไม่ได้เลือกสินค้า");
   }

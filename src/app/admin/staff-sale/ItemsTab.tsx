@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Percent, Plus, Search, Trash2, X } from "lucide-react";
+import { Check, Copy, Percent, Plus, Search, Trash2, X } from "lucide-react";
 import { Button } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import AdminField from "@/components/admin/AdminField";
@@ -29,12 +29,15 @@ export default function ItemsTab({
   roundId,
   items,
   busy,
+  otherRounds,
   onError,
   onReload,
 }: {
   roundId: string;
   items: StaffRoundItem[];
   busy: boolean;
+  /** Rounds to copy a price list from — this one excluded. */
+  otherRounds: { id: string; name: string }[];
   onError: (msg: string | null) => void;
   onReload: () => void;
 }) {
@@ -48,6 +51,7 @@ export default function ItemsTab({
   const [percent, setPercent] = useState("40");
   const [roundTo, setRoundTo] = useState<"1" | "5" | "10">("5");
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const [copyFrom, setCopyFrom] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
 
   const already = new Set(items.map((i) => i.variant_id));
@@ -118,6 +122,23 @@ export default function ItemsTab({
     }
     setChosen({});
     setPicker(false);
+    onReload();
+  }
+
+  async function copyRound() {
+    if (!copyFrom) return;
+    onError(null);
+    const res = await fetch(`/api/admin/staff-sale/rounds/${roundId}/items`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ copyFrom }),
+    });
+    const json = await res.json();
+    if (!json.ok) {
+      onError(json.error ?? "คัดลอกไม่สำเร็จ");
+      return;
+    }
+    setCopyFrom("");
     onReload();
   }
 
@@ -263,7 +284,7 @@ export default function ItemsTab({
               {items.length === 0 && (
                 <tr>
                   <td className={adminTable.muted} colSpan={8}>
-                    ยังไม่มีสินค้าในรอบนี้ — กด “เพิ่มสินค้า”
+                    ยังไม่มีสินค้าในรอบนี้ — กด “เพิ่มสินค้า” หรือคัดลอกจากรอบก่อนด้านล่าง
                   </td>
                 </tr>
               )}
@@ -384,6 +405,37 @@ export default function ItemsTab({
             </tbody>
           </table>
         </div>
+        {/* Each round keeps its own products at its own prices, which is why
+            the next round usually starts as the last one plus a few edits.
+            Copying beats retyping sixty prices, which is how one gets typed
+            wrong. Prices come across; what sold does not. */}
+        {otherRounds.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 p-3">
+            <label className="text-[12px] font-medium text-slate-500" htmlFor="copy-from-round">
+              คัดลอกสินค้าและราคาจากรอบ
+            </label>
+            <select
+              id="copy-from-round"
+              value={copyFrom}
+              onChange={(e) => setCopyFrom(e.target.value)}
+              className="h-9 rounded-xl2 border border-slate-200 bg-white px-2 text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+            >
+              <option value="">— เลือกรอบ —</option>
+              {otherRounds.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+            <Button size="sm" variant="ghost" onPress={copyRound} isDisabled={!copyFrom || busy}>
+              <Copy className="h-3.5 w-3.5" aria-hidden />
+              คัดลอกมา
+            </Button>
+            <span className="text-[11px] text-slate-400">
+              สินค้าที่มีอยู่แล้วในรอบนี้จะถูกข้าม ยอดขายไม่ถูกคัดลอกมา
+            </span>
+          </div>
+        )}
       </Panel>
 
       {picker && (

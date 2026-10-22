@@ -114,14 +114,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!STATUSES.includes(status)) return badRequest("สถานะไม่ถูกต้อง");
 
     if (status === "open") {
-      const open = await supabaseRest<{ id: string; name: string }[]>(
-        `staff_rounds?status=eq.open&id=neq.${pgValue(id)}&select=id,name&limit=1`,
+      // Overlapping windows, not simply another open round.
+      //
+      // Two rounds running at once means two allowances for the same person
+      // in the same week, which is the thing to prevent. Two rounds whose
+      // dates do not touch is a schedule — set November up in October and
+      // leave it, and it opens itself when its own start time arrives,
+      // because a round is live only when its status and its clock agree.
+      const others = await supabaseRest<
+        { id: string; name: string; starts_at: string; ends_at: string }[]
+      >(`staff_rounds?status=eq.open&id=neq.${pgValue(id)}&select=id,name,starts_at,ends_at&limit=50`);
+
+      const start = new Date(before.starts_at).getTime();
+      const end = new Date(before.ends_at).getTime();
+      const clash = (others ?? []).find(
+        (o) => new Date(o.starts_at).getTime() < end && start < new Date(o.ends_at).getTime(),
       );
-      // Refused rather than closing the other one: two open rounds means two
-      // caps per person, and which of them to close is not this click's call.
-      if (open?.[0]) {
-        return badRequest(`ยังมีรอบ "${open[0].name}" เปิดอยู่ — ปิดรอบนั้นก่อน`);
+      if (clash) {
+        return badRequest(
+          `ช่วงเวลาทับกับรอบ "${clash.name}" ที่เปิดอยู่ — แก้วันเวลาให้ไม่ทับกัน หรือปิดรอบนั้นก่อน`,
+        );
       }
+
       const items = await supabaseRest<{ id: string }[]>(
         `staff_round_items?round_id=eq.${pgValue(id)}&enabled=is.true&select=id&limit=1`,
       );

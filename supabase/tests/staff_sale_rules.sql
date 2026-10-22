@@ -6,7 +6,7 @@
 -- here touches real data — but it does run against the real database, so
 -- read the cleanup at the bottom of each block before running it.
 --
--- Last run: 22 October 2026 — all 44 steps as expected.
+-- Last run: 22 October 2026 — all 51 steps as expected.
 --
 -- The one thing this cannot do from a single connection is two genuinely
 -- simultaneous carts. What stands in for it: step 5 proves one person cannot
@@ -296,3 +296,58 @@ begin
 end $$;
 
 select step, got from s9 order by length(step), step;
+
+-- ===========================================================================
+-- Block 5 — the round's own two rules: at most N of any one item, and at
+-- most N purchases per person per round
+-- ===========================================================================
+do $$
+declare v_round uuid; v_a uuid; v_res jsonb; v_order uuid;
+begin
+  create temp table if not exists s6(step text, got text) on commit drop;
+  delete from s6;
+  insert into public.users (id) values (gen_random_uuid()) returning id into v_a;
+  insert into public.staff_rounds (name, starts_at, ends_at, cap_thb, status, max_per_item, max_orders)
+  values ('TEST rules', now() - interval '1 hour', now() + interval '1 hour', 99000, 'open', 6, 1)
+  returning id into v_round;
+  insert into public.staff_round_items (round_id, variant_id, product_slug, regular_price, staff_price, per_person_limit)
+  values (v_round, 'gid://test/M1', 'test-blanket', 900, 100, null),
+         (v_round, 'gid://test/M2', 'test-stricter', 900, 100, 2),
+         (v_round, 'gid://test/M3', 'test-looser', 900, 100, 10);
+  insert into public.staff_eligibility (kind, value) values ('allow_domain','smooth-e.com') on conflict do nothing;
+  perform public.staff_verify(v_round, v_a, 'm@smooth-e.com');
+
+  v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/M1","qty":7}]'::jsonb);
+  insert into s6 values ('1 no item limit, asks 7', coalesce(v_res->>'reason', v_res->>'ok') || ' / limit ' || coalesce(v_res->'detail'->>'limit',''));
+
+  v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/M2","qty":3}]'::jsonb);
+  insert into s6 values ('2 item says 2, asks 3', coalesce(v_res->>'reason','ok') || ' / limit ' || coalesce(v_res->'detail'->>'limit',''));
+
+  v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/M3","qty":8}]'::jsonb);
+  insert into s6 values ('3 item says 10, round says 6, asks 8', coalesce(v_res->>'reason','ok') || ' / limit ' || coalesce(v_res->'detail'->>'limit',''));
+
+  v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/M1","qty":6}]'::jsonb);
+  insert into s6 values ('4 asks exactly 6', v_res->>'ok' || ' / ' || coalesce(v_res->>'reason',''));
+  v_order := (v_res->>'order_id')::uuid;
+
+  update public.staff_orders set payment_reference='R-1' where id = v_order;
+  perform public.staff_confirm_payment('R-1', 600);
+
+  v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/M1","qty":1}]'::jsonb);
+  insert into s6 values ('5 a second purchase in the round', coalesce(v_res->>'reason','ok') || ' / used ' || coalesce(v_res->'detail'->>'used',''));
+
+  -- A refund gives the turn back: the purchase was undone.
+  perform public.staff_refund_restore(v_order);
+  v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/M1","qty":1}]'::jsonb);
+  insert into s6 values ('6 after the admin refunds it', v_res->>'ok' || ' / ' || coalesce(v_res->>'reason',''));
+
+  update public.staff_rounds set max_per_item = null, max_orders = null where id = v_round;
+  v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/M1","qty":50}]'::jsonb);
+  insert into s6 values ('7 both rules off, asks 50', coalesce(v_res->>'reason', v_res->>'ok'));
+
+  delete from public.staff_rounds where id = v_round;
+  delete from public.staff_eligibility where value = 'smooth-e.com';
+  delete from public.users where id = v_a;
+end $$;
+
+select step, got from s6 order by step;

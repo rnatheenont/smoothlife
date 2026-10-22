@@ -57,11 +57,28 @@ export type StaffRound = {
   cap_thb: number;
   status: RoundStatus;
   payment_window_min: number;
+  /**
+   * The round's blanket per-person limit per item — "nobody takes more than
+   * six of any one thing". Null means no blanket limit.
+   *
+   * A row in the price list may still be stricter; the RPC takes whichever
+   * bites first. It lives on the round rather than on every row because it
+   * is a rule, and a rule typed once per product is a rule that holds only
+   * where somebody remembered to type it.
+   */
+  max_per_item: number | null;
+  /**
+   * How many times one person may buy in this round. One, by default — the
+   * allowance is a round's worth of shopping rather than a balance to draw
+   * down over a fortnight, and one order is one parcel to pack. Null means
+   * no limit.
+   */
+  max_orders: number | null;
   created_at: string;
 };
 
 export const ROUND_COLUMNS =
-  "id,name,starts_at,ends_at,cap_thb,status,payment_window_min,created_at";
+  "id,name,starts_at,ends_at,cap_thb,status,payment_window_min,max_per_item,max_orders,created_at";
 
 export type StaffRoundItem = {
   id: string;
@@ -178,6 +195,7 @@ export const STAFF_REASON_TH: Record<string, string> = {
   sold_out: "สินค้านี้หมดแล้ว",
   over_cap: "เกินวงเงินที่เหลือของคุณ",
   pending_order_exists: "คุณมีคำสั่งซื้อที่รอชำระเงินอยู่แล้ว",
+  order_limit_reached: "รอบนี้ซื้อได้ครั้งเดียว และคุณใช้สิทธิ์ไปแล้ว",
   unknown_reference: "ไม่พบรายการชำระเงินนี้",
   bad_status: "สถานะคำสั่งซื้อไม่ถูกต้อง",
   amount_mismatch: "ยอดชำระไม่ตรงกับคำสั่งซื้อ",
@@ -224,6 +242,8 @@ export type RoundInput = {
   ends_at: string;
   cap_thb: number;
   payment_window_min: number;
+  max_per_item: number | null;
+  max_orders: number | null;
 };
 
 /**
@@ -255,6 +275,18 @@ export function parseRoundInput(body: unknown): { input: RoundInput } | { error:
     return { error: "เวลาที่ให้ชำระเงินต้องอยู่ระหว่าง 5–180 นาที" };
   }
 
+  const rawMax = b.max_per_item;
+  const max = rawMax == null || rawMax === "" ? null : Number(rawMax);
+  if (max !== null && (!Number.isInteger(max) || max < 1 || max > 999)) {
+    return { error: "จำนวนสูงสุดต่อสินค้าต้องเป็นจำนวนเต็ม 1–999 (เว้นว่าง = ไม่จำกัด)" };
+  }
+
+  const rawOrders = b.max_orders;
+  const orders = rawOrders == null || rawOrders === "" ? null : Number(rawOrders);
+  if (orders !== null && (!Number.isInteger(orders) || orders < 1 || orders > 99)) {
+    return { error: "จำนวนครั้งที่ซื้อได้ต่อรอบต้องเป็นจำนวนเต็ม 1–99 (เว้นว่าง = ไม่จำกัด)" };
+  }
+
   return {
     input: {
       name,
@@ -262,6 +294,8 @@ export function parseRoundInput(body: unknown): { input: RoundInput } | { error:
       ends_at: ends.toISOString(),
       cap_thb: Math.round(cap * 100) / 100,
       payment_window_min: win,
+      max_per_item: max,
+      max_orders: orders,
     },
   };
 }

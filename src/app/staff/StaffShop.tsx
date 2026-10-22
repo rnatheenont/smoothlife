@@ -33,6 +33,8 @@ type RoundInfo = {
   ends_at: string;
   cap_thb?: number;
   payment_window_min?: number;
+  max_per_item?: number | null;
+  max_orders?: number | null;
 };
 
 type Standing = {
@@ -63,6 +65,8 @@ type State =
       items: StaffShopVariant[];
       pending: PendingOrder | null;
       shipTo: { summary: string; hasPhone: boolean } | null;
+      ordersUsed: number;
+      canOrder: boolean;
     };
 
 const baht = (n: number) =>
@@ -336,6 +340,37 @@ export default function StaffShop() {
               </div>
             )}
 
+            {!shop.canOrder && !shop.pending && (
+              <div className="mb-5 rounded-xl2 bg-surface-soft p-4">
+                <p className="text-[14px] font-semibold text-brand-ink">
+                  คุณใช้สิทธิ์ของรอบนี้แล้ว
+                </p>
+                <p className="mt-1 text-[13px] text-slate-600">
+                  รอบนี้ซื้อได้ {shop.round.max_orders ?? 1} ครั้งต่อคน — ดูคำสั่งซื้อได้ที่{" "}
+                  <Link href="/account/orders" className="font-semibold text-brand-800 underline">
+                    หน้าคำสั่งซื้อ
+                  </Link>
+                </p>
+              </div>
+            )}
+
+            {/* The rules of the round, where they can be read before
+                anything is chosen. Finding out at checkout that a cart is
+                not allowed is finding out too late. */}
+            {shop.canOrder && !shop.pending && (shop.round.max_orders || shop.round.max_per_item) && (
+              <p className="mb-5 text-[12px] text-slate-500">
+                {[
+                  shop.round.max_orders ? `ซื้อได้ ${shop.round.max_orders} ครั้งต่อรอบ` : null,
+                  shop.round.max_per_item
+                    ? `ไม่เกิน ${shop.round.max_per_item} ชิ้นต่อสินค้า`
+                    : null,
+                  shop.standing ? `รวมไม่เกิน ฿${baht(shop.standing.cap_thb)}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
+
             {shop.items.length === 0 && (
               <p className="rounded-xl2 bg-surface-soft p-6 text-[13px] text-slate-500">
                 รอบนี้ยังไม่มีสินค้าให้เลือก
@@ -471,7 +506,7 @@ export default function StaffShop() {
                                   .join(" · ")}
                           </p>
 
-                          {!soldOut && !shop.pending && (
+                          {!soldOut && !shop.pending && shop.canOrder && (
                             <div className="mt-2 flex items-center gap-2">
                               <button
                                 onClick={() => setQty(item, qty - 1)}
@@ -537,7 +572,7 @@ export default function StaffShop() {
               </p>
             </div>
 
-            {!shop.pending && (
+            {!shop.pending && shop.canOrder && (
               <div className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
                 <p className="text-[13px] font-bold text-brand-ink">ตะกร้าพนักงาน</p>
                 {Object.keys(cart).length === 0 ? (

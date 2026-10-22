@@ -9,6 +9,7 @@ import {
   mailboxProvedRecently,
   staffPendingOrder,
   staffShippingAddress,
+  staffOrdersUsed,
   staffShopItems,
   staffStanding,
   upcomingStaffRound,
@@ -101,10 +102,11 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const [items, pending, address] = await Promise.all([
-    staffShopItems(round.id, userId),
+  const [items, pending, address, ordersUsed] = await Promise.all([
+    staffShopItems(round, userId),
     staffPendingOrder(round.id, userId),
     staffShippingAddress(userId),
+    staffOrdersUsed(round.id, userId),
   ]);
 
   return NextResponse.json({
@@ -116,10 +118,17 @@ export async function GET(req: NextRequest) {
       ends_at: round.ends_at,
       cap_thb: Number(round.cap_thb),
       payment_window_min: round.payment_window_min,
+      max_per_item: round.max_per_item,
+      max_orders: round.max_orders,
     },
     standing,
     items,
     pending,
+    // Said up front rather than discovered at checkout: when the round
+    // allows one purchase and this person has made it, every plus button on
+    // the page is a button that cannot work.
+    ordersUsed,
+    canOrder: round.max_orders === null || ordersUsed < round.max_orders,
     // Not the address itself beyond what the page needs to show "ส่งไปที่
     // …" and to say if there isn't one yet.
     shipTo: address

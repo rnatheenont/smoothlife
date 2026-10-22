@@ -92,9 +92,20 @@ type FormState = {
   ends: string;
   cap: string;
   window: string;
+  maxPerItem: string;
+  maxOrders: string;
 };
 
-const BLANK_FORM: FormState = { name: "", starts: "", ends: "", cap: "2000", window: "30" };
+// The defaults are the rules, so a round nobody edits still has them.
+const BLANK_FORM: FormState = {
+  name: "",
+  starts: "",
+  ends: "",
+  cap: "2000",
+  window: "30",
+  maxPerItem: "6",
+  maxOrders: "1",
+};
 
 export default function StaffSalePage() {
   const [tab, setTab] = useState<TabKey>("rounds");
@@ -185,6 +196,8 @@ export default function StaffSalePage() {
       ends_at: ends,
       cap_thb: Number(form.cap),
       payment_window_min: Number(form.window),
+      max_per_item: form.maxPerItem.trim() === "" ? null : Number(form.maxPerItem),
+      max_orders: form.maxOrders.trim() === "" ? null : Number(form.maxOrders),
     });
     const json = editing
       ? await send(`/api/admin/staff-sale/rounds/${editing}`, { method: "PATCH", body })
@@ -194,8 +207,17 @@ export default function StaffSalePage() {
     setEditing(null);
     await loadRounds();
     const created = (json.round as StaffRound | undefined)?.id;
-    if (created) setSelected(created);
-    else if (editing) await loadDetail(editing);
+    if (created) {
+      // A round with no products is not a round. Creating one lands on its
+      // own price list rather than back on the list of rounds, because the
+      // next thing to do is always "put the products in" — and each round
+      // carries its own products at its own prices.
+      setSelected(created);
+      setTab("items");
+      setNote("สร้างรอบแล้ว (ยังเป็นร่าง) — เลือกสินค้าและตั้งราคาของรอบนี้ต่อได้เลย");
+    } else if (editing) {
+      await loadDetail(editing);
+    }
   }
 
   async function setStatus(id: string, status: RoundStatus) {
@@ -348,6 +370,23 @@ export default function StaffSalePage() {
               hint="5–180 นาที · หน้าชำระเงินและการกันสิทธิ์จะหมดอายุพร้อมกัน"
               isRequired
             />
+            {/* The two rules, set once for the whole round instead of typed
+                on every product. A row in the price list can still be
+                stricter; the database takes whichever bites first. */}
+            <AdminField
+              label="ซื้อได้สูงสุดต่อสินค้า (ชิ้น/คน)"
+              type="number"
+              value={form.maxPerItem}
+              onChange={(v) => setForm({ ...form, maxPerItem: v })}
+              hint="ใช้กับทุกสินค้าในรอบนี้ · เว้นว่าง = ไม่จำกัด · ตั้งรายสินค้าให้น้อยกว่านี้ได้"
+            />
+            <AdminField
+              label="ซื้อได้กี่ครั้งต่อรอบ (ต่อคน)"
+              type="number"
+              value={form.maxOrders}
+              onChange={(v) => setForm({ ...form, maxOrders: v })}
+              hint="นับเฉพาะที่จ่ายแล้วและที่รอชำระ · ออร์เดอร์ที่ยกเลิกหรือคืนเงินไม่นับ · เว้นว่าง = ไม่จำกัด"
+            />
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button size="sm" onPress={saveForm} isDisabled={busy}>
@@ -462,6 +501,8 @@ export default function StaffSalePage() {
                                 ends: toLocalInput(r.ends_at),
                                 cap: String(r.cap_thb),
                                 window: String(r.payment_window_min),
+                                maxPerItem: r.max_per_item == null ? "" : String(r.max_per_item),
+                                maxOrders: r.max_orders == null ? "" : String(r.max_orders),
                               });
                             }}
                           >
@@ -486,7 +527,8 @@ export default function StaffSalePage() {
             </table>
           </div>
           <p className="border-t border-slate-100 p-3 text-[12px] text-slate-500">
-            เปิดได้ทีละรอบ — ถ้ามีรอบอื่นเปิดอยู่ ระบบจะไม่ให้เปิดรอบที่สอง เพราะพนักงานจะได้วงเงินสองก้อน
+            ตั้งรอบถัดไปทิ้งไว้ล่วงหน้าได้ — กด “เปิดขาย” ไว้พร้อมวันเวลาในอนาคต แล้วรอบจะเปิดเองเมื่อถึงเวลา
+            ห้ามเฉพาะรอบที่ช่วงเวลาทับกัน เพราะพนักงานจะได้วงเงินสองก้อนพร้อมกัน
           </p>
         </Panel>
       )}
@@ -497,6 +539,7 @@ export default function StaffSalePage() {
             roundId={round.id}
             items={detail?.items ?? []}
             busy={busy}
+            otherRounds={rounds.filter((r) => r.id !== round.id).map((r) => ({ id: r.id, name: r.name }))}
             onError={setError}
             onReload={() => loadDetail(round.id)}
           />

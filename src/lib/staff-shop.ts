@@ -184,7 +184,11 @@ export async function staffStanding(roundId: string, userId: string): Promise<St
  * the category — the price list stores a variant id and a slug, which is
  * the right thing to store and the wrong thing to show.
  */
-export async function staffShopItems(roundId: string, userId: string): Promise<StaffShopVariant[]> {
+export async function staffShopItems(
+  round: StaffRound,
+  userId: string,
+): Promise<StaffShopVariant[]> {
+  const roundId = round.id;
   const [items, mine] = await Promise.all([
     supabaseRest<StaffRoundItem[]>(
       `staff_round_items?round_id=eq.${pgValue(roundId)}&enabled=is.true&select=${ITEM_COLUMNS}&limit=2000`,
@@ -210,6 +214,11 @@ export async function staffShopItems(roundId: string, userId: string): Promise<S
     // where it should be noticed.
     if (!product) continue;
     const quota = i.total_quota == null ? null : Number(i.total_quota);
+    // The effective limit, not the row's own: the shop has to clamp its own
+    // plus button to the number the RPC will enforce, or the only place the
+    // rule shows up is a refusal at checkout.
+    const itemLimit = i.per_person_limit == null ? null : Number(i.per_person_limit);
+    const limits = [itemLimit, round.max_per_item].filter((n): n is number => n != null);
     out.push({
       variant_id: i.variant_id,
       product_slug: i.product_slug,
@@ -220,12 +229,25 @@ export async function staffShopItems(roundId: string, userId: string): Promise<S
       size: variant?.size ?? "",
       regular_price: Number(i.regular_price),
       staff_price: Number(i.staff_price),
-      per_person_limit: i.per_person_limit == null ? null : Number(i.per_person_limit),
+      per_person_limit: limits.length ? Math.min(...limits) : null,
       left: quota === null ? null : Math.max(quota - Number(i.sold_qty) - Number(i.reserved_qty), 0),
       mine: held.get(i.variant_id) ?? 0,
     });
   }
   return out;
+}
+
+/**
+ * How many times this person has bought in this round, counting the cart
+ * they are still paying for. Only 'pending' and 'paid': a cart that expired
+ * or was cancelled was never a purchase, and one the admin refunded has
+ * been undone — in both cases they have not had their turn.
+ */
+export async function staffOrdersUsed(roundId: string, userId: string): Promise<number> {
+  const rows = await supabaseRest<{ id: string }[]>(
+    `staff_orders?round_id=eq.${pgValue(roundId)}&user_id=eq.${pgValue(userId)}&status=in.(pending,paid)&select=id&limit=50`,
+  ).catch(() => []);
+  return rows?.length ?? 0;
 }
 
 /** The one order this person may have waiting for payment in this round. */

@@ -134,6 +134,8 @@ declare
   v_canon     text;
   v_line      jsonb;
   v_qty       integer;
+  v_limit     integer;
+  v_orders    integer;
   v_already   integer;
   v_subtotal  numeric(10, 2) := 0;
   v_lines     jsonb := '[]'::jsonb;
@@ -192,6 +194,25 @@ begin
       raise exception 'pending_order_exists';
     end if;
 
+    -- How many times this person may buy in this round at all. One, by
+    -- default: the allowance is a round's worth of shopping, not a balance
+    -- to draw down over a fortnight, and a single order is also a single
+    -- parcel to pack.
+    --
+    -- Only 'pending' and 'paid' count. A cart that expired or was cancelled
+    -- was never a purchase, and an order the admin refunded has been undone
+    -- — in both cases the person has not had their turn.
+    if v_round.max_orders is not null then
+      select count(*) into v_orders
+      from public.staff_orders
+      where round_id = p_round and user_id = p_user and status in ('pending', 'paid');
+
+      if v_orders >= v_round.max_orders then
+        raise exception 'order_limit_reached'
+          using detail = jsonb_build_object('limit', v_round.max_orders, 'used', v_orders)::text;
+      end if;
+    end if;
+
     for v_line in
       select value from jsonb_array_elements(p_lines)
       order by value->>'variant_id'
@@ -209,7 +230,12 @@ begin
           using detail = jsonb_build_object('variant_id', v_line->>'variant_id')::text;
       end if;
 
-      if v_item.per_person_limit is not null then
+      -- The round's blanket cap and the item's own, whichever bites first.
+      -- The round's is the rule ("nobody takes more than six of anything");
+      -- the item's is the exception for a line that needs to go further.
+      v_limit := least(v_item.per_person_limit, v_round.max_per_item);
+
+      if v_limit is not null then
         -- Counts what this person already holds of this variant in this
         -- round, paid or waiting to be paid.
         select coalesce(sum(nullif(l->>'qty', '')::integer), 0) into v_already
@@ -219,11 +245,11 @@ begin
           and o.status in ('pending', 'paid')
           and l->>'variant_id' = v_item.variant_id;
 
-        if v_already + v_qty > v_item.per_person_limit then
+        if v_already + v_qty > v_limit then
           raise exception 'per_person_limit'
             using detail = jsonb_build_object(
               'variant_id', v_item.variant_id,
-              'limit', v_item.per_person_limit,
+              'limit', v_limit,
               'already', v_already)::text;
         end if;
       end if;
