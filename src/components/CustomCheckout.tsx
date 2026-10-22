@@ -50,8 +50,17 @@ export default function CustomCheckout() {
   // happens in a frame over this page instead of navigating away, so the cart
   // and address stay put if the customer backs out.
   const [payment, setPayment] = useState<{ url: string; cartToken: string } | null>(null);
+  // Trimmed, because a field holding one space is not a name — and the
+  // district matters as much as the rest: the server needs it as the city,
+  // so without it the button enabled and the only thing waiting was a
+  // refusal. /api/checkout/init checks all of this again; this is only so
+  // the refusal is a disabled button rather than a round trip.
   const addressReady = Boolean(
-    address.recipient_name && address.phone && address.address_line && address.postal_code
+    address.recipient_name?.trim() &&
+      address.phone?.replace(/\D/g, "").length >= 9 &&
+      address.address_line?.trim() &&
+      address.district?.trim() &&
+      address.postal_code?.trim()
   );
   const [error, setError] = useState<string | null>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
@@ -70,7 +79,16 @@ export default function CustomCheckout() {
     setError(null);
 
     const [firstName, ...rest] = address.recipient_name.trim().split(/\s+/);
-    if (!address.recipient_name || !address.phone || !address.address_line || !address.postal_code) {
+    if (!firstName) {
+      setError("กรุณากรอกชื่อผู้รับ");
+      return;
+    }
+    const phoneDigits = address.phone.replace(/\D/g, "");
+    if (phoneDigits.length < 9 || phoneDigits.length > 10) {
+      setError("กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (9–10 หลัก)");
+      return;
+    }
+    if (!address.address_line.trim() || !address.district?.trim() || !address.postal_code.trim()) {
       setError("กรุณากรอกที่อยู่จัดส่งให้ครบ");
       return;
     }
@@ -88,7 +106,7 @@ export default function CustomCheckout() {
           lines: lines.filter((l) => !l.isGift).map((l) => ({ variantId: l.variantId, quantity: l.qty })),
           couponCode: applied ? applied.code : undefined,
           email: user?.email || undefined,
-          phone: address.phone,
+          phone: phoneDigits,
           shippingAddress: {
             address1: address.address_line,
             city: address.district,

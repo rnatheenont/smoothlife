@@ -54,13 +54,46 @@ export async function POST(req: NextRequest) {
   if (!body) return NextResponse.json({ ok: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
 
   const { lines, shippingAddress, email, phone, couponCode } = body;
+
+  // Checked here, not only in the form.
+  //
+  // The form did check, and still a parcel can be addressed to nobody: a
+  // field holding a single space passes `!value`, `"  ".trim().split()`
+  // yields an empty first name, and the name was never looked at on this
+  // side at all — so whatever arrived went to Shopify as the recipient.
+  // Fifteen attempts in the last ninety days carried no name (all of them
+  // failed before payment, so nothing shipped). This is the gate every path
+  // to a payment page goes through, so it is the one that has to hold.
+  const trimmed = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+  const digitsOnly = (v: unknown) => trimmed(v).replace(/\D/g, "");
+
   if (
-    !shippingAddress?.address1 ||
-    !shippingAddress?.city ||
-    !shippingAddress?.postalCode ||
-    !shippingAddress?.countryCode
+    !trimmed(shippingAddress?.address1) ||
+    !trimmed(shippingAddress?.city) ||
+    !trimmed(shippingAddress?.postalCode) ||
+    !trimmed(shippingAddress?.countryCode)
   ) {
     return NextResponse.json({ ok: false, error: "กรุณากรอกที่อยู่จัดส่งให้ครบ" }, { status: 400 });
+  }
+
+  // Whoever the courier asks for at the door.
+  const recipient = [trimmed(shippingAddress?.firstName), trimmed(shippingAddress?.lastName)]
+    .filter(Boolean)
+    .join(" ");
+  if (recipient.length < 2) {
+    return NextResponse.json({ ok: false, error: "กรุณากรอกชื่อผู้รับ" }, { status: 400 });
+  }
+
+  // 9 for a landline, 10 for a mobile. Not a pattern beyond that: a shopper
+  // typing their own number in their own format is not the place to be
+  // clever, and the courier needs a number that can be dialled, not one
+  // that matches a regex.
+  const phoneDigits = digitsOnly(phone);
+  if (phoneDigits.length < 9 || phoneDigits.length > 10) {
+    return NextResponse.json(
+      { ok: false, error: "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (9–10 หลัก)" },
+      { status: 400 },
+    );
   }
   if (!Array.isArray(lines) || lines.length === 0) {
     return NextResponse.json({ ok: false, error: "ตะกร้าสินค้าว่างเปล่า" }, { status: 400 });
@@ -137,7 +170,9 @@ export async function POST(req: NextRequest) {
       invoice_no: invoiceNo,
       status: "pending",
       contact_email: email ?? null,
-      contact_phone: phone ?? null,
+      // The digits, not whatever separators were typed around them — this
+      // is the number support reads back and the courier dials.
+      contact_phone: phoneDigits,
       shipping_address: shippingAddress,
       line_items: resolved.map((l) => ({ variantId: l.variantId, quantity: l.quantity, price: l.price })),
       discount_code: appliedCode,
@@ -165,7 +200,7 @@ export async function POST(req: NextRequest) {
       paymentChannel: ["CC", "PPQR"],
       frontendReturnUrl: `${origin}/api/payments/return?cartToken=${cartToken}`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p-checkout`,
-      customer: { email: email ?? undefined, mobileNo: phone ?? undefined },
+      customer: { email: email ?? undefined, mobileNo: phoneDigits },
       shippingAddress: {
         address1: shippingAddress.address1,
         city: shippingAddress.city,

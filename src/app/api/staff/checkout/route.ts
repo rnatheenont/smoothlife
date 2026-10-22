@@ -78,11 +78,14 @@ export async function POST(req: NextRequest) {
   }
 
   const address = await staffShippingAddress(userId);
-  if (!address || !address.phone) {
+  // A name as well as a number: a staff parcel is a parcel, and the courier
+  // asks for somebody at the door. Same rule the customer checkout now
+  // holds to.
+  if (!address || !address.phone || !address.firstName) {
     return NextResponse.json(
       {
         ok: false,
-        error: "กรุณาเพิ่มที่อยู่จัดส่งและเบอร์โทรในหน้าโปรไฟล์ก่อนสั่งซื้อ",
+        error: "กรุณาเพิ่มชื่อผู้รับ ที่อยู่จัดส่ง และเบอร์โทรในหน้าโปรไฟล์ก่อนสั่งซื้อ",
         needsAddress: true,
       },
       { status: 400 },
