@@ -14,6 +14,7 @@ import {
   Search,
   ShieldCheck,
   ShoppingBag,
+  ShoppingCart,
   Wallet,
 } from "lucide-react";
 import { Button } from "@heroui/react";
@@ -1399,7 +1400,7 @@ export default function StaffShop() {
                     data-cart-target="staff"
                     className="relative grid size-10 shrink-0 place-items-center rounded-full bg-white/15"
                   >
-                    <ShoppingBag className="h-4 w-4 text-white" aria-hidden />
+                    <ShoppingCart className="h-4 w-4 text-white" aria-hidden />
                     {cartCount > 0 && (
                       // Keyed on the count so each change remounts the badge
                       // and replays the pop — the same trick the shop's own
