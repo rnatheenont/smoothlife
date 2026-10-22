@@ -208,17 +208,7 @@ export default function SmoothieHeroBand() {
           the page's own centre line. It is positioned instead, so it sits
           beside the question without being measured into it. */}
       <div className="container-page relative flex flex-col justify-center md:min-h-[360px] lg:min-h-[403px]">
-        <div className="mx-auto w-full max-w-[720px] py-10 text-center md:py-6 xl:py-0">
-          {/* Tablet only: below xl there is no room beside the question, so
-              the mascot stands above it instead. Not on a phone — taken off
-              there on request. The one pinned to the
-              right only appears from xl (a hidden rig never starts). */}
-          <SmoothieRig
-            className="mx-auto mb-1 hidden aspect-[1100/1180] h-[180px] md:block xl:hidden"
-            greet="wave"
-            idleActions={["wave", "happy", "nod", "think"]}
-            idleEvery={10}
-          />
+        <div className="mx-auto w-full max-w-[720px] py-10 text-center md:py-0">
           <p className="text-sm text-slate-500 md:text-base lg:text-lg">
             {t("ผู้ช่วยหาสินค้าที่ใช่สำหรับคุณ", "Your personal product finder")}
           </p>
