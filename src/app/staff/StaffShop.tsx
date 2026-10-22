@@ -138,6 +138,33 @@ export default function StaffShop() {
     void load();
   }, [load]);
 
+  // Coming back from the payment page.
+  //
+  // The shop loads its state once, on mount — and a phone returning from
+  // 2C2P does not mount anything. iOS restores the page from the back-forward
+  // cache exactly as it left, so the order that was just created is not on
+  // it, and the only way to see it was to kill the app and start again.
+  //
+  // `pageshow` with `persisted` is that restore; `visibilitychange` covers
+  // the tab being switched back to, and a browser that suspended the page
+  // instead of caching it. Both only ever re-ask the same question, so
+  // firing twice costs one request.
+  useEffect(() => {
+    const refresh = () => void load();
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) refresh();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    window.addEventListener("pageshow", onShow);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("pageshow", onShow);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [load]);
+
   const shop = data.state === "shop" ? data : null;
 
   const subtotal = useMemo(() => {
@@ -297,6 +324,10 @@ export default function StaffShop() {
       if (!json.ok) throw new Error(json.error ?? "เริ่มการชำระเงินไม่สำเร็จ");
       // 2C2P's own page. Replaced rather than opened so the back button
       // comes back here instead of to a spent payment page.
+      //
+      // `busy` is deliberately left on: the navigation can take a few
+      // seconds on a phone, and a button that comes back to life before the
+      // page changes invites a second press and a second order.
       window.location.href = json.webPaymentUrl;
     } catch (err) {
       setError(err instanceof Error ? err.message : "เริ่มการชำระเงินไม่สำเร็จ");
@@ -1029,7 +1060,7 @@ export default function StaffShop() {
                   }
                   className={`${CHECKOUT_BUTTON} mt-3 w-full`}
                 >
-                  ไปชำระเงิน
+                  {busy ? "กำลังเปิดหน้าชำระเงิน…" : "ไปชำระเงิน"}
                 </button>
                 <p className="mt-2 text-[11px] text-slate-400">
                   ชำระเงินแยกจากตะกร้าปกติ · มีเวลาชำระ {shop.round.payment_window_min ?? 30} นาที
@@ -1140,7 +1171,10 @@ export default function StaffShop() {
                   }
                   className={`${CHECKOUT_BUTTON} shrink-0`}
                 >
-                  ไปชำระเงิน
+                  {/* A phone can take several seconds to reach 2C2P, and a
+                      button that still says "go" is a button somebody
+                      presses again. */}
+                  {busy ? "กำลังเปิด…" : "ไปชำระเงิน"}
                 </button>
               </div>
             )}
