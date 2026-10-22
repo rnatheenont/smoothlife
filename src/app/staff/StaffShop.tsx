@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -232,6 +232,11 @@ export default function StaffShop() {
   const [chosenVariant, setChosenVariant] = useState<Record<string, string>>({});
   /** The card that just took something, so it can say so for a moment. */
   const [justAdded, setJustAdded] = useState<string | null>(null);
+  // Where a picked-up thing flies to. Two, because the cart is a panel on a
+  // desktop and an icon on the bottom bar on a phone; whichever is on screen
+  // is the one it lands in.
+  const cartPanelRef = useRef<HTMLDivElement>(null);
+  const cartIconRef = useRef<HTMLSpanElement>(null);
 
   function variantOf(product: { slug: string; variants: StaffShopVariant[] }): StaffShopVariant {
     const picked = chosenVariant[product.slug];
@@ -268,9 +273,68 @@ export default function StaffShop() {
    * happened — on a grid this dense the cart is far from the thumb that
    * pressed the button.
    */
-  function add(item: StaffShopVariant) {
+  /**
+   * The picked-up thing flying to the cart.
+   *
+   * A copy of the card's own photo, moved with the Web Animations API and
+   * thrown away when it lands — no state, no re-render, nothing left behind
+   * if the page changes under it. It is only ever decoration: the cart has
+   * already been updated by the time this starts, so a browser that refuses
+   * to animate loses nothing.
+   *
+   * Skipped outright for anyone who asked their device for less motion.
+   */
+  function flyToCart(from: HTMLElement) {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const photo = from.closest("article")?.querySelector("img");
+    const target = [cartIconRef.current, cartPanelRef.current].find(
+      (el) => el && el.offsetParent !== null,
+    );
+    if (!photo || !target) return;
+
+    const a = photo.getBoundingClientRect();
+    const b = target.getBoundingClientRect();
+    const ghost = photo.cloneNode() as HTMLImageElement;
+    ghost.style.cssText = [
+      "position:fixed",
+      `left:${a.left}px`,
+      `top:${a.top}px`,
+      `width:${a.width}px`,
+      `height:${a.height}px`,
+      "object-fit:cover",
+      "border-radius:14px",
+      "z-index:120",
+      "pointer-events:none",
+      "box-shadow:0 12px 32px rgba(15,23,42,.22)",
+    ].join(";");
+    document.body.appendChild(ghost);
+
+    const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+    const dy = b.top + b.height / 2 - (a.top + a.height / 2);
+    const flight = ghost.animate(
+      [
+        { transform: "translate(0,0) scale(1)", opacity: 1 },
+        // Lifted at the halfway point, so it arcs rather than sliding
+        // across the page in a straight line.
+        {
+          transform: `translate(${dx * 0.55}px, ${dy * 0.55 - 56}px) scale(0.55)`,
+          opacity: 0.95,
+          offset: 0.6,
+        },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.1)`, opacity: 0.15 },
+      ],
+      { duration: 620, easing: "cubic-bezier(.4,0,.2,1)" },
+    );
+    flight.onfinish = () => ghost.remove();
+    flight.oncancel = () => ghost.remove();
+  }
+
+  function add(item: StaffShopVariant, from?: HTMLElement) {
     setQty(item, (cart[item.variant_id] ?? 0) + 1);
     setJustAdded(item.variant_id);
+    if (from) flyToCart(from);
     window.setTimeout(() => setJustAdded((cur) => (cur === item.variant_id ? null : cur)), 1200);
   }
 
@@ -661,7 +725,10 @@ export default function StaffShop() {
                               grid is "something from this card is in the
                               cart". The breakdown is in the cart. */}
                           {inCart > 0 && (
-                            <span className="absolute right-2 top-2 grid h-6 min-w-6 place-items-center rounded-full bg-brand-800 px-1.5 text-[11px] font-bold text-white">
+                            <span
+                              key={inCart}
+                              className="absolute right-2 top-2 grid h-6 min-w-6 place-items-center rounded-full bg-brand-800 px-1.5 text-[11px] font-bold text-white motion-safe:animate-pop"
+                            >
                               {inCart}
                             </span>
                           )}
@@ -763,7 +830,7 @@ export default function StaffShop() {
                               return (
                                 <button
                                   type="button"
-                                  onClick={() => add(item)}
+                                  onClick={(e) => add(item, e.currentTarget)}
                                   disabled={full}
                                   title={full ? "ครบจำนวนแล้ว" : "หยิบใส่ตะกร้า"}
                                   aria-label={
@@ -839,7 +906,7 @@ export default function StaffShop() {
             </div>
 
             {!shop.pending && shop.canOrder && (
-              <div className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
+              <div ref={cartPanelRef} className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
                 <p className="text-[14px] font-bold text-brand-ink">ตะกร้าพนักงาน</p>
                 {Object.keys(cart).length === 0 ? (
                   <p className="mt-2 text-[12px] text-slate-400">ยังไม่ได้เลือกสินค้า</p>
@@ -983,10 +1050,19 @@ export default function StaffShop() {
                   aria-expanded={cartOpen}
                   className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-default"
                 >
-                  <span className="relative grid size-10 shrink-0 place-items-center rounded-full bg-surface-soft">
+                  <span
+                    ref={cartIconRef}
+                    className="relative grid size-10 shrink-0 place-items-center rounded-full bg-surface-soft"
+                  >
                     <ShoppingBag className="h-4 w-4 text-brand-800" aria-hidden />
                     {cartCount > 0 && (
-                      <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-800 px-1 text-[10px] font-bold text-white">
+                      // Keyed on the count so each change remounts the badge
+                      // and replays the pop — the same trick the shop's own
+                      // tab bar uses for its basket.
+                      <span
+                        key={cartCount}
+                        className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-800 px-1 text-[10px] font-bold text-white motion-safe:animate-pop"
+                      >
                         {cartCount}
                       </span>
                     )}
