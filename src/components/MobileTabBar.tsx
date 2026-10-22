@@ -62,7 +62,14 @@ export default function MobileTabBar({ tabs = MOBILE_TABS_DEFAULT }: { tabs?: Mo
           );
           return (
             <li key={tab.href}>
-              <Link href={tab.href} aria-current={on ? "page" : undefined} className={className}>
+              <Link
+                href={tab.href}
+                aria-current={on ? "page" : undefined}
+                // The basket tab is where a quick-add flies to on a phone —
+                // see lib/fly-to-cart.
+                {...(isCart ? { "data-cart-target": "" } : {})}
+                className={className}
+              >
                 {content}
               </Link>
             </li>

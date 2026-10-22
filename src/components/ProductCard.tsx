@@ -12,6 +12,7 @@ import { useWidgetSettings } from "@/lib/use-widget-settings";
 import clsx from "clsx";
 import { useLang } from "@/lib/lang-context";
 import { HaloRing, RIM } from "@/components/Halo";
+import { flyToCart } from "@/lib/fly-to-cart";
 
 // Badges in Thai, and in two voices only. Red is money off — nothing else on
 // the card is red, so a red chip always means a discount. Every other badge
@@ -99,10 +100,13 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
     if (saving) setBeat((b) => b + 1);
   }
 
-  function handleAdd() {
+  function handleAdd(event: React.MouseEvent<HTMLButtonElement>) {
     if (soldOut) return;
     addItem(product.slug, 1, product.variantId);
     setAdded(true);
+    // The photo flies to whichever basket is on screen. Decoration only —
+    // the cart already has it by the time this starts.
+    flyToCart(event.currentTarget);
     setTimeout(() => setAdded(false), 1500);
   }
 
