@@ -10,6 +10,7 @@ import {
   Mail,
   Minus,
   Plus,
+  Search,
   ShieldCheck,
   ShoppingBag,
   Wallet,
@@ -86,6 +87,8 @@ export default function StaffShop() {
   const [busy, setBusy] = useState(false);
   const [tick, setTick] = useState(0);
   const [justPaid, setJustPaid] = useState(false);
+  const [category, setCategory] = useState<string>("all");
+  const [query, setQuery] = useState("");
 
   // Read straight off the URL rather than through useSearchParams: that hook
   // puts the whole page behind a Suspense boundary, for one boolean that
@@ -147,6 +150,27 @@ export default function StaffShop() {
       items: items.sort((a, b) => a.name.localeCompare(b.name, "th")),
     }));
   }, [shop]);
+
+  // Searching crosses the tabs. Somebody typing a product name is asking the
+  // whole round, not the tab they happen to be standing in — so a hit in
+  // another category still comes back, and the tabs step aside while it does.
+  const q = query.trim().toLowerCase();
+  const matches = (item: StaffShopVariant) =>
+    !q || item.name.toLowerCase().includes(q) || item.brand.toLowerCase().includes(q);
+
+  const sections = useMemo(() => {
+    if (q) {
+      const hits = grouped.flatMap((g) => g.items).filter(matches);
+      return [{ key: "search", label: "", items: hits }];
+    }
+    if (category === "all") return grouped;
+    // One tab selected: no heading over the list, because the tab is the
+    // heading and printing it twice is how a filtered page looks broken.
+    return grouped.filter((g) => g.key === category).map((g) => ({ ...g, label: "" }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `matches` closes over q, which is in the deps
+  }, [grouped, category, q]);
+
+  const shownCount = sections.reduce((n, s) => n + s.items.length, 0);
 
   function setQty(item: StaffShopVariant, qty: number) {
     // Clamped against both ceilings here as well as in the database, so the
@@ -311,11 +335,74 @@ export default function StaffShop() {
               </p>
             )}
 
+            {shop.items.length > 0 && (
+              <div className="mb-5 space-y-3">
+                {/* Search first, because it is the shortest route to one
+                    known product, and the tabs are for browsing. */}
+                <div className="relative">
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                    aria-hidden
+                  />
+                  <input
+                    type="search"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="ค้นหาสินค้าหรือแบรนด์ในรอบนี้"
+                    aria-label="ค้นหาสินค้าในรอบนี้"
+                    className="h-11 w-full rounded-xl2 border border-slate-200 bg-white pl-9 pr-3 text-[14px] text-brand-ink placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                  />
+                </div>
+
+                {/* One scrolling row rather than a wrapped block: six
+                    categories at 375px wrap into three lines of chips, which
+                    reads as a paragraph of buttons. */}
+                {!q && grouped.length > 1 && (
+                  <div
+                    role="tablist"
+                    aria-label="หมวดสินค้า"
+                    className="scrollbar-none -mx-4 flex gap-1 overflow-x-auto border-b border-surface-line px-4 md:mx-0 md:px-0"
+                  >
+                    {([["all", "ทั้งหมด", shop.items.length]] as [string, string, number][])
+                      .concat(grouped.map((g) => [g.key, g.label, g.items.length]))
+                      .map(([key, label, count]) => (
+                        <button
+                          key={key}
+                          role="tab"
+                          aria-selected={category === key}
+                          onClick={() => setCategory(key)}
+                          // h-11: these are how the round is filtered, and a
+                          // 36px target is below what a thumb is asked to find.
+                          className={`flex h-11 shrink-0 items-center whitespace-nowrap border-b-2 px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 ${
+                            category === key
+                              ? "border-brand-action font-bold text-brand-ink"
+                              : "border-transparent font-medium text-slate-500 hover:text-brand-ink"
+                          }`}
+                        >
+                          {label}
+                          <span className="ml-1 text-xs text-slate-400">({count})</span>
+                        </button>
+                      ))}
+                  </div>
+                )}
+
+                {q && (
+                  <p className="text-[12px] text-slate-500">
+                    พบ {shownCount} รายการสำหรับ “{query.trim()}”
+                    {shownCount === 0 && " — ลองค้นด้วยชื่อแบรนด์ดู"}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Grouped by category, which is what the plan asks for and what
-                a list of eighty products needs to be readable at all. */}
-            {grouped.map((group) => (
+                a list of eighty products needs to be readable at all. A tab
+                or a search narrows it to one list with no heading. */}
+            {sections.map((group) => (
               <section key={group.key} className="mb-7">
-                <h2 className="mb-3 text-[15px] font-bold text-brand-ink">{group.label}</h2>
+                {group.label && (
+                  <h2 className="mb-3 text-[15px] font-bold text-brand-ink">{group.label}</h2>
+                )}
                 <div className="grid gap-3 sm:grid-cols-2">
                   {group.items.map((item) => {
                     const qty = cart[item.variant_id] ?? 0;
