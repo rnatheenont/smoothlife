@@ -628,8 +628,14 @@ export default function StaffShop() {
           {/* Desktop only. On a phone the same two things live where a
               thumb is: the allowance on a strip under the heading, and the
               cart on a bar fixed to the bottom of the screen. A column of
-              this below eighty products is a column nobody scrolls to. */}
-          <aside className="hidden lg:sticky lg:top-24 lg:block lg:space-y-3">
+              this below eighty products is a column nobody scrolls to.
+
+              It sticks below the header's real height rather than at a
+              measured 96px: the header is taller than that with the ticker
+              strip showing, so a fixed offset put the allowance underneath
+              it every time somebody scrolled back up. --app-header-h is what
+              the header reports as it hides and returns (Header.tsx). */}
+          <aside className="hidden lg:sticky lg:top-[calc(var(--app-header-h,0px)+1rem)] lg:block lg:space-y-3">
             <div className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
               <p className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-600">
                 <Wallet className="h-3.5 w-3.5" aria-hidden />

@@ -177,7 +177,7 @@ export default function BundleBuilder({
       </div>
 
       <div>
-        <div className="rounded-xl2 shadow-card p-5 sticky top-24">
+        <div className="rounded-xl2 shadow-card p-5 sticky top-[calc(var(--app-header-h,0px)+1rem)]">
           <h2 className="text-sm font-bold text-brand-ink mb-3 flex items-center gap-1.5">
             <Package size={16} className="text-brand-emerald" /> ชุดของคุณ
           </h2>

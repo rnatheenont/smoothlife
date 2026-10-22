@@ -266,7 +266,7 @@ export default function ShopifyRedirectCheckout() {
           )}
         </div>
 
-        <div className="rounded-xl2 p-5 h-fit shadow-card sticky top-[152px]">
+        <div className="rounded-xl2 p-5 h-fit shadow-card sticky top-[calc(var(--app-header-h,0px)+1rem)]">
           <h2 className="font-bold text-brand-ink mb-4">สรุปคำสั่งซื้อ</h2>
           <div className="flex flex-col gap-2 mb-4 max-h-56 overflow-y-auto">
             {lines.map((l) => (

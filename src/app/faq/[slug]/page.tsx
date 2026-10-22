@@ -189,7 +189,7 @@ export default async function FaqArticlePage({ params }: { params: Promise<{ slu
           )}
         </article>
 
-        <aside className="mt-10 flex flex-col gap-3 lg:sticky lg:top-24 lg:mt-0">
+        <aside className="mt-10 flex flex-col gap-3 lg:sticky lg:top-[calc(var(--app-header-h,0px)+1rem)] lg:mt-0">
           {/* No heading over it: FaqFeedback asks "มีประโยชน์ไหม" itself, and
               a title above it asked the same question twice. */}
           <div className="rounded-xl2 bg-surface-soft p-4">

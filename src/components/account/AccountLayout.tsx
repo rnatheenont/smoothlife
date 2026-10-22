@@ -115,7 +115,7 @@ function AccountShell({ children }: { children: ReactNode }) {
       <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-8">
         {/* Desktop sidebar */}
         <aside className="hidden lg:block">
-          <nav className="sticky top-24 flex flex-col gap-1">
+          <nav className="sticky top-[calc(var(--app-header-h,0px)+1rem)] flex flex-col gap-1">
             {navGroups.map((group, i) => (
               <div key={group.label ?? `group-${i}`} className={i > 0 ? "mt-4 pt-4 border-t border-surface-line" : undefined}>
                 {group.label && (
