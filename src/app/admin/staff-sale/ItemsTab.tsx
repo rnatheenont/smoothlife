@@ -52,6 +52,9 @@ export default function ItemsTab({
   const [roundTo, setRoundTo] = useState<"1" | "5" | "10">("5");
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [copyFrom, setCopyFrom] = useState("");
+  // Narrows what is already on screen. The box above it goes to the server
+  // and replaces the list; a collection of 239 needs one that does not.
+  const [filter, setFilter] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
 
   const already = new Set(items.map((i) => i.variant_id));
@@ -74,6 +77,9 @@ export default function ItemsTab({
   async function search(params: string) {
     setSearching(true);
     onError(null);
+    // The filter belongs to the list on screen, so it goes when that list
+    // is replaced — otherwise a new collection arrives already hidden.
+    setFilter("");
     try {
       const res = await fetch(`/api/admin/staff-sale/catalogue?${params}`, { cache: "no-store" });
       const json = await res.json();
@@ -121,6 +127,7 @@ export default function ItemsTab({
       return;
     }
     setChosen({});
+    setFilter("");
     setPicker(false);
     onReload();
   }
@@ -229,6 +236,36 @@ export default function ItemsTab({
   }
 
   const chosenCount = Object.keys(chosen).length;
+
+  const f = filter.trim().toLowerCase();
+  const visible = f
+    ? found.filter(
+        (p) =>
+          p.name.toLowerCase().includes(f) ||
+          p.brand.toLowerCase().includes(f) ||
+          p.variants.some((v) => v.sku?.toLowerCase().includes(f)),
+      )
+    : found;
+
+  /** Every variant on screen that is not already in the round. */
+  const selectable = visible.flatMap((p) =>
+    p.variants.filter((v) => !already.has(v.variant_id)).map((v) => ({ ...v, slug: p.slug })),
+  );
+  const allPicked = selectable.length > 0 && selectable.every((v) => chosen[v.variant_id]);
+
+  function selectAllVisible() {
+    setChosen((cur) => {
+      const next = { ...cur };
+      // Pressed again when everything on screen is already picked, it clears
+      // those — one button, and the second press undoes the first.
+      if (allPicked) {
+        for (const v of selectable) delete next[v.variant_id];
+      } else {
+        for (const v of selectable) next[v.variant_id] = v;
+      }
+      return next;
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -493,11 +530,52 @@ export default function ItemsTab({
             </p>
           )}
 
-          <div className="mt-4 max-h-[420px] space-y-2 overflow-y-auto">
+          {/* Pick everything, then take out what is not wanted — which is
+              the way round a collection of 239 is actually worked through.
+              The filter narrows what "ทั้งหมด" means, so a brand or a size
+              can be taken in one press. */}
+          {found.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-y border-slate-100 py-2">
+              <Button size="sm" variant="ghost" onPress={selectAllVisible} isDisabled={selectable.length === 0}>
+                {allPicked ? (
+                  <>
+                    <X className="h-3.5 w-3.5" aria-hidden />
+                    เอาออกทั้งหมด ({selectable.length})
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-3.5 w-3.5" aria-hidden />
+                    เลือกทั้งหมด ({selectable.length})
+                  </>
+                )}
+              </Button>
+              <div className="relative min-w-[200px] flex-1">
+                <Search
+                  className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
+                  aria-hidden
+                />
+                <input
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  placeholder={`กรองใน ${found.length} รายการนี้`}
+                  aria-label="กรองรายการที่แสดงอยู่"
+                  className="h-9 w-full rounded-xl2 border border-slate-200 bg-white pl-8 pr-2 text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                />
+              </div>
+              <span className="text-[12px] text-slate-500">
+                เลือกแล้ว <span className="font-semibold text-brand-ink">{chosenCount}</span>
+              </span>
+            </div>
+          )}
+
+          <div className="mt-3 max-h-[420px] space-y-2 overflow-y-auto">
             {found.length === 0 && !searching && (
               <p className="text-[13px] text-slate-400">ยังไม่มีผลค้นหา</p>
             )}
-            {found.map((p) => (
+            {found.length > 0 && visible.length === 0 && (
+              <p className="text-[13px] text-slate-400">ไม่พบสินค้าที่ตรงกับ “{filter.trim()}”</p>
+            )}
+            {visible.map((p) => (
               <div key={p.slug} className="rounded-xl2 bg-surface-soft p-3">
                 <p className="text-[13px] font-semibold text-brand-ink">{p.name}</p>
                 <p className="text-[11px] text-slate-400">{p.brand}</p>
