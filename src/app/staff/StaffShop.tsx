@@ -1119,6 +1119,10 @@ export default function StaffShop() {
                   {Object.entries(cart).map(([variantId, qty]) => {
                     const item = shop.items.find((i) => i.variant_id === variantId);
                     if (!item) return null;
+                    const full =
+                      (item.per_person_limit !== null &&
+                        item.mine + qty >= item.per_person_limit) ||
+                      (item.left !== null && qty >= item.left);
                     return (
                       <li key={variantId} className="flex items-center gap-2 text-[13px]">
                         <span className="min-w-0 flex-1">
@@ -1145,16 +1149,28 @@ export default function StaffShop() {
                           <span className="w-5 text-center font-semibold">{qty}</span>
                           <button
                             onClick={() => setQty(item, qty + 1)}
+                            disabled={full}
                             aria-label={`เพิ่มจำนวน ${item.name}${item.size ? ` ${item.size}` : ""}`}
-                            className="grid size-9 place-items-center rounded-full bg-surface-soft text-slate-600"
+                            className="grid size-9 place-items-center rounded-full bg-surface-soft text-slate-600 disabled:opacity-35"
                           >
                             <Plus className="h-3.5 w-3.5" aria-hidden />
                           </button>
+                        </span>
+                        {/* What this line costs, which is the number the
+                            total is made of. The phone's cart showed the
+                            unit price and the count and left the
+                            multiplication to the reader. */}
+                        <span className="w-16 shrink-0 text-right font-mono text-[13px] font-semibold tabular-nums text-brand-ink">
+                          ฿{baht(item.staff_price * qty)}
                         </span>
                       </li>
                     );
                   })}
                 </ul>
+                <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-2 text-[13px] font-bold text-brand-ink">
+                  <span>รวม {cartCount} ชิ้น</span>
+                  <span className="font-mono text-[15px] tabular-nums">฿{baht(subtotal)}</span>
+                </div>
                 {!shop.shipTo ? (
                   <p className="mt-3 text-[12px] text-amber-700">
                     ยังไม่มีที่อยู่จัดส่ง —{" "}
