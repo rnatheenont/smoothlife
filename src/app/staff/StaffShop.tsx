@@ -182,19 +182,26 @@ export default function StaffShop() {
   const matches = (item: StaffShopVariant) =>
     !q || item.name.toLowerCase().includes(q) || item.brand.toLowerCase().includes(q);
 
-  const sections = useMemo(() => {
-    if (q) {
-      const hits = grouped.flatMap((g) => g.items).filter(matches);
-      return [{ key: "search", label: "", items: hits }];
-    }
-    if (category === "all") return grouped;
-    // One tab selected: no heading over the list, because the tab is the
-    // heading and printing it twice is how a filtered page looks broken.
-    return grouped.filter((g) => g.key === category).map((g) => ({ ...g, label: "" }));
+  /**
+   * One grid, never a stack of titled sections.
+   *
+   * The tabs are the headings — printing them again over each block said
+   * the same word twice and broke a wall of products into three short walls
+   * with gaps between them. "ทั้งหมด" is everything in one run, in category
+   * order so like still sits beside like without anything announcing it.
+   */
+  const shownItems = useMemo(() => {
+    const all = grouped.flatMap((g) => g.items.map((item) => ({ item, key: g.key })));
+    const picked = q
+      ? all.filter((r) => matches(r.item))
+      : category === "all"
+        ? all
+        : all.filter((r) => r.key === category);
+    return picked.map((r) => r.item);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `matches` closes over q, which is in the deps
   }, [grouped, category, q]);
 
-  const shownCount = sections.reduce((n, s) => n + s.items.length, 0);
+  const shownCount = shownItems.length;
 
   function setQty(item: StaffShopVariant, qty: number) {
     // Clamped against both ceilings here as well as in the database, so the
@@ -493,14 +500,11 @@ export default function StaffShop() {
               </div>
             )}
 
-            {/* Grouped by category, which is what the plan asks for and what
-                a list of eighty products needs to be readable at all. A tab
-                or a search narrows it to one list with no heading. */}
-            {sections.map((group) => (
-              <section key={group.key} className="mb-7">
-                {group.label && (
-                  <h2 className="mb-3 text-[16px] font-bold text-brand-ink">{group.label}</h2>
-                )}
+            {/* One grid for whatever the tabs and the search left. The
+                category headings are gone: the tabs already say which
+                shelf this is, and repeating it over each block turned one
+                wall of products into three short ones with gaps. */}
+            <section className="mb-7">
                 {/* The shop's own card, with the round's price in it.
                     ProductCard itself cannot be reused — it quick-adds to the
                     ordinary cart and carries a wishlist heart, neither of
@@ -519,7 +523,7 @@ export default function StaffShop() {
                     card uses @container because it is dropped into shelves
                     of wildly different widths, and this grid has one home. */}
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">
-                  {group.items.map((item) => {
+                  {shownItems.map((item) => {
                     const qty = cart[item.variant_id] ?? 0;
                     const soldOut = item.left === 0;
                     const atLimit =
@@ -624,8 +628,7 @@ export default function StaffShop() {
                     );
                   })}
                 </div>
-              </section>
-            ))}
+            </section>
           </div>
 
           {/* The allowance, the cart and the button. Sticky on desktop only —
