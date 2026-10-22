@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { supabaseConfigured } from "@/lib/supabase-server";
+import { staffRpc, type RpcResult } from "@/lib/staff-sale-rpc";
 import {
   currentStaffRound,
+  eligibleAccountEmail,
   staffPendingOrder,
   staffShippingAddress,
   staffShopItems,
@@ -45,7 +47,34 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const standing = await staffStanding(round.id, userId);
+  let standing = await staffStanding(round.id, userId);
+
+  // Nobody is asked to prove a mailbox they already signed in with.
+  //
+  // The OTP exists to answer "do you still hold a company address" for an
+  // account whose own address is somebody else's — a personal Gmail, say.
+  // When the account itself signed in through @smooth-e.com, that question
+  // was answered at login, and asking it again is a code sent to the inbox
+  // the person is already holding.
+  //
+  // Still a real verification row, written by the same RPC with the same
+  // uniqueness rules — one mailbox to one account per round — so nothing
+  // downstream can tell the two routes apart.
+  if (!standing) {
+    const own = await eligibleAccountEmail(userId);
+    if (own) {
+      const res = await staffRpc<RpcResult>("staff_verify", {
+        p_round: round.id,
+        p_user: userId,
+        p_email: own,
+      });
+      // A refusal here is almost always `email_or_account_taken`: this
+      // mailbox is tied to another account in this round. The panel below
+      // is the right place to land, where that is said out loud.
+      if (res?.ok) standing = await staffStanding(round.id, userId);
+    }
+  }
+
   if (!standing) {
     return NextResponse.json({
       ok: true,

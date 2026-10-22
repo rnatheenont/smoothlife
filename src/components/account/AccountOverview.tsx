@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronRight,
+  ShoppingBag,
   CheckCircle2,
   CreditCard,
   Crown,
@@ -31,6 +32,7 @@ import RewardsOverviewCard from "@/components/account/RewardsOverviewCard";
 import SkinScanSummaryCard from "@/components/account/SkinScanSummaryCard";
 import OrdersList from "@/components/account/OrdersList";
 import { orderStage, type OrderStage } from "@/lib/order-status";
+import { useStaffAccess } from "@/lib/use-staff-access";
 
 // The account overview, laid out the way Thai shoppers already read a
 // marketplace account page: who you are at the top, then the four order
@@ -99,6 +101,7 @@ function SettingRow({ icon: Icon, label, href, value }: { icon: LucideIcon; labe
 export default function AccountOverview() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const staff = useStaffAccess();
   const [counts, setCounts] = useState<Counts | null>(null);
   // Desktop shows the full order list instead of the counters; it mounts only
   // there so a phone never fetches the orders twice for a list it won't show.
@@ -177,6 +180,31 @@ export default function AccountOverview() {
           <div className="lg:col-span-2">
             <OrdersList embedded />
           </div>
+        )}
+
+        {/* The employee shop, for the few accounts it is open to.
+            Not a tile among the others and not hidden on desktop like them:
+            it is the only thing on this page with a date it stops working,
+            and the sidebar entry beside it cannot say when that is. */}
+        {staff.available && (
+          <Link
+            href="/staff"
+            className="flex items-center gap-3 rounded-xl2 bg-brand-50 p-4 ring-1 ring-brand-100 transition-colors hover:ring-brand-800/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
+              <ShoppingBag size={18} className="text-brand-800" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-brand-ink">ร้านพนักงาน</span>
+              <span className="block text-xs text-slate-600">
+                {staff.roundName ?? "ซื้อสินค้าราคาพนักงาน"}
+                {staff.ends_at
+                  ? ` · ถึง ${new Date(staff.ends_at).toLocaleDateString("th-TH", { day: "numeric", month: "short" })}`
+                  : ""}
+              </span>
+            </span>
+            <ChevronRight size={16} className="shrink-0 text-slate-300" />
+          </Link>
         )}
 
         {/* Benefits — everything that saves money in one place, instead of

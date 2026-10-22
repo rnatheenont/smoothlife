@@ -1,6 +1,7 @@
 import { pgValue, supabaseRest } from "@/lib/supabase-server";
 import { getProductDetail } from "@/data/product-details";
 import {
+  canonStaffEmail,
   ITEM_COLUMNS,
   ORDER_COLUMNS,
   ROUND_COLUMNS,
@@ -42,6 +43,56 @@ export async function upcomingStaffRound(): Promise<StaffRound | null> {
     `staff_rounds?status=eq.open&starts_at=gt.${new Date().toISOString()}&select=${ROUND_COLUMNS}&order=starts_at.asc&limit=1`,
   ).catch(() => []);
   return rows?.[0] ?? null;
+}
+
+/**
+ * Whether a canonical address may buy in the staff sale at all.
+ *
+ * A block beats an allow and is checked first, so adding somebody to the
+ * blocklist is enough on its own. The domain is matched exactly, never by
+ * suffix — `smooth-e.com.example.net` is not this company.
+ *
+ * Mirrors what `staff_verify` does in SQL. The RPC is still the one that
+ * decides; this exists so the shop can ask the question without writing a
+ * row, and so a code is never mailed to an address that could not pass.
+ */
+export async function addressIsEligible(canonEmail: string): Promise<boolean> {
+  const domain = canonEmail.split("@")[1] ?? "";
+  const [blocked, allowed] = await Promise.all([
+    supabaseRest<{ id: string }[]>(
+      `staff_eligibility?kind=eq.block_email&value=eq.${pgValue(canonEmail)}&revoked_at=is.null&select=id&limit=1`,
+    ).catch(() => []),
+    supabaseRest<{ id: string; expires_at: string | null }[]>(
+      `staff_eligibility?revoked_at=is.null&or=(and(kind.eq.allow_email,value.eq.${pgValue(canonEmail)}),and(kind.eq.allow_domain,value.eq.${pgValue(domain)}))&select=id,expires_at&limit=5`,
+    ).catch(() => []),
+  ]);
+  if (blocked?.[0]) return false;
+  const now = Date.now();
+  return (allowed ?? []).some((r) => !r.expires_at || new Date(r.expires_at).getTime() > now);
+}
+
+/**
+ * The company mailbox this account has already proved it owns, if any.
+ *
+ * `verified_at is not null` is the whole security of this: an address the
+ * account merely typed in is not proof of anything, and without that filter
+ * anyone could add somebody@smooth-e.com to their profile and shop at cost.
+ * A verified email identity is one the account signed in through, so the
+ * code has already been read out of that mailbox once.
+ *
+ * Only `provider = 'email'`. A Google or LINE identity stores an opaque id
+ * rather than an address, so those accounts still go through the OTP panel.
+ */
+export async function eligibleAccountEmail(userId: string): Promise<string | null> {
+  const rows = await supabaseRest<{ provider_uid: string }[]>(
+    `auth_identities?user_id=eq.${pgValue(userId)}&provider=eq.email&verified_at=not.is.null&select=provider_uid&limit=20`,
+  ).catch(() => []);
+  for (const row of rows ?? []) {
+    const canon = canonStaffEmail(row.provider_uid);
+    if (!canon) continue;
+    if (await addressIsEligible(canon)) return canon;
+  }
+  return null;
 }
 
 export type StaffStanding = {

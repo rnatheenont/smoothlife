@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -19,11 +19,13 @@ import {
   Users,
   MessageSquareText,
   ScanFace,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 import AccountGate from "@/components/AccountGate";
 import { useAuth } from "@/lib/auth-context";
 import { DAILY_CHECKIN_ENABLED, REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
+import { useStaffAccess } from "@/lib/use-staff-access";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 type NavGroup = { label?: string; items: NavItem[] };
@@ -86,6 +88,22 @@ function AccountShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
+  const staff = useStaffAccess();
+
+  // A group of its own, first, and only for the people it applies to. It is
+  // the one entry here with a deadline on it, and burying it under "การซื้อ
+  // ของฉัน" would file a round that closes on Thursday next to a wishlist.
+  const navGroups = useMemo<NavGroup[]>(
+    () =>
+      staff.available
+        ? [
+            NAV_GROUPS[0],
+            { items: [{ href: "/staff", label: "ร้านพนักงาน", icon: ShoppingBag }] },
+            ...NAV_GROUPS.slice(1),
+          ]
+        : NAV_GROUPS,
+    [staff.available],
+  );
 
   function handleLogout() {
     logout();
@@ -98,7 +116,7 @@ function AccountShell({ children }: { children: ReactNode }) {
         {/* Desktop sidebar */}
         <aside className="hidden lg:block">
           <nav className="sticky top-24 flex flex-col gap-1">
-            {NAV_GROUPS.map((group, i) => (
+            {navGroups.map((group, i) => (
               <div key={group.label ?? `group-${i}`} className={i > 0 ? "mt-4 pt-4 border-t border-surface-line" : undefined}>
                 {group.label && (
                   <p className="px-3.5 mb-1.5 text-[11px] font-bold text-slate-500">
@@ -141,7 +159,7 @@ function AccountShell({ children }: { children: ReactNode }) {
             overview page is itself the menu on a phone, so the chips would
             only repeat what is already on screen. */}
         <nav className={`${pathname === "/account" ? "hidden" : "lg:hidden"} -mx-4 px-4 mb-5 flex items-center gap-2 overflow-x-auto scrollbar-none pb-1`}>
-          {NAV_GROUPS.map((group, i) => (
+          {navGroups.map((group, i) => (
             <div key={group.label ?? `group-${i}`} className="flex shrink-0 items-center gap-2">
               {i > 0 && <span className="h-5 w-px shrink-0 bg-slate-200" />}
               {group.items.map((item) => {
