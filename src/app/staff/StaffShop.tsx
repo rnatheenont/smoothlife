@@ -487,9 +487,13 @@ export default function StaffShop() {
   return (
     <div className="container-page py-6 md:py-10">
       <header className="mb-6">
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-brand-ink md:text-3xl">
+        <h1 className="flex items-center gap-2 text-2xl font-bold md:text-3xl">
           <ShoppingBag className="h-6 w-6 text-brand-700" aria-hidden />
-          ร้านพนักงาน
+          {/* The shop's own gradient, the one on its buttons. A span rather
+              than the heading, because background-clip: text makes the box
+              it is on transparent — on the h1 that would take the icon's
+              line box with it. */}
+          <span className="brand-text-gradient">ร้านพนักงาน</span>
         </h1>
         {data.state === "shop" && (
           <p className="mt-1 text-[13px] text-slate-500">
@@ -637,8 +641,8 @@ export default function StaffShop() {
               <div className="mb-5 rounded-xl2 bg-surface-soft p-3 lg:hidden">
                 <p className="flex items-baseline justify-between gap-2">
                   <span className="text-[12px] font-medium text-slate-500">วงเงินที่เหลือ</span>
-                  <span className="text-[17px] font-bold text-brand-ink">
-                    ฿{baht(shop.standing.left_thb)}
+                  <span className="text-[17px] font-bold">
+                    <span className="brand-text-gradient">฿{baht(shop.standing.left_thb)}</span>
                     <span className="ml-1 text-[11px] font-normal text-slate-400">
                       จาก ฿{baht(shop.standing.cap_thb)}
                     </span>
@@ -1066,8 +1070,8 @@ export default function StaffShop() {
                 <Wallet className="h-3.5 w-3.5" aria-hidden />
                 วงเงินของคุณในรอบนี้
               </p>
-              <p className="mt-1 text-2xl font-extrabold text-brand-ink">
-                ฿{baht(shop.standing.left_thb)}
+              <p className="mt-1 text-2xl font-extrabold">
+                <span className="brand-text-gradient">฿{baht(shop.standing.left_thb)}</span>
                 <span className="ml-1 text-[12px] font-normal text-slate-500">
                   จาก ฿{baht(shop.standing.cap_thb)}
                 </span>
