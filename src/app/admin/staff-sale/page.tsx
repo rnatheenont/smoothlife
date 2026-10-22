@@ -337,7 +337,7 @@ export default function StaffSalePage() {
               inputMode="decimal"
               value={form.cap}
               onChange={(v) => setForm({ ...form, cap: v })}
-              hint="คนที่ยืนยันอีเมลแล้วจะถือวงเงินเดิม การแก้ตัวเลขนี้มีผลกับคนที่ยืนยันหลังจากนี้"
+              hint="แก้แล้วมีผลกับคนที่ยืนยันอีเมลไปแล้วด้วย — ยกเว้นคนที่ใช้หรือกันวงเงินไปเกินตัวเลขใหม่ จะลดลงได้แค่เท่าที่ใช้ไป"
               isRequired
             />
             <AdminField

@@ -23,8 +23,11 @@ create table if not exists public.staff_rounds (
   starts_at          timestamptz not null,
   ends_at            timestamptz not null,
   -- The per-person spending cap, copied onto each entitlement when somebody
-  -- verifies. Copied rather than read live: raising the cap mid-round must
-  -- be a deliberate act on the people already in, not a silent retro-grant.
+  -- verifies. Copied rather than read live so that an allowance already
+  -- granted is a row somebody can see and reason about. Editing this number
+  -- in the console does move the existing rows with it — floored at what
+  -- each person has already committed — but that is the console's doing,
+  -- deliberately, not a cascade the database performs behind it.
   cap_thb            numeric(10, 2) not null check (cap_thb > 0),
   status             text not null default 'draft' check (status in ('draft', 'open', 'closed')),
   -- How long an unpaid order holds its reservation. 2C2P's payment page gets

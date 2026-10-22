@@ -262,8 +262,10 @@ begin
   v_res := public.staff_create_order(v_round, v_a, '[{"variant_id":"gid://test/E2","qty":1}]'::jsonb);
   insert into s9 values ('6 then 0.01 more', v_res->>'ok' || ' / ' || coalesce(v_res->>'reason','') || ' / left ' || coalesce(v_res->'detail'->>'remaining_thb',''));
 
-  -- The cap is copied onto the entitlement at verification, so moving the
-  -- round's dates or raising its cap leaves the people already in it alone.
+  -- At the database level the entitlement's cap stands on its own: moving
+  -- the round's dates or editing its cap does not cascade. The console does
+  -- the cascade itself when an admin saves the form, with a floor at what
+  -- each person has already committed — see the round PATCH route.
   update public.staff_rounds set ends_at = now() + interval '3 hours', cap_thb = 5000 where id = v_round;
   insert into s9 values ('7 spent after extending',
     (select spent_thb || ' spent, cap still ' || cap_thb from public.staff_entitlements

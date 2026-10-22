@@ -143,9 +143,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const parsed = parseRoundInput(body);
   if ("error" in parsed) return badRequest(parsed.error);
 
-  // The cap is copied onto each entitlement at verification, so lowering it
-  // here does not claw back an allowance somebody already has. Said plainly
-  // in the response rather than left for somebody to discover.
   const capChanged = Number(before.cap_thb) !== parsed.input.cap_thb;
 
   await supabaseRest(`staff_rounds?id=eq.${pgValue(id)}`, {
@@ -154,18 +151,62 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     body: JSON.stringify({ ...parsed.input, updated_at: new Date().toISOString() }),
   });
 
+  // Changing the cap changes it for the people already in the round too.
+  //
+  // It used to apply only to whoever verified next, on the reasoning that an
+  // allowance already granted is a promise. In practice an admin who edits
+  // this number has decided what the round's allowance is, and a page that
+  // quietly keeps the old one for everybody who signed up first is a page
+  // that lies about its own setting.
+  //
+  // The floor is what each person has already committed: a cap below
+  // `reserved + spent` is a cap the database refuses, and it would mean
+  // taking back money that is already in a payment page or already paid.
+  let capApplied = 0;
+  let capFloored = 0;
+  if (capChanged) {
+    const ents = await supabaseRest<
+      { user_id: string; cap_thb: number; reserved_thb: number; spent_thb: number }[]
+    >(
+      `staff_entitlements?round_id=eq.${pgValue(id)}&select=user_id,cap_thb,reserved_thb,spent_thb&limit=5000`,
+    ).catch(() => []);
+
+    for (const e of ents) {
+      const committed = Number(e.reserved_thb) + Number(e.spent_thb);
+      const next = Math.max(parsed.input.cap_thb, committed);
+      if (next === Number(e.cap_thb)) continue;
+      await supabaseRest(
+        `staff_entitlements?round_id=eq.${pgValue(id)}&user_id=eq.${pgValue(e.user_id)}`,
+        {
+          method: "PATCH",
+          returning: false,
+          body: JSON.stringify({ cap_thb: next, updated_at: new Date().toISOString() }),
+        },
+      ).catch((err) => {
+        console.error("[staff-sale] could not move an entitlement's cap", e.user_id, err);
+      });
+      capApplied += 1;
+      if (next > parsed.input.cap_thb) capFloored += 1;
+    }
+  }
+
   await auditStaffSale(req, "staff_sale.round_edit", id, {
     name: { from: before.name, to: parsed.input.name },
     starts_at: { from: before.starts_at, to: parsed.input.starts_at },
     ends_at: { from: before.ends_at, to: parsed.input.ends_at },
     cap_thb: { from: Number(before.cap_thb), to: parsed.input.cap_thb },
     payment_window_min: { from: before.payment_window_min, to: parsed.input.payment_window_min },
+    ...(capChanged ? { entitlements_updated: capApplied, entitlements_floored: capFloored } : {}),
   });
 
   return NextResponse.json({
     ok: true,
     note: capChanged
-      ? "วงเงินใหม่จะใช้กับคนที่ยืนยันอีเมลหลังจากนี้ คนที่ยืนยันแล้วยังถือวงเงินเดิม"
+      ? capApplied === 0
+        ? "วงเงินใหม่ใช้กับทุกคนในรอบนี้แล้ว"
+        : capFloored > 0
+          ? `ปรับวงเงินให้คนที่ยืนยันแล้ว ${capApplied} คน · ${capFloored} คนลดลงไม่ได้ถึงตัวเลขใหม่ เพราะใช้หรือกันวงเงินไปเกินกว่านั้นแล้ว`
+          : `ปรับวงเงินให้คนที่ยืนยันแล้ว ${capApplied} คนด้วย`
       : undefined,
   });
 }
