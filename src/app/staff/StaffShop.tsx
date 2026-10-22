@@ -631,9 +631,13 @@ export default function StaffShop() {
                               </span>
                             </div>
                           )}
-                          {/* What is in the cart across every option of this
-                              product, since the stepper below only ever
-                              shows the one on screen. */}
+                          {/* What is in the cart across every option of
+                              this product. The options themselves no longer
+                              carry their own counts — a row of chips each
+                              with a number on it reads as a row of prices,
+                              and the one number worth seeing from across the
+                              grid is "something from this card is in the
+                              cart". The breakdown is in the cart. */}
                           {inCart > 0 && (
                             <span className="absolute right-2 top-2 grid h-6 min-w-6 place-items-center rounded-full bg-brand-800 px-1.5 text-[11px] font-bold text-white">
                               {inCart}
@@ -657,7 +661,6 @@ export default function StaffShop() {
                               {options.map((v) => {
                                 const on = v.variant_id === item.variant_id;
                                 const gone = v.left === 0 || !v.in_stock;
-                                const picked = cart[v.variant_id] ?? 0;
                                 return (
                                   <button
                                     key={v.variant_id}
@@ -676,7 +679,6 @@ export default function StaffShop() {
                                     }`}
                                   >
                                     {v.size}
-                                    {picked > 0 && <span className="ml-1 font-bold">·{picked}</span>}
                                   </button>
                                 );
                               })}
