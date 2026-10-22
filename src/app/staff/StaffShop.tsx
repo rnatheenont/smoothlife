@@ -1199,16 +1199,22 @@ export default function StaffShop() {
                   </button>
                 </div>
 
-                {/* Quiet, and on its own line. Nothing anybody reaches for by
-                    accident sits next to the button they were aiming at. */}
-                <button
-                  type="button"
-                  onClick={() => cancelPending(shop.pending!.id)}
-                  disabled={busy}
-                  className="mb-1 mt-1 grid h-9 w-full place-items-center text-[12px] font-medium text-amber-800 underline-offset-2 hover:underline disabled:opacity-50"
-                >
-                  ยกเลิกคำสั่งซื้อนี้
-                </button>
+                {/* Out of the way of the thumb heading for the green one.
+                    Full width and centred, it still sat directly under
+                    ชำระเงินต่อ — a press aimed at the primary and landing an
+                    inch low cancelled the order instead. It is short now,
+                    pushed to the far side under แก้ไขรายการ, and behind a
+                    hairline that says the row above has ended. */}
+                <div className="mt-2 flex justify-end border-t border-amber-200/70 px-4 pt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => cancelPending(shop.pending!.id)}
+                    disabled={busy}
+                    className="h-9 rounded-full px-3 text-[12px] font-medium text-amber-800 underline-offset-2 hover:underline disabled:opacity-50"
+                  >
+                    ยกเลิกคำสั่งซื้อ
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-3 px-4 py-3">
