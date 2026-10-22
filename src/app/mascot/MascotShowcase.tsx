@@ -14,10 +14,7 @@ const GESTURES: [string, string, string][] = [
   ["jump", "กระโดด", "Jump"],
   ["talk", "พูด", "Talk"],
   ["think", "คิด", "Think"],
-  ["dance", "เต้น", "Dance"],
   ["run", "วิ่ง", "Run"],
-  ["party", "เต้นเฟี้ยว", "Party"],
-  ["brazil", "บราซิล", "Brazil"],
 ];
 const MOODS: [string, string, string][] = [
   ["happy", "ดีใจ", "Happy"],

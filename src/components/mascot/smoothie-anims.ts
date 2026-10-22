@@ -9,7 +9,7 @@
 //
 // Units: pixels on the 1000×1000 artboard (y down), angles in degrees
 // (positive = clockwise). Key = [time s, value, easing of the segment that
-// arrives at this key]. "sad", "angry" and "love" were taken out on purpose — the
+// arrives at this key]. "sad", "angry" and "love" (and the dances: dance, party, brazil) were taken out on purpose — the
 // team wants those moods off the storefront for now.
 
 export type Key = [number, number] | [number, number, string];
@@ -129,25 +129,6 @@ export const ANIMS: Record<string, Anim> = {
     "armL.rot": [[0, D], [0.6, D + 5], [2.4, D + 4], [2.9, D]],
     "legR.y": [[0, 0], [1.0, 0], [1.1, -8, "out"], [1.2, 0, "in"], [1.4, 0], [1.5, -8, "out"], [1.6, 0, "in"], [1.8, 0], [1.9, -8, "out"], [2.0, 0, "in"]],
   } },
-  dance: { dur: 3.4, keys: (() => {
-    const k = { "legL.y": [[0, 0]], "legR.y": [[0, 0]], "hips.rot": [[0, 0]], "head.rot": [[0, 0]], "root.sy": [[0, 1], [0.12, 0.96, "out"]], "root.y": [[0, 0]],
-      "armL.rot": [[0, D], [0.12, D - 6]], "armR.rot": [[0, 0], [0.12, 6]], "handL.rot": [[0, 0]], "handR.rot": [[0, 0]], "face.x": [[0, 0]],
-      "mouth.sy": [[0, 1], [0.25, 1.2], [3.1, 1.2], [3.4, 1]] };
-    for (let i = 0; i < 4; i++) {
-      const t = 0.15 + i * 0.75, s = i % 2 ? -1 : 1, leg = i % 2 ? "legR.y" : "legL.y";
-      k[leg].push([t + 0.05, 0], [t + 0.22, -28, "out"], [t + 0.4, 0, "in"]);
-      k["root.y"].push([t + 0.2, -8, "out"], [t + 0.4, 0, "in"]);
-      k["root.sy"].push([t + 0.42, 0.95, "in"], [t + 0.58, 1.02, "out"], [t + 0.72, 1]);
-      k["hips.rot"].push([t + 0.38, 3.2 * s]);
-      k["head.rot"].push([t + 0.46, -3.6 * s]);           // หัวตามหลังสะโพก ~0.08 s
-      k["face.x"].push([t + 0.46, 8 * s]);
-      k["armL.rot"].push([t + 0.36, D + 13 + 14 * s]); k["handL.rot"].push([t + 0.44, 14 * s]);
-      k["armR.rot"].push([t + 0.36, -13 - 14 * s]); k["handR.rot"].push([t + 0.44, -14 * s]);
-    }
-    for (const ch of ["hips.rot", "head.rot", "face.x", "handL.rot", "armR.rot", "handR.rot"]) k[ch].push([3.4, 0, "soft"]);
-    k["armL.rot"].push([3.4, D, "soft"]); k["legL.y"].push([3.4, 0]); k["legR.y"].push([3.4, 0]); k["root.sy"].push([3.4, 1]); k["root.y"].push([3.4, 0]);
-    return k;
-  })() },
   // วิ่งอยู่กับที่: ขาสลับเร็ว ตัวลอยทุกก้าว/ยุบตอนลง, แขนแกว่งสวนขา, หัวโยกตามหลัง, ออกตัว-ชะลอ
   run: { dur: 3.3, keys: (() => {
     const k = { "legL.y": [[0, 0]], "legR.y": [[0, 0]], "legL.rot": [[0, 0]], "legR.rot": [[0, 0]],
@@ -175,119 +156,6 @@ export const ANIMS: Record<string, Anim> = {
     k["root.sy"].push([end + 0.08, 0.96, "in"], [end + 0.22, 1.01, "out"], [3.3, 1]);
     for (const ch of ["hips.rot", "head.rot", "handL.rot", "handR.rot", "armR.rot", "legL.rot", "legR.rot"]) k[ch].push([3.3, 0, "soft"]);
     k["armL.rot"].push([3.3, D, "soft"]); k["legL.y"].push([3.3, 0]); k["legR.y"].push([3.3, 0]); k["root.y"].push([3.3, 0]);
-    return k;
-  })() },
-  // เต้นเฟี้ยว (~5.6 s, 120 BPM = 0.5 s/จังหวะ): groove โยกสะโพก → raise the roof ดันแขนขึ้นฟ้า
-  // → ชี้ฟ้าสลับข้างแบบดิสโก้ → ยักไหล่รัว → กระโดดจบท่าชูสองแขน
-  party: { dur: 5.6, face: "happy", keys: (() => {
-    const k = {}, push = (ch, t, v, e) => (k[ch] = k[ch] || []).push(e ? [t, v, e] : [t, v]);
-    const RU = -137;                                   // แขนขวาชูเต็ม (ภาพท่ายก)
-    ["root.y", "hips.rot", "hips.x", "head.rot", "face.x", "face.y", "armR.rot", "handL.rot", "handR.rot", "chest.rot", "legL.y", "legR.y"].forEach((c) => push(c, 0, 0));
-    push("root.sy", 0, 1); push("armL.rot", 0, D); push("mouth.sy", 0, 1);
-    // 1) groove 0–1.5: โยกสะโพกซ้ายขวา ย่อตามจังหวะ หัวพยักนอกจังหวะ แขนแกว่งสบาย ๆ
-    for (let i = 0; i < 3; i++) {
-      const t = 0.1 + i * 0.5, s = i % 2 ? -1 : 1;
-      push("hips.x", t + 0.25, 14 * s, "out"); push("hips.rot", t + 0.25, 4 * s);
-      push("root.sy", t + 0.12, 0.95, "in"); push("root.sy", t + 0.3, 1.02, "out");
-      push("head.rot", t + 0.32, -4 * s); push("face.y", t + 0.2, 6); push("face.y", t + 0.4, -2);
-      push("armL.rot", t + 0.25, D + 18 + 12 * s); push("armR.rot", t + 0.25, -18 + 12 * s);
-      push("handL.rot", t + 0.33, 14 * s); push("handR.rot", t + 0.33, 14 * s);
-      push("legL.y", t + 0.12, s > 0 ? -16 : 0, "out"); push("legL.y", t + 0.28, 0, "in");
-      push("legR.y", t + 0.12, s < 0 ? -16 : 0, "out"); push("legR.y", t + 0.28, 0, "in");
-    }
-    // 2) raise the roof 1.6–2.8: ดันแขนสองข้างขึ้นฟ้าเป็นจังหวะ ตัวเด้ง
-    push("hips.x", 1.6, 0); push("hips.rot", 1.6, 0); push("head.rot", 1.6, 0);
-    for (let i = 0; i < 4; i++) {
-      const t = 1.6 + i * 0.3;
-      push("armL.rot", t, -38); push("armL.rot", t + 0.15, 4, "out");
-      push("armR.rot", t, RU + 38); push("armR.rot", t + 0.15, RU, "out");
-      push("handL.rot", t + 0.18, -12); push("handR.rot", t + 0.18, 12);
-      push("root.sy", t, 0.95, "in"); push("root.sy", t + 0.15, 1.04, "out");
-      push("root.y", t + 0.15, -10, "out"); push("root.y", t + 0.3, 0, "in");
-      push("face.y", t + 0.18, -8); push("face.y", t + 0.3, 2);
-    }
-    // 3) ชี้ฟ้าดิสโก้ 2.8–4.0: แขนซ้ายชี้ฟ้า/แขนขวาลงสลับกัน สะโพกเหวี่ยงสวน หัวหันตามมือ
-    for (let i = 0; i < 4; i++) {
-      const t = 2.85 + i * 0.3, s = i % 2 ? -1 : 1;
-      push("armL.rot", t + 0.12, s > 0 ? 10 : D + 25, "out"); push("armR.rot", t + 0.12, s < 0 ? RU - 6 : -25, "out");
-      push("handL.rot", t + 0.2, s > 0 ? -16 : 8); push("handR.rot", t + 0.2, s < 0 ? 16 : -8);
-      push("hips.x", t + 0.14, -16 * s, "out"); push("hips.rot", t + 0.14, -5 * s);
-      push("head.rot", t + 0.18, 6 * s); push("face.x", t + 0.18, -12 * s);
-      push("root.sy", t + 0.04, 0.96, "in"); push("root.sy", t + 0.16, 1.02, "out");
-      push(s > 0 ? "legR.y" : "legL.y", t + 0.1, -20, "out"); push(s > 0 ? "legR.y" : "legL.y", t + 0.24, 0, "in");
-    }
-    // 4) ยักไหล่รัว 4.05–4.65: แขนลงข้างตัว ไหล่/อกสั่นเร็ว หัวโยก
-    push("armL.rot", 4.05, D + 8); push("armR.rot", 4.05, -8); push("hips.x", 4.05, 0); push("hips.rot", 4.05, 0); push("face.x", 4.05, 0);
-    for (let i = 0; i < 6; i++) {
-      const t = 4.1 + i * 0.1, s = i % 2 ? -1 : 1;
-      push("chest.rot", t, 3.5 * s, "lin"); push("head.rot", t + 0.03, -3 * s, "lin");
-      push("armL.rot", t, D + 8 + 7 * s, "lin"); push("armR.rot", t, -8 + 7 * s, "lin");
-      push("root.y", t, s > 0 ? -5 : 0, "lin");
-    }
-    // 5) ไฟนอล 4.7–5.6: ย่อ → กระโดดชูสองแขนค้าง → ลงพื้นเด้ง
-    push("chest.rot", 4.7, 0); push("head.rot", 4.7, 0);
-    push("root.sy", 4.72, 0.86, "out"); push("root.y", 4.74, 0);
-    push("armL.rot", 4.74, D - 10); push("armR.rot", 4.74, 10);
-    push("root.y", 4.98, -120, "out"); push("root.sy", 4.82, 1.1, "in"); push("root.sy", 5.0, 1);
-    push("armL.rot", 4.95, 16, "back"); push("armR.rot", 4.95, RU - 6, "back");
-    push("handL.rot", 5.0, -18); push("handR.rot", 5.0, 18);
-    push("legL.y", 4.98, -22, "out"); push("legR.y", 4.98, -22, "out");
-    push("face.y", 4.95, -14, "out"); push("mouth.sy", 4.9, 1.3);
-    push("root.y", 5.22, 0, "in"); push("legL.y", 5.2, 0, "in"); push("legR.y", 5.2, 0, "in");
-    push("root.sy", 5.24, 0.9, "in"); push("root.sy", 5.38, 1.03, "out"); push("root.sy", 5.6, 1);
-    push("armL.rot", 5.35, 12); push("armR.rot", 5.35, RU - 2);
-    for (const c of ["hips.x", "hips.rot", "face.x", "face.y", "handL.rot", "handR.rot"]) push(c, 5.6, 0, "soft");
-    push("mouth.sy", 5.6, 1);
-    return k;
-  })() },
-  // บราซิล (ท่าเต้นบราซิลที่ฮิตใน TikTok ไทย ตามคลิปสอน @luvmelovespringrolls, ช่วงสาธิต 0–8 s) ~6.6 s, 0.4 s/จังหวะ
-  // ทั้งท่า: ย่อเข่าเด้งทุกจังหวะ + สะโพกส่ายซ้ายขวาไม่หยุด — ตัวท่าคือแขนที่เปลี่ยนทุก 2–4 จังหวะ:
-  // แขนห้อยแกว่ง → มือสองข้างจับข้างหัว → ปัดแขนผ่านอก → มือจับหลังหัว → ย่อส่ายสะโพกเร็ว → ยกมือแบระดับไหล่
-  brazil: { dur: 6.6, face: "happy", keys: (() => {
-    const k = {}, push = (ch, t, v, e) => (k[ch] = k[ch] || []).push(e ? [t, v, e] : [t, v]);
-    const hold = (t) => { for (const ch in k) { const last = k[ch].reduce((a, b) => (b[0] > a[0] ? b : a)); if (last[0] < t) push(ch, t, last[1]); } };
-    const RU = -137, HIP_L = D + 26, HIP_R = -26, B = 0.4, T0 = 0.15, N = 15;
-    ["root.y", "hips.rot", "hips.x", "head.rot", "face.x", "face.y", "armR.rot", "handL.rot", "handR.rot", "chest.rot", "legL.y", "legR.y"].forEach((c) => push(c, 0, 0));
-    push("root.sy", 0, 1); push("armL.rot", 0, D); push("mouth.sy", 0, 1);
-    // ฐานทั้งท่า: เด้งเข่า + ส่ายสะโพก + หัวโยกตามหลัง
-    for (let i = 0; i < N; i++) {
-      const t = T0 + i * B, s = i % 2 ? -1 : 1, deep = i >= 10 && i < 12 ? 0.86 : 0.93;
-      push("root.sy", t + 0.1, deep, "in"); push("root.sy", t + 0.26, 1.02, "out");
-      push("hips.x", t + 0.16, 16 * s, "out"); push("hips.rot", t + 0.16, 5 * s);
-      push("chest.rot", t + 0.2, -2 * s); push("head.rot", t + 0.24, -3 * s); push("face.y", t + 0.12, 4); push("face.y", t + 0.3, -1);
-      push(s > 0 ? "legR.y" : "legL.y", t + 0.08, -10, "out"); push(s > 0 ? "legR.y" : "legL.y", t + 0.2, 0, "in");
-    }
-    const beat = (i) => T0 + i * B;
-    // 1) จังหวะ 0–3: แขนห้อยแกว่งสวนสะโพก
-    for (let i = 0; i < 4; i++) { const s = i % 2 ? -1 : 1;
-      push("armL.rot", beat(i) + 0.18, D + 10 - 12 * s); push("armR.rot", beat(i) + 0.18, -10 - 12 * s);
-      push("handL.rot", beat(i) + 0.24, 10 * s); push("handR.rot", beat(i) + 0.24, 10 * s); }
-    // 2) จังหวะ 4–5: มือสองข้างจับข้างหัว
-    hold(beat(4));
-    push("armL.rot", beat(4) + 0.16, 32, "out"); push("armR.rot", beat(4) + 0.16, RU - 32, "out");
-    push("handL.rot", beat(4) + 0.2, -18); push("handR.rot", beat(4) + 0.2, 18);
-    // 3) จังหวะ 6–8: แขนซ้ายปัดผ่านหน้าอกไปมา มือขวาเท้าสะเอว
-    hold(beat(6));
-    push("armR.rot", beat(6) + 0.14, HIP_R, "out"); push("handR.rot", beat(6) + 0.14, -18);
-    for (let i = 6; i < 9; i++) { const s = i % 2 ? -1 : 1;
-      push("armL.rot", beat(i) + 0.16, s > 0 ? -40 : 30, "out"); push("handL.rot", beat(i) + 0.22, 16 * s); }
-    // 4) จังหวะ 9: มือขวาจับหลังหัว มือซ้ายเท้าสะเอว เอนตัว
-    hold(beat(9));
-    push("armL.rot", beat(9) + 0.14, HIP_L, "out"); push("handL.rot", beat(9) + 0.14, 18);
-    push("armR.rot", beat(9) + 0.16, RU - 28, "back"); push("handR.rot", beat(9) + 0.2, 24);
-    // 5) จังหวะ 10–11: ย่อลึก มือห้อยหน้า ส่ายสะโพกเร็ว (สองเท่า)
-    hold(beat(10));
-    push("armL.rot", beat(10) + 0.14, D - 14, "out"); push("armR.rot", beat(10) + 0.14, 14, "out");
-    push("handL.rot", beat(10) + 0.14, -10); push("handR.rot", beat(10) + 0.14, 10);
-    for (let q = 0; q < 4; q++) push("hips.x", beat(10) + 0.1 + q * 0.2, q % 2 ? -18 : 18);
-    // 6) จังหวะ 12–14: ยกมือแบระดับไหล่สองข้าง เด้งตามจังหวะ แล้วจบ
-    hold(beat(12));
-    push("armL.rot", beat(12) + 0.16, -32, "back"); push("armR.rot", beat(12) + 0.16, -90, "back");
-    for (let i = 12; i < 15; i++) { const s = i % 2 ? -1 : 1;
-      push("handL.rot", beat(i) + 0.2, -14 + 8 * s); push("handR.rot", beat(i) + 0.2, 14 + 8 * s); }
-    hold(6.25);
-    for (const c of ["hips.x", "hips.rot", "head.rot", "face.x", "face.y", "chest.rot", "handL.rot", "handR.rot", "legL.y", "legR.y"]) push(c, 6.6, 0, "soft");
-    push("armL.rot", 6.6, D, "soft"); push("armR.rot", 6.6, 0, "soft"); push("root.sy", 6.6, 1);
     return k;
   })() },
   // ---------- อารมณ์ (สลับเป็นหัวอารมณ์ตลอดท่า) ----------
