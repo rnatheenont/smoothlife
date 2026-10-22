@@ -22,6 +22,11 @@ const SKIP = [
   "src/components/admin",
   "src/app/api",
   "src/lib/i18n",
+  // The employee shop, for the same reason as the admin: it is an internal
+  // tool for a Thai-speaking team, behind a company-mailbox check, and no
+  // English visitor can reach it. Counting it would move the number that is
+  // supposed to track the storefront.
+  "src/app/staff",
 ];
 const THAI = /[฀-๿]/;
 

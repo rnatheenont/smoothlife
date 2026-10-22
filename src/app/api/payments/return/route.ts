@@ -21,6 +21,9 @@ export const dynamic = "force-dynamic";
 function destination(req: NextRequest): string {
   const params = req.nextUrl.searchParams;
   if (params.get("next") === "subscriptions") return "/account/subscriptions?justSubscribed=1";
+  // The employee shop has its own checkout and its own page to come back to.
+  // /checkout/success reads the ordinary cart, which a staff order never had.
+  if (params.get("next") === "staff") return "/staff?paid=1";
   const cartToken = params.get("cartToken");
   return cartToken ? `/checkout/success?cartToken=${encodeURIComponent(cartToken)}` : "/checkout/success";
 }

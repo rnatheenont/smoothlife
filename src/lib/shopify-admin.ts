@@ -2395,6 +2395,15 @@ export async function createPaidShopifyOrder(opts: {
   tranRef: string;
   /** The Shopify discount code the customer used, and what it took off. */
   discount?: { code: string; amount: number } | null;
+  /**
+   * Tags to put on the order.
+   *
+   * Added for the staff sale, where the tag is not decoration: the profile
+   * badge, the admin filter and every revenue report that has to exclude
+   * purchases at cost all read it. An order sold below retail with no tag
+   * saying why is an order nobody can account for later.
+   */
+  tags?: string[];
 }): Promise<{ id: string; name: string }> {
   // The order carries the code, not a set of quietly reduced prices: the
   // lines keep what the products cost and the discount appears as itself, so
@@ -2421,6 +2430,7 @@ export async function createPaidShopifyOrder(opts: {
         customer: opts.customerId ? { toAssociate: { id: opts.customerId } } : undefined,
         financialStatus: "PAID",
         note: opts.note,
+        tags: opts.tags && opts.tags.length > 0 ? opts.tags : undefined,
         // Every field here is one orderCreate will silently drop the whole
         // address over — see the note at the top of shopify-th-address.ts.
         shippingAddress: {

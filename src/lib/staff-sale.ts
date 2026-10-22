@@ -7,6 +7,32 @@
 // bundle. The calls themselves live in ./staff-sale-rpc, which is server
 // only. check-client-bundle is what notices if that ever stops being true.
 
+/**
+ * One buyable line as the /staff page shows it: the price list's row joined
+ * to the catalogue's name, picture and category.
+ *
+ * Declared here, with the other shared types, rather than beside the query
+ * that builds it — the page is a client component, and a type imported from
+ * a module that reaches the database is one `import type` away from pulling
+ * supabase-server into a browser bundle.
+ */
+export type StaffShopVariant = {
+  variant_id: string;
+  product_slug: string;
+  name: string;
+  brand: string;
+  category: string;
+  image: string | null;
+  size: string;
+  regular_price: number;
+  staff_price: number;
+  per_person_limit: number | null;
+  /** Null when the round sets no quota for this line. */
+  left: number | null;
+  /** How many of this line the person already holds, paid or awaiting payment. */
+  mine: number;
+};
+
 export type RoundStatus = "draft" | "open" | "closed";
 
 export type StaffRound = {
