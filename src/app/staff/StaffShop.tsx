@@ -86,7 +86,7 @@ const CATEGORY_TH = new Map(categories.map((c) => [c.slug as string, c.nameTh]))
  * brand when it works, flat grey when it does not.
  */
 const CHECKOUT_BUTTON =
-  "mt-3 grid h-12 w-full place-items-center rounded-full text-sm font-bold transition-colors " +
+  "grid h-12 place-items-center rounded-full px-6 text-sm font-bold transition-colors " +
   "bg-brand-800 text-white hover:bg-brand-1000 " +
   "disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200 " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2";
@@ -441,7 +441,13 @@ export default function StaffShop() {
             )}
 
             {shop.items.length > 0 && (
-              <div className="mb-5 space-y-3">
+              // Pinned under the header on a phone, so the search box and the
+              // tabs are still there twenty products down — the two controls
+              // that decide what is on screen were the first things to scroll
+              // off it. top-(--app-header-h) is the height the header reports
+              // as it hides and comes back, so this follows it rather than
+              // guessing a number (see Header.tsx and CategoryCircles).
+              <div className="scrollbar-none sticky top-(--app-header-h) z-30 -mx-4 mb-5 space-y-3 bg-white/95 px-4 py-3 backdrop-blur-sm transition-[top] duration-300 lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none">
                 {/* Search first, because it is the shortest route to one
                     known product, and the tabs are for browsing. */}
                 <div className="relative">
@@ -725,7 +731,7 @@ export default function StaffShop() {
                     !shop.shipTo ||
                     !shop.shipTo.hasPhone
                   }
-                  className={CHECKOUT_BUTTON}
+                  className={`${CHECKOUT_BUTTON} mt-3 w-full`}
                 >
                   ไปชำระเงิน
                 </button>
@@ -816,7 +822,7 @@ export default function StaffShop() {
                     !shop.shipTo ||
                     !shop.shipTo.hasPhone
                   }
-                  className={`${CHECKOUT_BUTTON} mt-0 w-auto shrink-0 px-6`}
+                  className={`${CHECKOUT_BUTTON} shrink-0`}
                 >
                   ไปชำระเงิน
                 </button>
