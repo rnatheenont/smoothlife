@@ -237,8 +237,17 @@ test("an order with no gift gets no tag at all", () => {
   assert.deepEqual(giftOrderTags([{ price: 679 }, { price: 1599 }]), []);
 });
 
-test("a paid line is never mistaken for a gift, even with a slug on it", () => {
-  assert.deepEqual(giftOrderTags([{ price: 10, promoSlug: "spend-1000" }]), []);
+test("a reward at a discount is tagged like any other", () => {
+  // Not every reward is free — a campaign can sell one at 30% off, and it is
+  // still that campaign's doing.
+  assert.deepEqual(giftOrderTags([{ price: 210, promoSlug: "spend-1000" }]), [
+    "free-gift",
+    "free-gift:spend-1000",
+  ]);
+});
+
+test("a plain paid line carries no campaign and no tag", () => {
+  assert.deepEqual(giftOrderTags([{ price: 679 }, { price: 1599 }]), []);
 });
 
 test("one campaign named twice is still one tag", () => {
@@ -322,4 +331,115 @@ test("no cap means every listed gift is handed over", () => {
     ],
   });
   assert.equal(giftLinesFrom([promo], basket, NONE, NOW, noCatalogue).length, 2);
+});
+
+// A reward is not always a giveaway, and is not always chosen for the shopper.
+
+test("a percentage reward is charged against its retail price", () => {
+  const promo = spendPromo({
+    minSubtotal: 1000,
+    discountType: "percentage",
+    discountValue: 70,
+    gifts: [{ variantId: "gid://shopify/ProductVariant/1", qty: 1, price: 300 }],
+  });
+  const [line] = giftLinesFrom([promo], basket, NONE, NOW, noCatalogue);
+  assert.equal(line.price, 90);
+});
+
+test("a fixed-price reward never costs more than the product does", () => {
+  const promo = spendPromo({
+    minSubtotal: 1000,
+    discountType: "fixed",
+    discountValue: 500,
+    gifts: [{ variantId: "gid://shopify/ProductVariant/1", qty: 1, price: 300 }],
+  });
+  assert.equal(giftLinesFrom([promo], basket, NONE, NOW, noCatalogue)[0].price, 300);
+});
+
+test("a priced reward we cannot price is left off the order", () => {
+  // Giving it away would hand over a product meant to be sold at a discount,
+  // and the cart refuses to show it for the same reason.
+  const promo = spendPromo({
+    minSubtotal: 1000,
+    discountType: "percentage",
+    discountValue: 50,
+    gifts: [{ variantId: "gid://shopify/ProductVariant/1", qty: 1 }],
+  });
+  assert.deepEqual(giftLinesFrom([promo], basket, NONE, NOW, noCatalogue), []);
+  // …unless the shelf can price it.
+  const priced = giftLinesFrom([promo], basket, NONE, NOW, noCatalogue, () => 200);
+  assert.equal(priced[0].price, 100);
+});
+
+test("a free reward needs no price at all", () => {
+  const promo = spendPromo({ minSubtotal: 1000 });
+  assert.equal(giftLinesFrom([promo], basket, NONE, NOW, noCatalogue)[0].price, 0);
+});
+
+test("a campaign the shopper chooses from gives nothing until they choose", () => {
+  const promo = spendPromo({
+    minSubtotal: 1000,
+    giftChoice: "customer",
+    maxGifts: 1,
+    gifts: [
+      { variantId: "gid://shopify/ProductVariant/1", qty: 1 },
+      { variantId: "gid://shopify/ProductVariant/2", qty: 1 },
+    ],
+  });
+  assert.deepEqual(giftLinesFrom([promo], basket, NONE, NOW, noCatalogue), []);
+
+  const picked = giftLinesFrom(
+    [promo],
+    basket,
+    NONE,
+    NOW,
+    noCatalogue,
+    undefined,
+    new Map([["spend-1000", ["gid://shopify/ProductVariant/2"]]]),
+  );
+  assert.deepEqual(
+    picked.map((l) => l.variantId),
+    ["gid://shopify/ProductVariant/2"],
+  );
+});
+
+test("a pick the campaign never offered is ignored", () => {
+  // The browser's claim can only ever narrow what the promo would have given.
+  const promo = spendPromo({
+    minSubtotal: 1000,
+    giftChoice: "customer",
+    gifts: [{ variantId: "gid://shopify/ProductVariant/1", qty: 1 }],
+  });
+  const lines = giftLinesFrom(
+    [promo],
+    basket,
+    NONE,
+    NOW,
+    noCatalogue,
+    undefined,
+    new Map([["spend-1000", ["gid://shopify/ProductVariant/999"]]]),
+  );
+  assert.deepEqual(lines, []);
+});
+
+test("the cap still applies to what the shopper picked", () => {
+  const promo = spendPromo({
+    minSubtotal: 1000,
+    giftChoice: "customer",
+    maxGifts: 1,
+    gifts: [
+      { variantId: "gid://shopify/ProductVariant/1", qty: 1 },
+      { variantId: "gid://shopify/ProductVariant/2", qty: 1 },
+    ],
+  });
+  const lines = giftLinesFrom(
+    [promo],
+    basket,
+    NONE,
+    NOW,
+    noCatalogue,
+    undefined,
+    new Map([["spend-1000", ["gid://shopify/ProductVariant/1", "gid://shopify/ProductVariant/2"]]]),
+  );
+  assert.equal(lines.length, 1);
 });

@@ -28,7 +28,14 @@ export type { CheckoutGiftLine };
 /**
  * @param lines the lines the server resolved, at the prices it resolved them to
  */
-export async function giftLinesForCheckout(lines: CartLine[]): Promise<CheckoutGiftLine[]> {
+export async function giftLinesForCheckout(
+  lines: CartLine[],
+  /** Which rewards the shopper picked, for campaigns that let them choose.
+   *  A claim from the browser, so it is checked against the campaign here
+   *  rather than trusted — it can only ever narrow what a promo would have
+   *  given, never add to it. */
+  chosen: Map<string, string[]> = new Map(),
+): Promise<CheckoutGiftLine[]> {
   if (!supabaseConfigured() || lines.length === 0) return [];
 
   let rows: FreeGiftPromoRow[];
@@ -44,8 +51,13 @@ export async function giftLinesForCheckout(lines: CartLine[]): Promise<CheckoutG
   }
 
   let stock = new Map<string, number | null>();
+  // What each reward sells for, for the campaigns that discount rather than
+  // give away. Read from the same shelf as the stock, in the same call.
+  let retail = new Map<string, number>();
   try {
-    stock = new Map((await freeGiftProducts()).map((g) => [g.variantId, g.stock]));
+    const shelf = await freeGiftProducts();
+    stock = new Map(shelf.map((g) => [g.variantId, g.stock]));
+    retail = new Map(shelf.map((g) => [g.variantId, g.price]));
   } catch (err) {
     // Unknown stock is not zero stock — the promo stands, the same way the
     // storefront treats it.
@@ -58,6 +70,8 @@ export async function giftLinesForCheckout(lines: CartLine[]): Promise<CheckoutG
     stock,
     Date.now(),
     (slug) => getProductBySlug(slug)?.variants[0]?.variantId,
+    (variantId) => retail.get(variantId),
+    chosen,
   );
 }
 

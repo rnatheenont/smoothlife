@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { giftLinesForCheckout } from "@/lib/checkout-gifts";
+import { giftLinesForCheckout, type CheckoutGiftLine } from "@/lib/checkout-gifts";
 import type { CartLine } from "@/data/coupons";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ ok: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
 
-  const { lines, shippingAddress, email, phone, couponCode } = body;
+  const { lines, shippingAddress, email, phone, couponCode, giftChoices } = body;
 
   // Checked here, not only in the form.
   //
@@ -174,6 +174,20 @@ export async function POST(req: NextRequest) {
   // browser — the cart shows them, and until the order carries them too the
   // "free" line the shopper saw was a promise nothing kept. They are priced at
   // zero, so they ride along without touching what is charged.
+  // Which rewards the shopper picked, for campaigns that let them choose. The
+  // browser's claim is narrowed against the campaign on the way through — it
+  // can only ever take fewer gifts than the promo offers, never different ones.
+  const chosen = new Map<string, string[]>();
+  if (giftChoices && typeof giftChoices === "object" && !Array.isArray(giftChoices)) {
+    for (const [slug, picks] of Object.entries(giftChoices as Record<string, unknown>)) {
+      if (typeof slug !== "string" || !Array.isArray(picks)) continue;
+      chosen.set(
+        slug,
+        picks.filter((v): v is string => typeof v === "string" && v.startsWith("gid://shopify/ProductVariant/")),
+      );
+    }
+  }
+
   const gifts = await giftLinesForCheckout(
     resolved.map((l) => ({
       slug: l.slug,
@@ -182,6 +196,7 @@ export async function POST(req: NextRequest) {
       brand: l.brand,
       category: l.category as CartLine["category"],
     })),
+    chosen,
   ).catch((err) => {
     console.error("[checkout/init] gift evaluation failed", err);
     return [];
@@ -190,7 +205,12 @@ export async function POST(req: NextRequest) {
   // The lines keep their real prices and the discount rides alongside them,
   // so the Shopify order can carry the code itself rather than a set of
   // quietly reduced prices no report can explain.
-  const amount = subtotal - discount + SHIPPING_FEE_THB;
+  // Rewards sold at a discount are part of what is charged; giveaways add
+  // nothing. Leaving them out of the total would charge the card less than
+  // the order says it is worth, and Shopify's order total is built from the
+  // same lines.
+  const giftTotal: number = (gifts as CheckoutGiftLine[]).reduce((sum, g) => sum + g.price * g.quantity, 0);
+  const amount = subtotal - discount + giftTotal + SHIPPING_FEE_THB;
   const invoiceNo = `CHKT${Date.now().toString(36).toUpperCase()}`.slice(0, 30);
 
   const [transaction] = await supabaseRest<{ id: string }[]>("payment_transactions", {
@@ -214,10 +234,13 @@ export async function POST(req: NextRequest) {
         // promoSlug rides along so the webhook can tag the Shopify order with
         // the campaign that paid for the gift — it is the only place that
         // knowledge still exists by then.
+        // The price comes from the rules, not a hard zero: a reward can be
+        // sold at a discount rather than given away, and the order has to
+        // charge what the cart showed.
         ...gifts.map((g) => ({
           variantId: g.variantId,
           quantity: g.quantity,
-          price: 0,
+          price: g.price,
           promoSlug: g.promoSlug,
         })),
       ],

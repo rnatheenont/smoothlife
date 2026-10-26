@@ -24,7 +24,7 @@ import { useLoginModal } from "@/lib/login-modal-context";
 // checkout-2c2p-plan.md milestone breakdown) — this page only ever
 // initiates the payment, never marks anything paid itself.
 export default function CustomCheckout() {
-  const { lines, couponQuote, clear } = useCart();
+  const { lines, couponQuote, clear, giftChoices } = useCart();
   const { user } = useAuth();
   const { open: openLogin } = useLoginModal();
   const { lang } = useLang();
@@ -120,6 +120,10 @@ export default function CustomCheckout() {
           // gift's real price — ฿950 for a "free" cleansing gel — and the app
           // that does grant gifts adds its own line at checkout anyway.
           lines: lines.filter((l) => !l.isGift).map((l) => ({ variantId: l.variantId, quantity: l.qty })),
+          // Which rewards the shopper picked, for the campaigns that let them.
+          // The server re-checks every pick against the campaign — this can
+          // only narrow what it would have granted, never widen it.
+          giftChoices,
           couponCode: applied ? applied.code : undefined,
           email: email.trim(),
           phone: phoneDigits,

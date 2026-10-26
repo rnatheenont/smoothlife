@@ -6,6 +6,7 @@ import type { CartProduct } from "@/data/cart-product";
 import { useAuth } from "@/lib/auth-context";
 import { CartLine } from "@/data/coupons";
 import { evaluateActiveFreeGifts, FreeGiftPromo, giftsOf } from "@/data/free-gifts";
+import { rewardPrice } from "@/lib/checkout-gifts-rules";
 import {
   buildLines,
   clampQty,
@@ -83,6 +84,17 @@ type CartContextValue = {
   couponQuote: CouponQuote | null;
   couponPending: boolean;
   giftPromos: FreeGiftPromo[];
+  /** Campaigns that ask the shopper to pick their reward, and the options. */
+  giftOffers: {
+    promoSlug: string;
+    titleTh: string;
+    titleEn: string;
+    max: number;
+    options: { variantId?: string; title?: string; image?: string | null; qty: number }[];
+    chosen: string[];
+  }[];
+  giftChoices: Record<string, string[]>;
+  chooseGift: (promoSlug: string, variantIds: string[]) => void;
   /** One of the products the cart has already fetched — the lines in it and
    *  the gifts the live promos give away. The gift widgets draw a picture
    *  and a name for those gifts; looking them up in the catalogue is what
@@ -96,11 +108,17 @@ export type CouponQuote =
 
 const CartContext = createContext<CartContextValue | null>(null);
 const CART_KEY = "sl_cart";
+const GIFT_CHOICE_KEY = "sl_gift_choices";
 const COUPON_KEY = "sl_coupon";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [couponCode, setCouponCodeState] = useState<string | null>(null);
+  /** Which rewards the shopper picked, by promo slug — only used by campaigns
+   *  that let them choose. Kept beside the cart because it is part of what
+   *  they are about to buy, and lost on reload it would silently empty the
+   *  gift they had already chosen. */
+  const [giftChoices, setGiftChoices] = useState<Record<string, string[]>>({});
   const [couponQuote, setCouponQuote] = useState<CouponQuote | null>(null);
   const [couponPending, setCouponPending] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -128,6 +146,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           .map((i) => ({ slug: i.slug, variantId: i.variantId ?? "", qty: i.qty, subscribeMonths: i.subscribeMonths }))
       );
       setCouponCodeState(localStorage.getItem(COUPON_KEY));
+      setGiftChoices(JSON.parse(localStorage.getItem(GIFT_CHOICE_KEY) || "{}"));
     } catch {
       setItems([]);
     }
@@ -326,13 +345,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }));
   const giftLineFor = giftLineFrom;
   /** A gift that lives only on Shopify's free-gift shelf — UNLISTED, so absent from our catalogue. */
-  function shopifyGiftLine(variantId: string, title: string | undefined, image: string | null | undefined, qty: number, giftPromoSlug: string) {
+  function shopifyGiftLine(
+    variantId: string,
+    title: string | undefined,
+    image: string | null | undefined,
+    qty: number,
+    giftPromoSlug: string,
+    /** What the shopper pays for it. Zero for a giveaway; a campaign can also
+     *  sell a reward at a discount, and then the cart has to show the figure
+     *  the checkout will charge. */
+    price = 0,
+  ) {
     return {
       slug: variantId,
       variantId,
       qty,
       name: (title ?? "ของแถม").replace(/^\s*(TEST\s*\|\s*)?\[Free Gift\]\s*/i, "").trim(),
-      price: 0,
+      price,
       image: image ?? "",
       compareAtPrice: undefined,
       brand: "",
@@ -362,12 +391,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const gone = (stock: number | null | undefined) => typeof stock === "number" && stock <= 0;
 
   const linesForGifts = (
-    source: Parameters<typeof giftsOf>[0],
+    source: Parameters<typeof giftsOf>[0] & {
+      discountType?: "free" | "percentage" | "fixed";
+      discountValue?: number;
+    },
     key: string,
     fallbackStock?: number | null,
+    promo?: FreeGiftPromo,
   ) => {
     const items = giftsOf(source);
-    return items.flatMap((item, i) => {
+    // A campaign the shopper chooses from shows only what they picked, and
+    // nothing until they do — same rule the checkout applies.
+    const picks = promo?.giftChoice === "customer" ? (giftChoices[promo.slug] ?? []) : null;
+    const cap = promo?.maxGifts;
+    const wanted = picks ? items.filter((i) => picks.includes(i.variantId ?? "")) : items;
+    const offered = typeof cap === "number" && cap > 0 ? wanted.slice(0, cap) : wanted;
+    // A tier prices its own reward; otherwise the campaign does.
+    const type = source.discountType ?? promo?.discountType;
+    const value = source.discountValue ?? promo?.discountValue;
+    return offered.flatMap((item, i) => {
       if (gone(item.stock ?? (items.length === 1 ? fallbackStock : undefined))) return [];
       // Keyed per gift, or two gifts from one promo collide on giftPromoSlug.
       const itemKey = items.length > 1 ? `${key}::gift-${i}` : key;
@@ -375,13 +417,49 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ? giftLineFrom(bySlug[item.productSlug], item.qty, itemKey)
         : null;
       if (fromCatalogue) return [fromCatalogue];
-      return item.variantId
-        ? [shopifyGiftLine(item.variantId, item.title, item.image, item.qty, itemKey)]
-        : [];
+      if (!item.variantId) return [];
+      const price = rewardPrice(item.price, type, value);
+      // A reward we cannot price is a reward the checkout will leave off the
+      // order; showing it here would be the promise-then-take-away again.
+      if (price === null) return [];
+      return [shopifyGiftLine(item.variantId, item.title, item.image, item.qty, itemKey, price)];
     });
   };
 
-  const giftLines = evaluateActiveFreeGifts(giftPromos, cartLinesForEval)
+  function chooseGift(promoSlug: string, variantIds: string[]) {
+    setGiftChoices((prev) => {
+      const next = { ...prev, [promoSlug]: variantIds };
+      try {
+        localStorage.setItem(GIFT_CHOICE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }
+
+  const evaluated = evaluateActiveFreeGifts(giftPromos, cartLinesForEval);
+
+  /** Campaigns that ask the shopper to pick, and what they may pick from.
+   *  Nothing from these lands in the cart until a choice is made, so the cart
+   *  has to offer the choice somewhere. */
+  const giftOffers = evaluated
+    .filter((e) => e.eligible && e.promo.giftChoice === "customer")
+    .map((e) => {
+      const sources = e.unlockedTiers?.length ? e.unlockedTiers : [e.promo];
+      const options = sources
+        .flatMap((src) => giftsOf(src))
+        .filter((g) => g.variantId && !gone(g.stock));
+      return {
+        promoSlug: e.promo.slug,
+        titleTh: e.promo.titleTh,
+        titleEn: e.promo.titleEn,
+        max: e.promo.maxGifts ?? options.length,
+        options,
+        chosen: giftChoices[e.promo.slug] ?? [],
+      };
+    })
+    .filter((o) => o.options.length > 0);
+
+  const giftLines = evaluated
     .filter((e) => e.eligible)
     .flatMap((e) => {
       if (e.unlockedTiers) {
@@ -389,14 +467,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // uniquely per tier so multiple tiers of the same promo don't
         // collide on giftPromoSlug.
         return e.unlockedTiers.flatMap((t) =>
-          linesForGifts(t, `${e.promo.slug}::tier-${t.tierIndex}`, t.giftStock),
+          linesForGifts(t, `${e.promo.slug}::tier-${t.tierIndex}`, t.giftStock, e.promo),
         );
       }
       // The gift usually lives on Shopify's free-gift shelf rather than in our
       // catalogue — every one of them is UNLISTED there — so the promo carries
       // its name and picture and the line is built from those. The catalogue
       // lookup stays for promos written before the shelf existed.
-      return linesForGifts(e.promo, e.promo.slug, e.promo.giftStock);
+      return linesForGifts(e.promo, e.promo.slug, e.promo.giftStock, e.promo);
     })
     .filter(Boolean) as CartContextValue["lines"];
   const linesWithGifts = [...lines, ...giftLines];
@@ -418,6 +496,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         couponQuote,
         couponPending,
         giftPromos,
+        giftOffers,
+        giftChoices,
+        chooseGift,
         productBySlug: (slug: string) => bySlug[slug],
       }}
     >

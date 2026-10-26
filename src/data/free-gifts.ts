@@ -25,6 +25,9 @@ export type FreeGiftItem = {
   title?: string;
   image?: string | null;
   stock?: number | null;
+  /** Retail price off the shelf. Only needed when the reward is a percentage
+   *  off or a fixed price rather than free. */
+  price?: number | null;
 };
 
 export type FreeGiftItemRow = {
@@ -44,6 +47,10 @@ export type FreeGiftTier = {
   giftQty: number;
   /** Several gifts at this tier. Overrides the single-gift fields above. */
   gifts?: FreeGiftItem[];
+  /** What this tier's reward costs, when it is not a giveaway. Falls back to
+   *  the promo's own setting. */
+  discountType?: "free" | "percentage" | "fixed";
+  discountValue?: number;
   shopifyDiscountId?: string; // one real Shopify discount per tier — see activate route
 };
 
@@ -108,6 +115,23 @@ export type FreeGiftPromo = {
   scopeCategories?: string[];
   /** Hand over at most this many of the listed gifts. Undefined means all. */
   maxGifts?: number;
+  /**
+   * Who puts the reward in the cart.
+   *
+   * "auto" is what this has always done. "customer" is the app's other mode:
+   * the shopper picks which of the listed rewards they want, up to maxGifts,
+   * and nothing lands until they do.
+   */
+  giftChoice?: "auto" | "customer";
+  /**
+   * What the reward costs.
+   *
+   * "free" is the only thing this table could say until now, and it is the
+   * first entry of a dropdown in the app, not the whole of it — a milestone
+   * can hand over a product at a percentage off or at a fixed price.
+   */
+  discountType?: "free" | "percentage" | "fixed";
+  discountValue?: number;
 };
 
 // Row shape as stored in the Supabase `free_gift_promos` table (snake_case) —
@@ -118,6 +142,8 @@ export type FreeGiftTierRow = {
   gift_variant_id?: string | null;
   gift_qty: number;
   gifts?: FreeGiftItemRow[] | null;
+  discount_type?: "free" | "percentage" | "fixed" | null;
+  discount_value?: number | null;
   shopify_discount_id: string | null;
 };
 
@@ -142,6 +168,9 @@ export type FreeGiftPromoRow = {
   gifts: FreeGiftItemRow[] | null;
   tier_mode: "cumulative" | "highest" | null;
   trigger_type: "cart-value" | "quantity" | null;
+  gift_choice: "auto" | "customer" | null;
+  discount_type: "free" | "percentage" | "fixed" | null;
+  discount_value: number | string | null;
   excluded_product_slugs: string[] | null;
   scope_brands: string[] | null;
   scope_categories: string[] | null;
@@ -151,7 +180,7 @@ export type FreeGiftPromoRow = {
 // Shared SELECT column list — used by both the public /api/free-gifts route
 // and the admin CRUD routes so they never silently drift out of sync.
 export const FREE_GIFT_COLUMNS =
-  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,trigger_type,excluded_product_slugs,scope_brands,scope_categories,max_gifts,created_at,updated_at";
+  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,trigger_type,excluded_product_slugs,scope_brands,scope_categories,max_gifts,gift_choice,discount_type,discount_value,created_at,updated_at";
 
 const toItems = (rows: FreeGiftItemRow[] | null | undefined): FreeGiftItem[] | undefined => {
   const list = (rows ?? [])
@@ -218,6 +247,8 @@ export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
           giftVariantId: t.gift_variant_id ?? undefined,
           giftQty: t.gift_qty,
           gifts: toItems(t.gifts),
+          discountType: t.discount_type ?? undefined,
+          discountValue: t.discount_value ?? undefined,
           shopifyDiscountId: t.shopify_discount_id ?? undefined,
         }))
       : undefined,
@@ -235,6 +266,10 @@ export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
     scopeBrands: row.scope_brands?.length ? row.scope_brands : undefined,
     scopeCategories: row.scope_categories?.length ? row.scope_categories : undefined,
     maxGifts: row.max_gifts ?? undefined,
+    giftChoice: row.gift_choice === "customer" ? "customer" : "auto",
+    discountType:
+      row.discount_type === "percentage" || row.discount_type === "fixed" ? row.discount_type : "free",
+    discountValue: Number(row.discount_value ?? 0) || 0,
   };
 }
 
@@ -258,6 +293,10 @@ export type FreeGiftEval = {
      *  over nothing: the fallback looks at the single-gift fields, which a
      *  tier written as a list leaves empty. */
     gifts?: FreeGiftItem[];
+    /** The tier's own reward pricing, carried so the checkout charges what
+     *  the cart showed. */
+    discountType?: "free" | "percentage" | "fixed";
+    discountValue?: number;
   }[];
 };
 
@@ -339,6 +378,8 @@ export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeG
         giftQty: t.giftQty,
         giftStock: t.giftStock,
         gifts: t.gifts,
+        discountType: t.discountType,
+        discountValue: t.discountValue,
       }));
     if (unlockedTiers.length > 0) {
       const allUnlocked = reached.length === sortedTiers.length;
