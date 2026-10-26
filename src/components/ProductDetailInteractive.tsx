@@ -876,18 +876,28 @@ export default function ProductDetailInteractive({
             <FreeGiftProgress scopedToSlug={product.slug} />
           </div>
 
-          <div className="grid grid-cols-3 gap-2 mt-6 text-xs text-slate-500">
-            <div className="flex flex-col items-center gap-1 rounded-lg bg-surface-soft p-3 text-center">
-              <Truck size={16} className="text-brand-emerald" /> ส่งฟรีทั่วไทย
-              ทุกออเดอร์
+          {/* Each phrase is split into units that may not break inside. "ออเดอร์"
+              is a loanword the browser's Thai dictionary does not know, so in a
+              cell this narrow it was cut as "ทุกอ / เดอร์"; the line may now only
+              break between the units. */}
+          <div className="grid grid-cols-3 gap-2 mt-6 text-xs text-slate-500 [&_span]:whitespace-nowrap">
+            <div className="flex flex-col items-center gap-1 rounded-lg bg-surface-soft px-2 py-3 text-center sm:px-3">
+              <Truck size={16} className="text-brand-emerald" />
+              <p>
+                <span>ส่งฟรีทั่วไทย</span> <span>ทุกออเดอร์</span>
+              </p>
             </div>
-            <div className="flex flex-col items-center gap-1 rounded-lg bg-surface-soft p-3 text-center">
-              <ShieldCheck size={16} className="text-brand-emerald" /> ของแท้
-              100% มีอย.
+            <div className="flex flex-col items-center gap-1 rounded-lg bg-surface-soft px-2 py-3 text-center sm:px-3">
+              <ShieldCheck size={16} className="text-brand-emerald" />
+              <p>
+                <span>ของแท้</span> <span>100% มีอย.</span>
+              </p>
             </div>
-            <div className="flex flex-col items-center gap-1 rounded-lg bg-surface-soft p-3 text-center">
-              <RotateCcw size={16} className="text-brand-emerald" />{" "}
-              คืนสินค้าได้ใน 14 วัน
+            <div className="flex flex-col items-center gap-1 rounded-lg bg-surface-soft px-2 py-3 text-center sm:px-3">
+              <RotateCcw size={16} className="text-brand-emerald" />
+              <p>
+                <span>คืนสินค้า</span> <span>ได้ใน 14 วัน</span>
+              </p>
             </div>
           </div>
 
