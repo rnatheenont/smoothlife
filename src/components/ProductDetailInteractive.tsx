@@ -39,7 +39,7 @@ import { subscribeBuyNow } from "@/lib/subscribe-checkout";
 import StarRating from "./StarRating";
 import { headlineRating as pickHeadlineRating } from "@/lib/product-rating";
 import MobileStickyBar from "./MobileStickyBar";
-import FreeGiftProgress from "./FreeGiftProgress";
+import FreeGiftTiles from "./FreeGiftTiles";
 import SubscriptionTermsInfo from "./SubscriptionTermsInfo";
 import SubscribeConsentDialog from "./SubscribeConsentDialog";
 import { useCart, useWishlist } from "@/lib/cart-context";
@@ -881,8 +881,9 @@ export default function ProductDetailInteractive({
             )}
           </div>
 
+          {/* The gift itself, not a panel about the gift. */}
           <div className="mt-6">
-            <FreeGiftProgress scopedToSlug={product.slug} />
+            <FreeGiftTiles scopedToSlug={product.slug} />
           </div>
 
           {/* Each phrase is split into units that may not break inside. "ออเดอร์"
