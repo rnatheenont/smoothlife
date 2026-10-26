@@ -268,3 +268,58 @@ test("two promos landing on one gift merge without losing either", () => {
   assert.equal(line.quantity, 2);
   assert.deepEqual(giftOrderTags([line]), ["free-gift", "free-gift:first", "free-gift:second"]);
 });
+
+// The app's campaign settings this table could not express until now:
+// exclusions, a scope, a threshold counted in items, and a cap on how many
+// of a milestone's gifts are handed over.
+
+test("an excluded product does not pay toward the threshold", () => {
+  // The live Free-gift-orders campaign excludes the very product it gives
+  // away, so the gift cannot trigger itself.
+  const promo = spendPromo({ minSubtotal: 1000, excludedProductSlugs: ["a"] });
+  assert.deepEqual(giftLinesFrom([promo], basket, NONE, NOW, noCatalogue), []);
+});
+
+test("a scope limits which lines count", () => {
+  const onlySmoothE = spendPromo({ minSubtotal: 1000, scopeBrands: ["Smooth E"] });
+  const onlyDentiste = spendPromo({ minSubtotal: 1000, scopeBrands: ["Dentiste"] });
+  assert.equal(giftLinesFrom([onlySmoothE], basket, NONE, NOW, noCatalogue).length, 1);
+  assert.deepEqual(giftLinesFrom([onlyDentiste], basket, NONE, NOW, noCatalogue), []);
+});
+
+test("a threshold can count items instead of baht", () => {
+  // The basket is 2 items worth ฿1,000. Counted as money it clears a ฿1,000
+  // threshold; counted as items it does not clear a threshold of 3.
+  const byItems = spendPromo({ triggerType: "quantity", minSubtotal: 3 });
+  assert.deepEqual(giftLinesFrom([byItems], basket, NONE, NOW, noCatalogue), []);
+  const reachable = spendPromo({ triggerType: "quantity", minSubtotal: 2 });
+  assert.equal(giftLinesFrom([reachable], basket, NONE, NOW, noCatalogue).length, 1);
+});
+
+test("maxGifts caps a milestone that lists more", () => {
+  const promo = spendPromo({
+    minSubtotal: 1000,
+    maxGifts: 2,
+    gifts: [
+      { variantId: "gid://shopify/ProductVariant/1", qty: 1 },
+      { variantId: "gid://shopify/ProductVariant/2", qty: 1 },
+      { variantId: "gid://shopify/ProductVariant/3", qty: 1 },
+    ],
+  });
+  const lines = giftLinesFrom([promo], basket, NONE, NOW, noCatalogue);
+  assert.deepEqual(
+    lines.map((l) => l.variantId),
+    ["gid://shopify/ProductVariant/1", "gid://shopify/ProductVariant/2"],
+  );
+});
+
+test("no cap means every listed gift is handed over", () => {
+  const promo = spendPromo({
+    minSubtotal: 1000,
+    gifts: [
+      { variantId: "gid://shopify/ProductVariant/1", qty: 1 },
+      { variantId: "gid://shopify/ProductVariant/2", qty: 1 },
+    ],
+  });
+  assert.equal(giftLinesFrom([promo], basket, NONE, NOW, noCatalogue).length, 2);
+});

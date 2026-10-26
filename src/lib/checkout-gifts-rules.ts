@@ -65,12 +65,18 @@ export function giftLinesFrom(
   // One promo can hand over several things — the ฿1,599 tier the shop runs
   // today gives four. Each is its own line, and each is checked against the
   // shelf on its own: one of them running out does not cancel the rest.
+  // A milestone can also be capped: the app's "gift limitation" hands over at
+  // most N of the things listed. Without it a tier listing four always gives
+  // four, which is a different campaign.
   const take = (
     out: CheckoutGiftLine[],
     source: Parameters<typeof giftsOf>[0],
     promoSlug: string,
+    limit?: number,
   ) => {
-    for (const item of giftsOf(source)) {
+    const items = giftsOf(source);
+    const allowed = typeof limit === "number" && limit > 0 ? items.slice(0, limit) : items;
+    for (const item of allowed) {
       const variantId = variantFor(item);
       if (!variantId || !inStock(variantId)) continue;
       out.push({ variantId, quantity: item.qty, price: 0, promoSlug });
@@ -84,12 +90,12 @@ export function giftLinesFrom(
 
     if (unlockedTiers?.length) {
       for (const tier of unlockedTiers) {
-        take(out, tier, `${promo.slug}::tier-${tier.tierIndex}`);
+        take(out, tier, `${promo.slug}::tier-${tier.tierIndex}`, promo.maxGifts);
       }
       continue;
     }
 
-    take(out, promo, promo.slug);
+    take(out, promo, promo.slug, promo.maxGifts);
   }
 
   // One line per variant. Two promos can land on the same gift, and an order

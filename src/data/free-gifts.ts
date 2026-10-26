@@ -90,6 +90,24 @@ export type FreeGiftPromo = {
    * ฿1,599 gifts and not the ฿699 ones.
    */
   tierMode?: "cumulative" | "highest";
+  /**
+   * Whether the threshold counts money or items.
+   *
+   * The app on Shopify offers both ("Total cart value" / "Product quantity")
+   * and a campaign written the second way cannot be expressed as the first:
+   * "any three items" is not a baht figure.
+   */
+  triggerType?: "cart-value" | "quantity";
+  /** Lines that do not count toward the threshold — the app's "Exclude
+   *  product" sub-condition. A gift must not pay for itself. */
+  excludedProductSlugs?: string[];
+  /** Only these brands count. Empty means the whole catalogue. Stands in for
+   *  the app's "Include collection", which this catalogue has no equivalent
+   *  of — our cart lines carry a brand and a category, not collections. */
+  scopeBrands?: string[];
+  scopeCategories?: string[];
+  /** Hand over at most this many of the listed gifts. Undefined means all. */
+  maxGifts?: number;
 };
 
 // Row shape as stored in the Supabase `free_gift_promos` table (snake_case) —
@@ -123,12 +141,17 @@ export type FreeGiftPromoRow = {
   gift_variant_id: string | null;
   gifts: FreeGiftItemRow[] | null;
   tier_mode: "cumulative" | "highest" | null;
+  trigger_type: "cart-value" | "quantity" | null;
+  excluded_product_slugs: string[] | null;
+  scope_brands: string[] | null;
+  scope_categories: string[] | null;
+  max_gifts: number | null;
 };
 
 // Shared SELECT column list — used by both the public /api/free-gifts route
 // and the admin CRUD routes so they never silently drift out of sync.
 export const FREE_GIFT_COLUMNS =
-  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,created_at,updated_at";
+  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,trigger_type,excluded_product_slugs,scope_brands,scope_categories,max_gifts,created_at,updated_at";
 
 const toItems = (rows: FreeGiftItemRow[] | null | undefined): FreeGiftItem[] | undefined => {
   const list = (rows ?? [])
@@ -207,6 +230,11 @@ export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
     giftVariantId: row.gift_variant_id ?? undefined,
     gifts: toItems(row.gifts),
     tierMode: row.tier_mode === "highest" ? "highest" : "cumulative",
+    triggerType: row.trigger_type === "quantity" ? "quantity" : "cart-value",
+    excludedProductSlugs: row.excluded_product_slugs ?? undefined,
+    scopeBrands: row.scope_brands?.length ? row.scope_brands : undefined,
+    scopeCategories: row.scope_categories?.length ? row.scope_categories : undefined,
+    maxGifts: row.max_gifts ?? undefined,
   };
 }
 
@@ -233,6 +261,48 @@ export type FreeGiftEval = {
   }[];
 };
 
+/**
+ * The lines that count toward this promo's threshold.
+ *
+ * Three of the app's sub-conditions live here. "Exclude product" keeps a gift
+ * from paying for itself — the live Free-gift-orders campaign excludes the
+ * very product it gives away, and without that a ฿1 threshold is met by the
+ * gift alone. "Include collection" narrows a campaign to part of the shop;
+ * our cart lines carry a brand and a category rather than collection
+ * membership, so the scope is written in those terms.
+ *
+ * An empty scope means the whole catalogue, which is what every promo written
+ * before this did.
+ */
+export function qualifyingLines(promo: FreeGiftPromo, lines: CartLine[]): CartLine[] {
+  const excluded = new Set(promo.excludedProductSlugs ?? []);
+  const brands = promo.scopeBrands ?? [];
+  const categories = promo.scopeCategories ?? [];
+  return lines.filter((l) => {
+    if (excluded.has(l.slug)) return false;
+    if (brands.length > 0 && !brands.includes(l.brand)) return false;
+    if (categories.length > 0 && !categories.includes(l.category)) return false;
+    return true;
+  });
+}
+
+/** What the threshold is measured in: baht, or items in the basket. */
+export function triggerAmount(promo: FreeGiftPromo, lines: CartLine[]): number {
+  const counted = qualifyingLines(promo, lines);
+  return promo.triggerType === "quantity"
+    ? counted.reduce((n, l) => n + l.qty, 0)
+    : counted.reduce((sum, l) => sum + l.price * l.qty, 0);
+}
+
+/** How a threshold is written out, so the progress text does not promise baht
+ *  to a campaign counted in bottles. */
+export function formatTrigger(promo: FreeGiftPromo, amount: number, en = false): string {
+  if (promo.triggerType === "quantity") {
+    return en ? `${amount} item${amount === 1 ? "" : "s"}` : `${amount} ชิ้น`;
+  }
+  return `฿${amount.toLocaleString()}`;
+}
+
 export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeGiftEval {
   if (!promo.active) return { promo, eligible: false, reasonTh: "", reasonEn: "" };
   // A campaign can be written today and start on a date, rather than waiting
@@ -249,7 +319,7 @@ export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeG
   }
 
   if (promo.kind === "tiered") {
-    const subtotal = lines.reduce((sum, l) => sum + l.price * l.qty, 0);
+    const subtotal = triggerAmount(promo, lines);
     const sortedTiers = [...(promo.tiers ?? [])].sort((a, b) => a.minSubtotal - b.minSubtotal);
     const reached = sortedTiers
       .map((t, tierIndex) => ({ t, tierIndex }))
@@ -280,8 +350,8 @@ export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeG
       return {
         promo,
         eligible: true,
-        reasonTh: `ปลดล็อกแล้ว ${reached.length}/${sortedTiers.length} ระดับ — ซื้อเพิ่มอีก ฿${missing.toLocaleString()} รับระดับถัดไป`,
-        reasonEn: `${reached.length}/${sortedTiers.length} tiers unlocked — spend ฿${missing.toLocaleString()} more for the next tier`,
+        reasonTh: `ปลดล็อกแล้ว ${reached.length}/${sortedTiers.length} ระดับ — ซื้อเพิ่มอีก ${formatTrigger(promo, missing)} รับระดับถัดไป`,
+        reasonEn: `${reached.length}/${sortedTiers.length} tiers unlocked — ${formatTrigger(promo, missing, true)} more for the next tier`,
         unlockedTiers,
       };
     }
@@ -290,13 +360,13 @@ export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeG
     return {
       promo,
       eligible: false,
-      reasonTh: `ซื้อเพิ่มอีก ฿${missing.toLocaleString()} เพื่อปลดล็อกระดับแรก`,
-      reasonEn: `Spend ฿${missing.toLocaleString()} more to unlock the first tier`,
+      reasonTh: `ซื้อเพิ่มอีก ${formatTrigger(promo, missing)} เพื่อปลดล็อกระดับแรก`,
+      reasonEn: `${formatTrigger(promo, missing, true)} more to unlock the first tier`,
     };
   }
 
   if (promo.kind === "spend") {
-    const subtotal = lines.reduce((sum, l) => sum + l.price * l.qty, 0);
+    const subtotal = triggerAmount(promo, lines);
     if (subtotal >= (promo.minSubtotal ?? Infinity)) {
       return { promo, eligible: true, reasonTh: `รับฟรี ${promo.titleTh}`, reasonEn: `You unlocked ${promo.titleEn}` };
     }
@@ -304,13 +374,16 @@ export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeG
     return {
       promo,
       eligible: false,
-      reasonTh: `ซื้อเพิ่มอีก ฿${missing.toLocaleString()} เพื่อรับของแถมฟรี`,
-      reasonEn: `Spend ฿${missing.toLocaleString()} more to unlock a free gift`,
+      reasonTh: `ซื้อเพิ่มอีก ${formatTrigger(promo, missing)} เพื่อรับของแถมฟรี`,
+      reasonEn: `${formatTrigger(promo, missing, true)} more to unlock a free gift`,
     };
   }
 
-  const qtyInCart = lines
-    .filter((l) => (promo.buyProductSlugs ?? []).includes(l.slug))
+  // "Buy X get Y", and the app's "Gift with quantity purchase" when the buy
+  // list is empty: then any item counts and only the number matters.
+  const buyList = promo.buyProductSlugs ?? [];
+  const qtyInCart = qualifyingLines(promo, lines)
+    .filter((l) => buyList.length === 0 || buyList.includes(l.slug))
     .reduce((sum, l) => sum + l.qty, 0);
   if (qtyInCart >= (promo.buyQty ?? Infinity)) {
     return { promo, eligible: true, reasonTh: `รับฟรี ${promo.titleTh}`, reasonEn: `You unlocked ${promo.titleEn}` };
