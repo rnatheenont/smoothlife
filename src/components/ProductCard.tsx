@@ -328,13 +328,12 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
                   // Sized to its label, the button grew 21px the moment it
                   // turned into "เพิ่มแล้ว", which shifted the pill sideways
                   // just as the eye went to read it. flex-1 used to hide that.
-                  // The drifting gradient needs a background wider than the
-                  // button (bg-[length:200%_100%]) or there is nowhere for the
-                  // position to travel. Confirmation stays flat: "เพิ่มแล้ว" is
-                  // a state, and a state that keeps moving reads as still busy.
-                  added
-                    ? "bg-brand-emerald"
-                    : "bg-brand-gradient bg-[length:200%_100%] hover:animate-gradientPan hover:brightness-105"
+                  // Solid and dark, not the brand gradient: white 13px bold on
+                  // the gradient's green-to-sky run is 2.5-3.0:1, under the 4.5:1
+                  // that text this size needs. brand-800 is 5.65:1, and
+                  // confirmation steps one shade darker (9.18:1) so the state
+                  // still reads as a change.
+                  added ? "bg-brand-1000" : "bg-brand-800 hover:bg-brand-1000"
                 )}
               >
                 {added ? <Check size={16} strokeWidth={2.75} /> : <ShoppingCart size={17} className="@[11rem]:hidden" />}

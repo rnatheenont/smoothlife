@@ -203,7 +203,8 @@ export default function FlashSaleCard({ product }: { product: ProductCardData })
                 // the pill does not step sideways when it becomes "เพิ่มแล้ว".
                 // See the note there for why the padding is px-4 and not px-1
                 // once the button stops stretching.
-                added ? "bg-brand-emerald" : "bg-brand-emerald hover:brightness-105"
+                // brand-emerald under white text is 3.05:1; brand-800 is 5.65:1.
+                added ? "bg-brand-1000" : "bg-brand-800 hover:bg-brand-1000"
               )}
             >
               {added ? <Check size={15} strokeWidth={2.75} /> : <ShoppingCart size={16} className="md:hidden" />}
