@@ -126,7 +126,7 @@ export default function FlashSaleCard({ product }: { product: ProductCardData })
             className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-500"
             style={{ width: `${pct ?? 100}%`, background: FLASH_RED }}
           />
-          <span className="absolute inset-0 grid place-items-center text-[10px] font-bold text-white">
+          <span className="absolute inset-0 grid place-items-center text-[11px] font-bold text-white">
             {t(`ขายแล้ว ${sold}`, `${sold} sold`)}
           </span>
         </div>
@@ -149,19 +149,19 @@ export default function FlashSaleCard({ product }: { product: ProductCardData })
               {formatTHB(product.price)}
             </span>
             {product.reviewCount > 0 && (
-              <span translate="no" className="flex items-center gap-1 text-[11px] tabular-nums text-slate-500">
-                <Star size={11} className="shrink-0 fill-amber-400 text-amber-400" />
+              <span translate="no" className="flex items-center gap-1 text-xs tabular-nums text-slate-500">
+                <Star size={12} className="shrink-0 fill-amber-400 text-amber-400" />
                 <span className="font-semibold text-slate-700">{product.rating.toFixed(1)}</span>({product.reviewCount})
               </span>
             )}
           </div>
           {product.compareAtPrice && (
             <span className="flex flex-wrap items-center gap-1">
-              <span className="text-[11px] tabular-nums text-slate-500 line-through">
+              <span className="text-xs tabular-nums text-slate-500 line-through">
                 {formatTHB(product.compareAtPrice)}
               </span>
               {discount > 0 && (
-                <span className="rounded-full bg-brand-ink px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                <span className="rounded-full bg-brand-ink px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
                   {discount}%
                 </span>
               )}
