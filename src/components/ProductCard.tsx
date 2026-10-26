@@ -158,7 +158,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
               {cardBadgeChips(product.badges, promoChip).map((label) => (
                 <span
                   key={label}
-                  className="rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-brand-ink ring-1 ring-surface-line"
+                  className="rounded-full bg-white/95 px-2 py-0.5 text-xs font-semibold text-brand-ink ring-1 ring-surface-line"
                 >
                   {badgeLabel[label] ?? label}
                 </span>
@@ -199,10 +199,16 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
               a 166px card has inside its padding. Two pixels is not a margin
               to trust, so the line the chip sits on wraps rather than pushes:
               a longer price makes the card a line taller instead of printing
-              the chip over the star, which is what five stars did here. */}
+              the chip over the star, which is what five stars did here.
+
+              Those widths were taken at 11px. The small text is 12px now (11px
+              for the chip), which is a few pixels wider each, so on a 166-173px
+              card the chip line wraps a little more often. That is the line
+              doing what it was written to do; it costs the card up to a row of
+              height, not an overlap. */}
           <div className="mt-auto flex flex-col items-start gap-1 pt-1.5 @[10rem]:flex-row @[10rem]:items-end @[10rem]:justify-between @[13rem]:gap-2">
             <div className="min-w-0">
-              {hasMultiplePrices && <span className="block text-[11px] text-slate-500">เริ่มต้น</span>}
+              {hasMultiplePrices && <span className="block text-xs text-slate-500">เริ่มต้น</span>}
               {/* 13rem is where this card already loosens everything else —
                   the badge padding and the row gaps above use the same line,
                   so the price steps up with them rather than on its own. */}
@@ -211,7 +217,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
               </span>
               {product.compareAtPrice && (
                 <span className="flex flex-wrap items-center gap-1 @[13rem]:gap-1.5">
-                  <span className="text-[11px] tabular-nums text-slate-500 line-through">
+                  <span className="text-xs tabular-nums text-slate-500 line-through">
                     {formatTHB(product.compareAtPrice)}
                   </span>
                   {discount > 0 && (
@@ -219,7 +225,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
                     // moved next to the price it is taken from — in the photo's
                     // corner it was a number with nothing beside it to be a
                     // percentage of.
-                    <span className="rounded-full bg-sale px-1 py-0.5 text-[10px] font-bold leading-none text-white @[13rem]:px-1.5">
+                    <span className="rounded-full bg-sale px-1 py-0.5 text-[11px] font-bold leading-none text-white @[13rem]:px-1.5">
                       -{discount}%
                     </span>
                   )}
@@ -237,19 +243,19 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
                 // it was a picture 70px long that still needed the count
                 // written beside it to mean anything. "4.8 (399)" is the same
                 // sentence in a third of the room.
-                <span translate="no" className="flex items-center gap-1 text-[11px] tabular-nums text-slate-500">
-                  <Star size={11} className="shrink-0 fill-amber-400 text-amber-400" />
+                <span translate="no" className="flex items-center gap-1 text-xs tabular-nums text-slate-500">
+                  <Star size={12} className="shrink-0 fill-amber-400 text-amber-400" />
                   <span className="font-semibold text-slate-700">{product.rating.toFixed(1)}</span>({product.reviewCount})
                 </span>
               )}
               {lowStock && (
-                <span className="whitespace-nowrap text-[11px] font-semibold text-amber-700">
+                <span className="whitespace-nowrap text-xs font-semibold text-amber-700">
                   เหลือเพียง {product.quantity} ชิ้น
                 </span>
               )}
               {showSold && (
-                <span translate="no" className="flex items-center gap-1 text-[11px] text-slate-500">
-                  <Flame size={11} className="shrink-0 text-orange-500" />
+                <span translate="no" className="flex items-center gap-1 text-xs text-slate-500">
+                  <Flame size={12} className="shrink-0 text-orange-500" />
                   {lang === "en" ? (
                     <>
                       <span className="font-semibold text-slate-700">{formatSold(product.sold!, lang)}</span> sold
