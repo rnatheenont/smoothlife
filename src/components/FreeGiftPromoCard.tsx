@@ -52,9 +52,19 @@ export default function FreeGiftPromoCard({ config }: { config?: PromoCardConfig
   const cards = active.slice(0, maxCards);
   const en = lang === "en";
 
+  // The row is as wide as there are cards. Four columns with three promos in
+  // them left a quarter of the row empty, which reads as a card that failed
+  // to load rather than as a deliberate end.
+  const columns =
+    { 1: "md:grid-cols-1", 2: "md:grid-cols-2", 3: "md:grid-cols-3" }[cards.length] ?? "md:grid-cols-4";
+
   return (
-    <div className="my-6 grid grid-cols-2 gap-3 md:my-8 md:grid-cols-4 md:gap-4">
-      {cards.map((promo) => {
+    <div className={`my-6 grid grid-cols-2 gap-3 md:my-8 md:gap-4 ${columns}`}>
+      {cards.map((promo, i) => {
+        // An odd number of cards leaves the last one alone in a two-column
+        // phone grid, half-width beside nothing. It takes the whole row
+        // instead.
+        const lastOdd = cards.length % 2 === 1 && i === cards.length - 1;
         // The gift's own photograph, wherever it is written down. This used
         // to read giftProductSlug and nothing else — the field every promo
         // currently running leaves empty — so the cards were grey rectangles
@@ -68,7 +78,9 @@ export default function FreeGiftPromoCard({ config }: { config?: PromoCardConfig
             key={promo.slug}
             href="/cart"
             aria-label={title}
-            className="group relative flex aspect-4/3 flex-col justify-end overflow-hidden rounded-xl2 bg-brand-dark shadow-card transition-shadow hover:shadow-cardHover"
+            className={`group relative flex aspect-4/3 flex-col justify-end overflow-hidden rounded-xl2 bg-brand-dark shadow-card transition-shadow hover:shadow-cardHover ${
+              lastOdd ? "col-span-2 aspect-[16/7] md:col-span-1 md:aspect-4/3" : ""
+            }`}
           >
             {face?.image ? (
               <Image
