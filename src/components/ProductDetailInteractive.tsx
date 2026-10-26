@@ -714,7 +714,13 @@ export default function ProductDetailInteractive({
             )}
 
             {purchaseMode === "once" ? (
-              <div className="flex items-center gap-3 mt-3">
+              // Container query, not a breakpoint: this column is 344px wide at
+              // 768 (two-column layout) and 358px on a phone, and in both the
+              // qty + heart + share leave the add button ~100px — a pill that
+              // wraps "เพิ่มลงตะกร้า" onto three lines. Below 27rem the button
+              // takes its own full-width line under the qty / heart / share row.
+              <div className="@container mt-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center border border-slate-200 rounded-full">
                   <button
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
@@ -748,7 +754,7 @@ export default function ProductDetailInteractive({
                   onClick={handleAdd}
                   disabled={!selectedVariant.inStock}
                   size="lg"
-                  className="flex-1"
+                  className="order-last w-full whitespace-nowrap @[27rem]:order-none @[27rem]:w-auto @[27rem]:flex-1"
                 >
                   {added ? (
                     <CheckCircle2 size={16} />
@@ -761,6 +767,7 @@ export default function ProductDetailInteractive({
                       ? "เพิ่มลงตะกร้า"
                       : "สินค้าหมด"}
                 </Button>
+                <div className="ml-auto flex items-center gap-3 @[27rem]:ml-0">
                 <button
                   onClick={() => toggle(product.slug)}
                   className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-slate-200"
@@ -776,6 +783,8 @@ export default function ProductDetailInteractive({
                   />
                 </button>
                 <ProductShare name={product.name} />
+                </div>
+              </div>
               </div>
             ) : (
               <div className="mt-3 rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-4">
