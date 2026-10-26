@@ -210,6 +210,11 @@ export type FreeGiftEval = {
     giftTitle?: string;
     giftImage?: string | null;
     giftQty: number;
+    /** The tier's own list, carried through so the cart and the checkout can
+     *  read it with giftsOf. Left out, a tier that lists its gifts here hands
+     *  over nothing: the fallback looks at the single-gift fields, which a
+     *  tier written as a list leaves empty. */
+    gifts?: FreeGiftItem[];
   }[];
 };
 
@@ -247,6 +252,7 @@ export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeG
         giftTitle: t.giftTitle,
         giftImage: t.giftImage,
         giftQty: t.giftQty,
+        gifts: t.gifts,
       }));
     if (unlockedTiers.length > 0) {
       const allUnlocked = reached.length === sortedTiers.length;

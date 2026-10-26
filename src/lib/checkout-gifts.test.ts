@@ -130,6 +130,69 @@ test("one gift out of stock does not cancel the rest", () => {
   );
 });
 
+// A tier that lists its gifts handed over nothing, because the list was not
+// carried into the unlocked-tier shape and the fallback found two empty
+// single-gift fields. The shop's ฿699 tier is written exactly this way.
+test("a tier that lists its gifts hands them over", () => {
+  const ladder: FreeGiftPromo = {
+    slug: "ladder",
+    active: true,
+    titleTh: "บันได",
+    titleEn: "Ladder",
+    kind: "tiered",
+    giftProductSlug: "",
+    giftQty: 1,
+    displayOnly: false,
+    tierMode: "highest",
+    tiers: [
+      {
+        minSubtotal: 500,
+        giftProductSlug: "",
+        giftQty: 1,
+        gifts: [
+          { variantId: "gid://shopify/ProductVariant/1", qty: 1 },
+          { variantId: "gid://shopify/ProductVariant/2", qty: 1 },
+        ],
+      },
+      {
+        minSubtotal: 5000,
+        giftProductSlug: "",
+        giftQty: 1,
+        gifts: [{ variantId: "gid://shopify/ProductVariant/3", qty: 1 }],
+      },
+    ],
+  };
+  const lines = giftLinesFrom([ladder], basket, NONE, NOW, noCatalogue);
+  assert.deepEqual(
+    lines.map((l) => l.variantId),
+    ["gid://shopify/ProductVariant/1", "gid://shopify/ProductVariant/2"],
+  );
+});
+
+// The app the shop runs pays the top tier reached and nothing under it.
+test("tierMode highest pays only the tier reached, not the ones below", () => {
+  const ladder: FreeGiftPromo = {
+    slug: "ladder",
+    active: true,
+    titleTh: "บันได",
+    titleEn: "Ladder",
+    kind: "tiered",
+    giftProductSlug: "",
+    giftQty: 1,
+    displayOnly: false,
+    tierMode: "highest",
+    tiers: [
+      { minSubtotal: 500, giftProductSlug: "", giftQty: 1, gifts: [{ variantId: "low", qty: 1 }] },
+      { minSubtotal: 900, giftProductSlug: "", giftQty: 1, gifts: [{ variantId: "high", qty: 1 }] },
+    ],
+  };
+  const lines = giftLinesFrom([ladder], basket, NONE, NOW, noCatalogue);
+  assert.deepEqual(
+    lines.map((l) => l.variantId),
+    ["high"],
+  );
+});
+
 test("every line it returns is free", () => {
   for (const line of giftLinesFrom([spendPromo()], basket, NONE, NOW, noCatalogue)) {
     assert.equal(line.price, 0);
