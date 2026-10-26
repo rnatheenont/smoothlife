@@ -131,6 +131,10 @@ type ShopifyOrder = {
   total: string;
   currency: string;
   fulfillmentStatus: string | null;
+  financialStatus: string | null;
+  /** Set only when the order was cancelled outright — it overrules both of
+   *  the statuses above, which keep reporting whatever they said last. */
+  cancelledAt: string | null;
   trackingNumbers: string[];
   items: string[];
 };
@@ -223,6 +227,30 @@ const baht = (value: unknown) => formatTHB(Number(value) || 0);
 
 /** A tone for a status word, so a row reads at a glance. Anything unknown
  *  stays neutral rather than guessing a colour for it. */
+/** Shopify says FULFILLED, PARTIALLY_REFUNDED and so on. Support reads this
+ *  table in Thai, and SHOUTED ENGLISH is not a status anyone here reads at a
+ *  glance. Anything unrecognised is shown as it came, rather than hidden. */
+const SHIPPING_TH: Record<string, string> = {
+  FULFILLED: "ส่งแล้ว",
+  UNFULFILLED: "ยังไม่ส่ง",
+  PARTIALLY_FULFILLED: "ส่งบางส่วน",
+  IN_PROGRESS: "กำลังจัดส่ง",
+  ON_HOLD: "พักไว้",
+  SCHEDULED: "นัดส่ง",
+  RESTOCKED: "คืนสต็อกแล้ว",
+};
+
+const PAYMENT_TH: Record<string, string> = {
+  PAID: "จ่ายแล้ว",
+  PENDING: "รอชำระ",
+  AUTHORIZED: "กันวงเงินไว้",
+  PARTIALLY_PAID: "จ่ายบางส่วน",
+  REFUNDED: "คืนเงินแล้ว",
+  PARTIALLY_REFUNDED: "คืนเงินบางส่วน",
+  VOIDED: "ยกเลิกการชำระ",
+  EXPIRED: "หมดอายุ",
+};
+
 function statusTone(
   status: unknown,
 ): "success" | "warning" | "danger" | "neutral" {
@@ -1114,11 +1142,24 @@ function OrdersTab({
                 },
                 {
                   head: "สถานะ",
-                  cell: (o) => (
-                    <Badge tone={statusTone(o.fulfillmentStatus)}>
-                      {o.fulfillmentStatus || "—"}
-                    </Badge>
-                  ),
+                  className: "whitespace-nowrap",
+                  // Two facts, not one: did they pay, and did it ship. A
+                  // cancelled order says so instead, because the other two
+                  // keep reporting whatever they said the moment before it
+                  // was called off.
+                  cell: (o) =>
+                    o.cancelledAt ? (
+                      <Badge tone="danger">ยกเลิกแล้ว</Badge>
+                    ) : (
+                      <span className="flex flex-wrap items-center gap-1">
+                        <Badge tone={statusTone(o.financialStatus)}>
+                          {PAYMENT_TH[o.financialStatus ?? ""] ?? o.financialStatus ?? "—"}
+                        </Badge>
+                        <Badge tone={statusTone(o.fulfillmentStatus)}>
+                          {SHIPPING_TH[o.fulfillmentStatus ?? ""] ?? o.fulfillmentStatus ?? "—"}
+                        </Badge>
+                      </span>
+                    ),
                 },
                 { head: "รายการ", cell: (o) => o.items.join(", ") || "—" },
                 {

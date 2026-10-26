@@ -61,6 +61,11 @@ export async function GET(req: NextRequest) {
       total: o.total,
       currency: o.currency,
       fulfillmentStatus: o.fulfillmentStatus,
+      // Whether the money arrived, and whether the order still stands. The
+      // list showed only whether it had shipped, which answers none of the
+      // questions support is actually asked about an order.
+      financialStatus: o.financialStatus,
+      cancelledAt: o.cancelledAt,
       trackingNumbers: o.trackingNumbers,
       items: o.items.map((i) => `${i.title} x${i.quantity}`),
     })),
