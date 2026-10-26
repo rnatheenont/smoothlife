@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { giftLinesForCheckout } from "@/lib/checkout-gifts";
+import type { CartLine } from "@/data/coupons";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { products } from "@/data/products";
@@ -168,6 +170,23 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // The gifts this basket has earned, decided here rather than taken from the
+  // browser — the cart shows them, and until the order carries them too the
+  // "free" line the shopper saw was a promise nothing kept. They are priced at
+  // zero, so they ride along without touching what is charged.
+  const gifts = await giftLinesForCheckout(
+    resolved.map((l) => ({
+      slug: l.slug,
+      qty: l.quantity,
+      price: l.price,
+      brand: l.brand,
+      category: l.category as CartLine["category"],
+    })),
+  ).catch((err) => {
+    console.error("[checkout/init] gift evaluation failed", err);
+    return [];
+  });
+
   // The lines keep their real prices and the discount rides alongside them,
   // so the Shopify order can carry the code itself rather than a set of
   // quietly reduced prices no report can explain.
@@ -187,7 +206,13 @@ export async function POST(req: NextRequest) {
       // is the number support reads back and the courier dials.
       contact_phone: phoneDigits,
       shipping_address: shippingAddress,
-      line_items: resolved.map((l) => ({ variantId: l.variantId, quantity: l.quantity, price: l.price })),
+      // The gifts go in here, because this column is what the webhook hands
+      // to createPaidShopifyOrder once the payment lands. Nothing downstream
+      // has to learn about gifts; the order simply has them.
+      line_items: [
+        ...resolved.map((l) => ({ variantId: l.variantId, quantity: l.quantity, price: l.price })),
+        ...gifts.map((g) => ({ variantId: g.variantId, quantity: g.quantity, price: 0 })),
+      ],
       discount_code: appliedCode,
       discount_amount: discount,
       ...attributionColumns(req.cookies.get(ATTRIBUTION_COOKIE)?.value),

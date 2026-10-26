@@ -1,4 +1,4 @@
-import { Category } from "./types";
+import type { Category } from "./types.ts";
 
 // What the cart knows about a line. Coupons themselves — the codes, the
 // rules, the arithmetic — live in Shopify now (see lib/shopify-discounts),

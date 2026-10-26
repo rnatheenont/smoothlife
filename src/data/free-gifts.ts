@@ -1,4 +1,4 @@
-import { CartLine } from "./coupons";
+import type { CartLine } from "./coupons.ts";
 
 // Real Shopify Automatic Discount is what actually zeroes the gift's price
 // at checkout — this file only computes eligibility/progress text for the
