@@ -5,7 +5,7 @@ import { useRef, useState, useEffect } from "react";
 import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
 import Image from "next/image";
-import { Minus, Plus, Trash2, Award, Ticket, Repeat, Gift } from "lucide-react";
+import { Minus, Plus, Trash2, Award, Ticket, Repeat, Gift, Check } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLoginModal } from "@/lib/login-modal-context";
@@ -29,7 +29,8 @@ import ProductCard from "@/components/ProductCard";
  * the one thing a cart must never do is change on the day it moves.
  */
 export default function CartView() {
-  const { lines, updateQty, removeItem, changeVariant, productBySlug } = useCart();
+  const { lines, updateQty, removeItem, changeVariant, productBySlug, giftOffers, chooseGift } =
+    useCart();
   const { open: openLogin } = useLoginModal();
   const { user } = useAuth();
   const { lang, t } = useLang();
@@ -74,6 +75,17 @@ export default function CartView() {
   // chose — and the total — most of a screen further down. Nothing here can
   // be changed, removed or paid for; it only has to be recognised.
   const giftLines = lines.filter((l) => l.isGift);
+
+  /** Tick a reward on or off, keeping within what the campaign allows. Past
+   *  the cap the oldest pick makes way, so the control never dead-ends with
+   *  nothing to explain why the next tap does nothing. */
+  const togglePick = (offer: (typeof giftOffers)[number], variantId: string) => {
+    const has = offer.chosen.includes(variantId);
+    const next = has
+      ? offer.chosen.filter((v) => v !== variantId)
+      : [...offer.chosen, variantId].slice(-Math.max(1, offer.max));
+    chooseGift(offer.promoSlug, next);
+  };
 
   if (lines.length === 0) {
     return (
@@ -275,6 +287,65 @@ export default function CartView() {
               <div className="divide-y divide-slate-100">{normalLines.map(renderLine)}</div>
             </section>
           )}
+
+          {/* Some campaigns ask the shopper to pick rather than choosing for
+              them. Nothing from those lands in the cart until they do, so the
+              choice has to be offered where the gifts are. */}
+          {giftOffers.map((offer) => (
+            <section
+              key={offer.promoSlug}
+              className="overflow-hidden rounded-2xl bg-white shadow-card"
+            >
+              <h2 className="flex flex-wrap items-center gap-2 bg-brand-gradient-soft px-4 py-2.5 font-bold text-brand-ink">
+                <Gift size={17} className="text-brand-emerald" />
+                {lang === "en" ? offer.titleEn : offer.titleTh}
+                <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-bold text-brand-800">
+                  {t(`เลือกได้ ${offer.max} ชิ้น`, `pick ${offer.max}`)}
+                </span>
+                <span className="text-[11px] font-normal text-slate-500">
+                  {t(`เลือกแล้ว ${offer.chosen.length}`, `${offer.chosen.length} chosen`)}
+                </span>
+              </h2>
+              <ul className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-4">
+                {offer.options.map((option) => {
+                  const picked = offer.chosen.includes(option.variantId ?? "");
+                  return (
+                    <li key={option.variantId}>
+                      <button
+                        type="button"
+                        aria-pressed={picked}
+                        onClick={() => togglePick(offer, option.variantId ?? "")}
+                        className={`flex w-full items-center gap-2 rounded-xl p-2 text-left ring-1 transition ${
+                          picked
+                            ? "bg-brand-gradient-soft ring-brand-teal"
+                            : "bg-surface-soft ring-transparent hover:ring-surface-line"
+                        }`}
+                      >
+                        <span className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-white">
+                          {option.image && (
+                            <Image src={option.image} alt="" fill sizes="44px" className="object-contain" />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1 text-[11px] font-semibold leading-tight text-brand-ink">
+                          <span className="line-clamp-2">
+                            {(option.title ?? "").replace(/^\s*(TEST\s*\|\s*)?\[Free Gift\]\s*/i, "").trim()}
+                          </span>
+                        </span>
+                        <span
+                          aria-hidden
+                          className={`grid size-5 shrink-0 place-items-center rounded-full text-white ${
+                            picked ? "bg-brand-gradient" : "bg-slate-200"
+                          }`}
+                        >
+                          {picked ? <Check size={12} /> : null}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
 
           {giftLines.length > 0 && (
             <section className="overflow-hidden rounded-2xl bg-brand-gradient-soft shadow-card">
