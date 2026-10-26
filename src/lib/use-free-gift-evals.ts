@@ -17,9 +17,18 @@ export function useFreeGiftEvals(scopedToSlug?: string): FreeGiftEval[] {
     .filter((l) => !l.isGift)
     .map((l) => ({ slug: l.slug, qty: l.qty, price: l.price, brand: l.brand, category: l.category as CartLine["category"] }));
 
+  // A promo nobody can reach from this page is noise on it; a promo this page
+  // is a step toward is the opposite. "Spend ฿990" is reached by buying
+  // anything at all, so it belongs on every product page — leaving it out is
+  // what made the product pages silent about the only kind of promo the shop
+  // actually runs. Same for "buy any 3", which is a bxgy with no list.
+  const reachableFromAnything = (p: (typeof giftPromos)[number]) =>
+    p.kind === "spend" || p.kind === "tiered" || (p.buyProductSlugs ?? []).length === 0;
+
   const promos = scopedToSlug
     ? giftPromos.filter(
         (p) =>
+          reachableFromAnything(p) ||
           p.giftProductSlug === scopedToSlug ||
           (p.buyProductSlugs ?? []).includes(scopedToSlug) ||
           (p.tiers ?? []).some((t) => t.giftProductSlug === scopedToSlug)

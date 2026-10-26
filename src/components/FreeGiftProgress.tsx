@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Gift, Check, Lock } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
@@ -29,6 +30,24 @@ function percentFor(promo: FreeGiftPromo, subtotal: number, qtyOf: (slugs: strin
   // bxgy counts items, not money — and an empty buy list means any item
   // counts, which is how the "buy 3 of anything" promos are written.
   return pct(qtyOf(promo.buyProductSlugs ?? []), promo.buyQty ?? 0);
+}
+
+/** The gift itself — what is being offered, rather than what the promo was
+ *  named. A promo's title is written by whoever set it up; the gift's name and
+ *  picture come off the shelf it is picked from, and "ถุงผ้า" with a picture of
+ *  the bag answers a question that a title never does.
+ *
+ *  Tiered promos show the next gift still to come when there is one, because
+ *  that is the one worth adding to the basket for. */
+function giftOnOffer(ev: { promo: FreeGiftPromo; unlockedTiers?: { tierIndex: number }[] }) {
+  const { promo } = ev;
+  if (promo.kind === "tiered") {
+    const tiers = [...(promo.tiers ?? [])].sort((a, b) => a.minSubtotal - b.minSubtotal);
+    const reached = ev.unlockedTiers?.length ?? 0;
+    const next = tiers[reached] ?? tiers[tiers.length - 1];
+    return next ? { title: next.giftTitle, image: next.giftImage } : null;
+  }
+  return { title: promo.giftTitle, image: promo.giftImage };
 }
 
 // The "Milestone bar" widget. Also reused, scoped to one product, as the
@@ -61,6 +80,7 @@ export default function FreeGiftProgress({ scopedToSlug }: { scopedToSlug?: stri
         {sorted.map((ev, i) => {
           const title = lang === "en" ? ev.promo.titleEn : ev.promo.titleTh;
           const reason = lang === "en" ? ev.reasonEn : ev.reasonTh;
+          const gift = giftOnOffer(ev);
           if (connected) {
             return (
               <div key={ev.promo.slug} className="flex items-center flex-1 min-w-0">
@@ -106,6 +126,23 @@ export default function FreeGiftProgress({ scopedToSlug }: { scopedToSlug?: stri
                 <div className="min-w-0 flex-1">
                   <span className="text-sm font-bold text-brand-ink">{title}</span>
                   <p className={`text-xs mt-1 font-semibold ${ev.eligible ? "text-brand-800" : "text-amber-700"}`}>{reason}</p>
+                  {gift?.title && (
+                    <span className="mt-2 flex items-center gap-2">
+                      {gift.image && (
+                        <Image
+                          src={gift.image}
+                          alt=""
+                          width={72}
+                          height={72}
+                          className="size-9 shrink-0 rounded-lg bg-white object-contain ring-1 ring-slate-100"
+                        />
+                      )}
+                      <span className="min-w-0 text-[11px] leading-tight text-slate-500">
+                        {t("ของแถม", "Gift")}:{" "}
+                        <span className="font-semibold text-brand-ink">{gift.title}</span>
+                      </span>
+                    </span>
+                  )}
                   {!ev.eligible && (
                     <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
                       <div
