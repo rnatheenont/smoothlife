@@ -79,6 +79,15 @@ export type FreeGiftPromo = {
   giftImage?: string | null;
   /** Several gifts at once. Overrides the single-gift fields above. */
   gifts?: FreeGiftItem[];
+  /**
+   * Which tiers pay out, for kind "tiered".
+   *
+   * "cumulative" hands over every tier the basket reached — what this has
+   * always done. "highest" hands over only the top one, which is what the
+   * app the shop runs on Shopify does: an order at ฿1,599 there carries the
+   * ฿1,599 gifts and not the ฿699 ones.
+   */
+  tierMode?: "cumulative" | "highest";
 };
 
 // Row shape as stored in the Supabase `free_gift_promos` table (snake_case) —
@@ -111,12 +120,13 @@ export type FreeGiftPromoRow = {
   display_only: boolean | null;
   gift_variant_id: string | null;
   gifts: FreeGiftItemRow[] | null;
+  tier_mode: "cumulative" | "highest" | null;
 };
 
 // Shared SELECT column list — used by both the public /api/free-gifts route
 // and the admin CRUD routes so they never silently drift out of sync.
 export const FREE_GIFT_COLUMNS =
-  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,created_at,updated_at";
+  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,created_at,updated_at";
 
 const toItems = (rows: FreeGiftItemRow[] | null | undefined): FreeGiftItem[] | undefined => {
   const list = (rows ?? [])
@@ -184,6 +194,7 @@ export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
     displayOnly: row.display_only !== false,
     giftVariantId: row.gift_variant_id ?? undefined,
     gifts: toItems(row.gifts),
+    tierMode: row.tier_mode === "highest" ? "highest" : "cumulative",
   };
 }
 
@@ -220,9 +231,15 @@ export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeG
   if (promo.kind === "tiered") {
     const subtotal = lines.reduce((sum, l) => sum + l.price * l.qty, 0);
     const sortedTiers = [...(promo.tiers ?? [])].sort((a, b) => a.minSubtotal - b.minSubtotal);
-    const unlockedTiers = sortedTiers
+    const reached = sortedTiers
       .map((t, tierIndex) => ({ t, tierIndex }))
-      .filter(({ t }) => subtotal >= t.minSubtotal)
+      .filter(({ t }) => subtotal >= t.minSubtotal);
+    // "highest" pays the top tier reached and nothing under it, which is what
+    // the app on Shopify does. The progress text below still counts them all,
+    // because how far along the ladder you are is a different question from
+    // what you are getting.
+    const paying = promo.tierMode === "highest" ? reached.slice(-1) : reached;
+    const unlockedTiers = paying
       .map(({ t, tierIndex }) => ({
         tierIndex,
         giftProductSlug: t.giftProductSlug,
@@ -232,17 +249,17 @@ export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeG
         giftQty: t.giftQty,
       }));
     if (unlockedTiers.length > 0) {
-      const allUnlocked = unlockedTiers.length === sortedTiers.length;
+      const allUnlocked = reached.length === sortedTiers.length;
       if (allUnlocked) {
         return { promo, eligible: true, reasonTh: `รับฟรีครบทุกระดับของ ${promo.titleTh}`, reasonEn: `All tiers of ${promo.titleEn} unlocked`, unlockedTiers };
       }
-      const next = sortedTiers[unlockedTiers.length];
+      const next = sortedTiers[reached.length];
       const missing = next.minSubtotal - subtotal;
       return {
         promo,
         eligible: true,
-        reasonTh: `ปลดล็อกแล้ว ${unlockedTiers.length}/${sortedTiers.length} ระดับ — ซื้อเพิ่มอีก ฿${missing.toLocaleString()} รับระดับถัดไป`,
-        reasonEn: `${unlockedTiers.length}/${sortedTiers.length} tiers unlocked — spend ฿${missing.toLocaleString()} more for the next tier`,
+        reasonTh: `ปลดล็อกแล้ว ${reached.length}/${sortedTiers.length} ระดับ — ซื้อเพิ่มอีก ฿${missing.toLocaleString()} รับระดับถัดไป`,
+        reasonEn: `${reached.length}/${sortedTiers.length} tiers unlocked — spend ฿${missing.toLocaleString()} more for the next tier`,
         unlockedTiers,
       };
     }
