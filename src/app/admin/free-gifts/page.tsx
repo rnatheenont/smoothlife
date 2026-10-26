@@ -86,6 +86,23 @@ const EMPTY_FORM: FormState = {
 
 /** What the API is told about one chosen gift. The name and picture are for
  *  the operator's eyes only — the server looks both up from the shelf. */
+/** What a promo in the list hands over, in one line.
+ *
+ *  The table read getProductBySlug(p.giftProductSlug) — the catalogue — and
+ *  every promo written this year keeps its gifts as Shopify variants instead,
+ *  so the thumbnail was an empty square and the line read "รับฟรี  x1" with
+ *  the name missing between them. */
+function promoGiftLine(p: AdminPromo, nameFor: (variantId: string) => string | undefined): string {
+  const sources = p.kind === "tiered" ? (p.tiers ?? []) : [p];
+  const names = sources
+    .flatMap((src) => giftsOf(src))
+    .map((g) => giftName(g.title || (g.variantId ? nameFor(g.variantId) : "") || ""))
+    .filter(Boolean);
+  const unique = [...new Set(names)];
+  if (unique.length === 0) return "";
+  return unique.slice(0, 3).join(" + ") + (unique.length > 3 ? ` +${unique.length - 3}` : "");
+}
+
 /** "ยาสีฟัน x2 + แปรงสีฟัน" — what the operator is about to promise, read
  *  back to them before they save it.
  *
@@ -290,6 +307,12 @@ export default function AdminFreeGiftsPage() {
   const { gifts: shelf } = useGiftShelf();
   const shelfNameFor = (variantId: string) => shelf?.find((g) => g.variantId === variantId)?.title;
 
+  // Live first. The one question this page is opened with is "what is running
+  // right now", and the answer was a badge you had to read on every row of a
+  // list ordered by when each promo happened to be created.
+  const sortedPromos = [...promos].sort((a, b) => Number(b.active) - Number(a.active));
+  const liveCount = promos.filter((p) => p.active).length;
+
   async function loadList() {
     const res = await fetch("/api/admin/free-gifts");
     if (res.status === 401) return;
@@ -481,13 +504,6 @@ export default function AdminFreeGiftsPage() {
         subtitle="ตั้งโปร “ซื้อครบแถมฟรี” — ระบบจะเพิ่มของแถมในตะกร้าลูกค้าอัตโนมัติ และผูกกับส่วนลดจริงใน Shopify ให้ทันที"
       />
 
-      {/* Above the promos on purpose: what is left of the gifts decides whether
-          any promo below can be kept, and it is the one thing on this page
-          neither this console nor the app on Shopify was watching. */}
-      <div className="mb-4">
-        <GiftStockPanel />
-      </div>
-
       {promos.length === 0 ? (
         /* The dashed block is the whole invitation when there is nothing
            here yet. Once there are promos it would be a full row of empty
@@ -503,6 +519,21 @@ export default function AdminFreeGiftsPage() {
         /* Two to a row: each promo is a small card, and one per row left a
            wide screen mostly empty while the tenth promo sat below the fold. */
         <>
+          {/* The answer to "what is running right now", before the list that
+              has to be read to work it out. */}
+          <p className="mb-2 text-xs text-slate-500">
+            {liveCount > 0 ? (
+              <>
+                <span className="font-bold text-brand-800">กำลังใช้งานจริง {liveCount} โปร</span>
+                {promos.length > liveCount && ` · ร่างอีก ${promos.length - liveCount}`}
+              </>
+            ) : (
+              <span className="font-semibold text-amber-700">
+                ยังไม่มีโปรที่เปิดใช้งาน — ลูกค้าไม่เห็นของแถมบนหน้าเว็บตอนนี้
+              </span>
+            )}
+          </p>
+
           {/* A table, because the questions are comparisons: which of these
               is live, which are still drafts, which are actually wired to a
               Shopify discount. As cards each of those answers sat wherever
@@ -518,11 +549,13 @@ export default function AdminFreeGiftsPage() {
                 </tr>
               </thead>
               <tbody>
-                {promos.map((p) => {
-                  const giftProduct =
-                    p.kind === "tiered"
-                      ? undefined
-                      : getProductBySlug(p.giftProductSlug);
+                {sortedPromos.map((p) => {
+                  const giftLine = promoGiftLine(p, shelfNameFor);
+                  const lead = giftsOf(p.kind === "tiered" ? (p.tiers?.[0] ?? p) : p)[0];
+                  const giftImage =
+                    lead?.image ??
+                    (lead?.variantId ? shelf?.find((g) => g.variantId === lead.variantId)?.image : null) ??
+                    null;
                   const KindIcon =
                     p.kind === "spend"
                       ? ShoppingBag
@@ -539,40 +572,35 @@ export default function AdminFreeGiftsPage() {
                     p.kind === "tiered" &&
                     (p.tiers ?? []).every((t) => t.shopifyDiscountId);
                   return (
-                    <tr key={p.id} className={adminTable.row}>
+                    <tr
+                      key={p.id}
+                      className={`${adminTable.row} ${p.active ? "bg-brand-gradient-soft/60" : ""}`}
+                    >
                       <td className={adminTable.cell}>
                         <span className="flex items-start gap-3">
-                          <span className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-l bg-surface-soft">
-                            {giftProduct ? (
+                          <span className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl2 bg-surface-soft">
+                            {giftImage ? (
                               <Image
-                                src={giftProduct.image}
-                                alt={giftProduct.name}
+                                src={giftImage}
+                                alt=""
                                 fill
                                 sizes="44px"
-                                className="object-cover"
+                                className="object-contain"
                               />
-                            ) : p.kind === "tiered" ? (
-                              <TrendingUp
-                                size={18}
-                                className="text-slate-300"
-                              />
-                            ) : null}
+                            ) : (
+                              <Gift size={18} className="text-slate-300" />
+                            )}
                           </span>
                           <span className="min-w-0">
                             <span className="block font-semibold text-brand-ink">
                               {p.titleTh}
                             </span>
                             <span className="mt-0.5 block max-w-[60ch] text-[12px] text-slate-500">
-                              {p.kind === "tiered" ? (
-                                describeCondition(p)
-                              ) : (
+                              {describeCondition(p)}
+                              {giftLine && (
                                 <>
-                                  {describeCondition(p)} →{" "}
-                                  <span className="font-semibold text-brand-ink">
-                                    รับฟรี{" "}
-                                    {giftProduct?.name ?? p.giftProductSlug} x
-                                    {p.giftQty}
-                                  </span>
+                                  {" → "}
+                                  <span className="font-semibold text-brand-ink">รับฟรี {giftLine}</span>
                                 </>
                               )}
                             </span>
@@ -595,12 +623,17 @@ export default function AdminFreeGiftsPage() {
                         )}
                       </td>
                       <td className={adminTable.cell}>
-                        <span className="flex flex-wrap items-center justify-end gap-1.5">
+                        {/* One decision, then the rest.
+                            Four pills of equal weight wrapped onto two lines
+                            in a 288px column, so "เปิดใช้งานจริง" — the only
+                            one that changes what customers see — looked like
+                            an option among four. */}
+                        <span className="flex flex-col items-end gap-1.5">
                           {p.active ? (
                             <button
                               onClick={() => deactivate(p.id)}
                               disabled={busyId === p.id}
-                              className="flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-500 disabled:opacity-50"
+                              className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-500 disabled:opacity-50"
                             >
                               <Power size={12} /> ปิดใช้งาน
                             </button>
@@ -608,41 +641,41 @@ export default function AdminFreeGiftsPage() {
                             <button
                               onClick={() => activate(p.id)}
                               disabled={busyId === p.id}
-                              className="flex items-center gap-1 rounded-full bg-brand-gradient px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
+                              className="flex items-center gap-1 rounded-full bg-brand-gradient px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
                             >
                               <Check size={12} />{" "}
-                              {busyId === p.id
-                                ? "กำลังเปิด…"
-                                : "เปิดใช้งานจริง"}
+                              {busyId === p.id ? "กำลังเปิด…" : "เปิดใช้งานจริง"}
                             </button>
                           )}
-                          {!p.shopifyDiscountId && !tierDiscountsLinked && (
+                          <span className="flex items-center gap-2 text-[11px] text-slate-400">
                             <button
-                              onClick={() => createShopifyDiscount(p.id)}
-                              disabled={busyId === p.id}
-                              className="flex items-center gap-1 whitespace-nowrap rounded-full border border-amber-300 px-2.5 py-1 text-[11px] font-semibold text-amber-700 disabled:opacity-50"
+                              onClick={() => startEdit(p)}
+                              className="font-semibold hover:text-brand-800"
                             >
-                              + ส่วนลดบน Shopify
+                              แก้ไข
                             </button>
-                          )}
-                          <button
-                            onClick={() => startEdit(p)}
-                            className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-500"
-                          >
-                            แก้ไข
-                          </button>
-                          <button
-                            onClick={() => remove(p.id)}
-                            disabled={p.active || busyId === p.id}
-                            title={
-                              p.active
-                                ? "ปิดใช้งานก่อนถึงจะลบได้"
-                                : "ลบโปรโมชั่นนี้"
-                            }
-                            className="flex items-center gap-1 rounded-full border border-rose-200 px-2.5 py-1 text-[11px] font-semibold text-rose-500 disabled:opacity-30"
-                          >
-                            <Trash2 size={12} /> ลบ
-                          </button>
+                            {!p.shopifyDiscountId && !tierDiscountsLinked && (
+                              <>
+                                <span aria-hidden>·</span>
+                                <button
+                                  onClick={() => createShopifyDiscount(p.id)}
+                                  disabled={busyId === p.id}
+                                  className="whitespace-nowrap font-semibold text-amber-700 hover:underline disabled:opacity-50"
+                                >
+                                  + ส่วนลด Shopify
+                                </button>
+                              </>
+                            )}
+                            <span aria-hidden>·</span>
+                            <button
+                              onClick={() => remove(p.id)}
+                              disabled={p.active || busyId === p.id}
+                              title={p.active ? "ปิดใช้งานก่อนถึงจะลบได้" : "ลบโปรโมชั่นนี้"}
+                              className="font-semibold text-rose-500 hover:underline disabled:opacity-30"
+                            >
+                              ลบ
+                            </button>
+                          </span>
                         </span>
                       </td>
                     </tr>
@@ -653,11 +686,13 @@ export default function AdminFreeGiftsPage() {
           </div>
 
           <div className="grid items-start gap-3 md:hidden">
-            {promos.map((p) => {
-              const giftProduct =
-                p.kind === "tiered"
-                  ? undefined
-                  : getProductBySlug(p.giftProductSlug);
+            {sortedPromos.map((p) => {
+              const giftLine = promoGiftLine(p, shelfNameFor);
+              const cardLead = giftsOf(p.kind === "tiered" ? (p.tiers?.[0] ?? p) : p)[0];
+              const cardGiftImage =
+                cardLead?.image ??
+                (cardLead?.variantId ? shelf?.find((g) => g.variantId === cardLead.variantId)?.image : null) ??
+                null;
               const KindIcon =
                 p.kind === "spend"
                   ? ShoppingBag
@@ -679,18 +714,12 @@ export default function AdminFreeGiftsPage() {
                   className="rounded-xl2 border border-slate-100 bg-white p-4 shadow-card"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="relative h-14 w-14 shrink-0 rounded-xl overflow-hidden bg-surface-soft grid place-items-center">
-                      {giftProduct ? (
-                        <Image
-                          src={giftProduct.image}
-                          alt={giftProduct.name}
-                          fill
-                          sizes="56px"
-                          className="object-cover"
-                        />
-                      ) : p.kind === "tiered" ? (
-                        <TrendingUp size={20} className="text-slate-300" />
-                      ) : null}
+                    <div className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl2 bg-surface-soft">
+                      {cardGiftImage ? (
+                        <Image src={cardGiftImage} alt="" fill sizes="56px" className="object-contain" />
+                      ) : (
+                        <Gift size={20} className="text-slate-300" />
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -716,15 +745,11 @@ export default function AdminFreeGiftsPage() {
                         {p.titleTh}
                       </p>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        {p.kind === "tiered" ? (
-                          describeCondition(p)
-                        ) : (
+                        {describeCondition(p)}
+                        {giftLine && (
                           <>
-                            {describeCondition(p)} →{" "}
-                            <span className="font-semibold text-brand-ink">
-                              รับฟรี {giftProduct?.name ?? p.giftProductSlug} x
-                              {p.giftQty}
-                            </span>
+                            {" → "}
+                            <span className="font-semibold text-brand-ink">รับฟรี {giftLine}</span>
                           </>
                         )}
                       </p>
@@ -786,6 +811,15 @@ export default function AdminFreeGiftsPage() {
           </div>
         </>
       )}
+
+      {/* Below the promos, not above them.
+          What is left of each gift decides whether a promo can be kept, so it
+          belongs on this page — but it is reference, and at the top it was a
+          wall of 29 products that pushed the four promos this page is named
+          after entirely below the fold. */}
+      <div className="mt-6">
+        <GiftStockPanel />
+      </div>
 
       {showForm && (
         <div className="fixed inset-0 z-110 flex items-center justify-center bg-black/40 p-4">
