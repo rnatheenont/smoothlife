@@ -270,7 +270,12 @@ const helpPayment = (): PageDoc =>
       title: "ช่องทางการชำระเงิน",
       intro: "เลือกวิธีการชำระเงินที่สะดวกและปลอดภัยที่สุดสำหรับคุณ",
     },
-    [{"icon": "qr-code", "title": "PromptPay QR", "body": "สแกนจ่ายผ่านแอปธนาคารได้ทันที ยืนยันคำสั่งซื้อรวดเร็ว"}, {"icon": "credit-card", "title": "บัตรเครดิต/เดบิต", "body": "รองรับ Visa, Mastercard และ JCB พร้อมระบบเข้ารหัสความปลอดภัย"}]
+    // The PromptPay ceiling is stated here as well as in src/data/help.ts,
+    // because this is the copy the page actually renders — help.ts is what
+    // the assistant answers from. shop-facts.test.ts checks the number in
+    // both against PROMPTPAY_QR_MAX_THB, so neither can drift from the code
+    // or from the other.
+    [{"icon": "qr-code", "title": "PromptPay QR", "body": "สแกนจ่ายผ่านแอปธนาคารได้ทันที ยืนยันคำสั่งซื้อรวดเร็ว — ใช้ได้กับยอดไม่เกิน 50,000 บาท ยอดสูงกว่านี้ชำระด้วยบัตรเครดิต/เดบิต"}, {"icon": "credit-card", "title": "บัตรเครดิต/เดบิต", "body": "รองรับ Visa, Mastercard และ JCB พร้อมระบบเข้ารหัสความปลอดภัย"}]
   );
 
 /** The help centre's front door: the title, the three ways in, and the

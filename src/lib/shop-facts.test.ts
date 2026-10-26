@@ -73,9 +73,19 @@ test("เพดาน PromptPay ที่โค้ดใช้ ต้องต�
   );
   assert.ok(ceiling, "ไม่เจอ PROMPTPAY_QR_MAX_THB");
   const thb = Number(ceiling[1].replace(/_/g, ""));
-  assert.ok(
-    readFileSync("src/data/help.ts", "utf8").includes(thb.toLocaleString("en-US")),
-    `โค้ดจำกัด PromptPay ที่ ${thb.toLocaleString("en-US")} บาท แต่ /help/payment ไม่ได้บอกตัวเลขนี้`
+
+  // Both copies. src/data/help.ts is what the assistant answers from;
+  // default-docs/system.ts is what /help/payment actually renders once the
+  // pages system is on — which in production it is. Checking only the first
+  // is how the live page kept the old wording after the code changed.
+  const WHERE_THE_CUSTOMER_READS_IT = ["src/data/help.ts", "src/lib/pages/default-docs/system.ts"];
+  const silent = WHERE_THE_CUSTOMER_READS_IT.filter(
+    (f) => !readFileSync(f, "utf8").includes(thb.toLocaleString("en-US"))
+  );
+  assert.deepEqual(
+    silent,
+    [],
+    `โค้ดจำกัด PromptPay ที่ ${thb.toLocaleString("en-US")} บาท แต่ยังไม่ได้บอกลูกค้าใน:\n  ` + silent.join("\n  ")
   );
 });
 
