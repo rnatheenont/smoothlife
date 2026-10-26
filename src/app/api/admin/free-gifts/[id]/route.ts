@@ -4,6 +4,7 @@ import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { FreeGiftPromoRow, rowToPromo } from "@/data/free-gifts";
 import { getProductBySlug } from "@/data/products";
 import { normaliseGifts } from "@/lib/free-gift-input";
+import { campaignSettings } from "@/lib/free-gift-settings";
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
@@ -62,6 +63,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       giftVariantId?: string;
       giftQty?: number;
       gifts?: unknown;
+      discountType?: "free" | "percentage" | "fixed";
+      discountValue?: number;
       shopifyDiscountId?: string;
     };
     const rows = [];
@@ -77,10 +80,17 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
         gift_variant_id: level.gifts[0].variant_id ?? null,
         gift_qty: level.gifts[0].qty ?? 1,
         gifts: level.gifts,
+        discount_type: t.discountType ?? null,
+        discount_value: t.discountValue ?? null,
         shopify_discount_id: t.shopifyDiscountId ?? null,
       });
     }
     patch.tiers = rows;
+  }
+  // The campaign settings always travel together — the form sends all of
+  // them, and a half-applied set is a campaign nobody can reason about.
+  if (body.triggerType !== undefined || body.giftChoice !== undefined || body.discountType !== undefined) {
+    Object.assign(patch, campaignSettings(body));
   }
   patch.updated_at = new Date().toISOString();
 

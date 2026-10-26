@@ -16,7 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { FreeGiftPromo, FreeGiftTier, giftsOf } from "@/data/free-gifts";
-import { getProductBySlug } from "@/data/products";
+import { getProductBySlug, products } from "@/data/products";
 import { Badge } from "@/components/ui";
 import ProductPicker from "@/components/admin/ProductPicker";
 import GiftPicker, {
@@ -45,6 +45,10 @@ type TierFormRow = {
   minSubtotal: string;
   giftProductSlug: string;
   gifts: GiftFormRow[];
+  /** A milestone prices its own reward, the way the app's per-milestone
+   *  "Discount type" dropdown does. Empty means the campaign decides. */
+  discountType: "" | "free" | "percentage" | "fixed";
+  discountValue: string;
 };
 
 type FormState = {
@@ -61,12 +65,26 @@ type FormState = {
   tiers: TierFormRow[];
   starts: string;
   expires: string;
+  /** The app's "Tiered reward type": money or items. */
+  triggerType: "cart-value" | "quantity";
+  /** Its "Exclude product" and "Include collection" sub-conditions. */
+  excludedProductSlugs: string[];
+  scopeBrands: string[];
+  scopeCategories: string[];
+  /** Its gift limitation, and its "Free gift selection method". */
+  maxGifts: string;
+  giftChoice: "auto" | "customer";
+  /** Its per-campaign "Discount type". */
+  discountType: "free" | "percentage" | "fixed";
+  discountValue: string;
 };
 
 const EMPTY_TIER_ROW: TierFormRow = {
   minSubtotal: "",
   giftProductSlug: "",
   gifts: [],
+  discountType: "",
+  discountValue: "",
 };
 
 const EMPTY_FORM: FormState = {
@@ -82,6 +100,14 @@ const EMPTY_FORM: FormState = {
   tiers: [{ ...EMPTY_TIER_ROW }],
   starts: "",
   expires: "",
+  triggerType: "cart-value",
+  excludedProductSlugs: [],
+  scopeBrands: [],
+  scopeCategories: [],
+  maxGifts: "",
+  giftChoice: "auto",
+  discountType: "free",
+  discountValue: "",
 };
 
 /** What the API is told about one chosen gift. The name and picture are for
@@ -144,6 +170,180 @@ function giftRowsOf(source: Parameters<typeof giftsOf>[0]): GiftFormRow[] {
  *  written down at all — the operator had to make two promos and hope they
  *  fired together. The schema has held a list for a while; this is the form
  *  catching up. */
+/**
+ * The app's "Show sub-conditions": the two rules that decide which lines in a
+ * basket count toward the campaign at all.
+ *
+ * Folded away by default, as it is there, because most campaigns want the
+ * whole catalogue and an open panel of empty pickers reads as work to do.
+ */
+/** The app's "Discount type" dropdown and the number beside it. A reward is
+ *  free by default — every campaign this shop has run — and the other two
+ *  entries sell it at a discount instead of giving it away. */
+function DiscountTypeField({
+  type,
+  value,
+  onChange,
+  label,
+  allowInherit,
+}: {
+  type: "" | "free" | "percentage" | "fixed";
+  value: string;
+  onChange: (type: "" | "free" | "percentage" | "fixed", value: string) => void;
+  label: string;
+  allowInherit?: boolean;
+}) {
+  return (
+    <div>
+      <p className="mb-1 text-[11px] font-semibold text-brand-ink">{label}</p>
+      <div className="flex gap-2">
+        <select
+          value={type}
+          onChange={(e) => onChange(e.target.value as "" | "free" | "percentage" | "fixed", value)}
+          className="min-w-0 flex-1 rounded-lg border border-surface-line bg-white px-2 py-2 text-xs text-brand-ink"
+        >
+          {allowInherit && <option value="">ตามที่ตั้งไว้ของแคมเปญ</option>}
+          <option value="free">ฟรี</option>
+          <option value="percentage">ลดเป็น %</option>
+          <option value="fixed">ราคาตายตัว</option>
+        </select>
+        {(type === "percentage" || type === "fixed") && (
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={type === "percentage" ? 100 : undefined}
+            value={value}
+            onChange={(e) => onChange(type, e.target.value)}
+            placeholder={type === "percentage" ? "เช่น 50" : "เช่น 99"}
+            aria-label={type === "percentage" ? "ส่วนลดเป็นเปอร์เซ็นต์" : "ราคาที่ลูกค้าจ่าย"}
+            className="w-24 rounded-lg border border-surface-line bg-white px-2 py-2 text-xs text-brand-ink"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SubConditions({
+  open,
+  onToggle,
+  form,
+  setForm,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  form: FormState;
+  setForm: (f: FormState) => void;
+}) {
+  const brands: string[] = [...new Set(products.map((p) => p.brand))].filter(Boolean).sort();
+  const categories: string[] = [...new Set(products.map((p) => String(p.category)))]
+    .filter(Boolean)
+    .sort();
+
+  const toggleIn = (list: string[], value: string) =>
+    list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+
+  return (
+    <div className="mb-3">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex items-center gap-1 text-[11px] font-semibold text-brand-800"
+      >
+        <ChevronDown size={12} className={open ? "rotate-180 transition-transform" : "transition-transform"} />
+        {open ? "ซ่อนเงื่อนไขย่อย" : "แสดงเงื่อนไขย่อย"}
+      </button>
+
+      {open && (
+        <div className="mt-2 space-y-3 rounded-lg border border-surface-line p-3">
+          <div>
+            <p className="text-[11px] font-semibold text-brand-ink">ยกเว้นสินค้า</p>
+            <p className="mb-1.5 text-[10px] text-slate-400">
+              สินค้าที่เลือกไว้จะไม่ถูกนับเข้ายอด — ใช้กันไม่ให้ของแถมจ่ายค่าตัวเอง
+            </p>
+            {form.excludedProductSlugs.length > 0 && (
+              <div className="mb-1.5 flex flex-wrap gap-1">
+                {form.excludedProductSlugs.map((slug) => (
+                  <span
+                    key={slug}
+                    className="flex items-center gap-1 rounded-full bg-surface-soft px-2 py-0.5 text-[10px] text-brand-ink"
+                  >
+                    {getProductBySlug(slug)?.name ?? slug}
+                    <button
+                      type="button"
+                      aria-label={`เอา ${slug} ออกจากรายการยกเว้น`}
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          excludedProductSlugs: form.excludedProductSlugs.filter((x) => x !== slug),
+                        })
+                      }
+                    >
+                      <X size={10} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <ProductPicker
+              onSelect={(slug) =>
+                setForm({
+                  ...form,
+                  excludedProductSlugs: form.excludedProductSlugs.includes(slug)
+                    ? form.excludedProductSlugs
+                    : [...form.excludedProductSlugs, slug],
+                })
+              }
+            />
+          </div>
+
+          <div>
+            <p className="text-[11px] font-semibold text-brand-ink">นับเฉพาะแบรนด์ / หมวด</p>
+            <p className="mb-1.5 text-[10px] text-slate-400">
+              ไม่เลือกเลย = นับทั้งร้าน (แอปบน Shopify ใช้ collection — ของเราใช้แบรนด์กับหมวดที่บรรทัดตะกร้ามีจริง)
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {brands.map((brand) => (
+                <button
+                  key={brand}
+                  type="button"
+                  onClick={() => setForm({ ...form, scopeBrands: toggleIn(form.scopeBrands, brand) })}
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                    form.scopeBrands.includes(brand)
+                      ? "bg-brand-gradient text-white"
+                      : "bg-surface-soft text-slate-500"
+                  }`}
+                >
+                  {brand}
+                </button>
+              ))}
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() =>
+                    setForm({ ...form, scopeCategories: toggleIn(form.scopeCategories, category) })
+                  }
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                    form.scopeCategories.includes(category)
+                      ? "bg-brand-gradient text-white"
+                      : "bg-surface-soft text-slate-500"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GiftListField({
   gifts,
   onChange,
@@ -302,6 +502,11 @@ export default function AdminFreeGiftsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  // Two steps, the way the app on Shopify splits this: what the campaign is,
+  // then how it shows up. Operators move between the two consoles all day and
+  // a form shaped differently is a form they have to re-learn each time.
+  const [step, setStep] = useState<1 | 2>(1);
+  const [showSubConditions, setShowSubConditions] = useState(false);
   // The shelf is already loaded for the pickers; the preview borrows it to
   // turn the variant ids an edited promo arrives with into names.
   const { gifts: shelf } = useGiftShelf();
@@ -335,6 +540,8 @@ export default function AdminFreeGiftsPage() {
     setForm(EMPTY_FORM);
     setFormError("");
     setShowAdvanced(false);
+    setStep(1);
+    setShowSubConditions(false);
     setShowForm(true);
   }
 
@@ -367,10 +574,20 @@ export default function AdminFreeGiftsPage() {
             ? form.tiers.map((t) => ({
                 minSubtotal: Number(t.minSubtotal),
                 gifts: t.gifts.map(toGiftInput),
+                discountType: t.discountType || undefined,
+                discountValue: t.discountValue ? Number(t.discountValue) : undefined,
               }))
             : undefined,
         starts: form.starts || undefined,
         expires: form.expires || undefined,
+        triggerType: form.triggerType,
+        excludedProductSlugs: form.excludedProductSlugs,
+        scopeBrands: form.scopeBrands,
+        scopeCategories: form.scopeCategories,
+        maxGifts: form.maxGifts ? Number(form.maxGifts) : null,
+        giftChoice: form.giftChoice,
+        discountType: form.discountType,
+        discountValue: form.discountValue ? Number(form.discountValue) : 0,
       };
       const url = editingId
         ? `/api/admin/free-gifts/${editingId}`
@@ -410,13 +627,25 @@ export default function AdminFreeGiftsPage() {
               minSubtotal: String(t.minSubtotal),
               giftProductSlug: t.giftProductSlug,
               gifts: giftRowsOf(t),
+              discountType: t.discountType ?? ("" as const),
+              discountValue: t.discountValue != null ? String(t.discountValue) : "",
             }))
           : [{ ...EMPTY_TIER_ROW }],
       starts: p.starts ? p.starts.slice(0, 10) : "",
       expires: p.expires ?? "",
+      triggerType: p.triggerType === "quantity" ? "quantity" : "cart-value",
+      excludedProductSlugs: p.excludedProductSlugs ?? [],
+      scopeBrands: p.scopeBrands ?? [],
+      scopeCategories: p.scopeCategories ?? [],
+      maxGifts: p.maxGifts != null ? String(p.maxGifts) : "",
+      giftChoice: p.giftChoice === "customer" ? "customer" : "auto",
+      discountType: p.discountType ?? "free",
+      discountValue: p.discountValue ? String(p.discountValue) : "",
     });
     setFormError("");
     setShowAdvanced(false);
+    setStep(1);
+    setShowSubConditions(false);
     setShowForm(true);
   }
 
@@ -837,9 +1066,93 @@ export default function AdminFreeGiftsPage() {
               </button>
             </div>
             <form onSubmit={submitForm} className="flex min-h-0 flex-1 flex-col">
+              {/* Same two steps as the app on Shopify, in the same order and
+                  with the same split: the campaign, then how it is shown. */}
+              <div className="shrink-0 px-5 pt-4">
+                <div className="grid grid-cols-2 gap-1 rounded-xl2 bg-surface-soft p-1">
+                  {([1, 2] as const).map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setStep(n)}
+                      aria-current={step === n}
+                      className={`rounded-lg py-2 text-xs font-semibold transition ${
+                        step === n ? "bg-white text-brand-ink shadow-card" : "text-slate-500 hover:text-brand-ink"
+                      }`}
+                    >
+                      {n === 1 ? "ขั้นที่ 1: ตั้งค่าแคมเปญ" : "ขั้นที่ 2: การแสดงผล"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid min-h-0 flex-1 items-start gap-5 overflow-y-auto p-5 lg:grid-cols-2 lg:gap-6">
               {/* Left column: what the promo is and who it is for. */}
               <div className="min-w-0 space-y-5">
+              {step === 2 ? (
+                <>
+                  {/* Step 2, laid out like the app's "Display setting": where
+                      it shows, and who puts the reward in the cart. */}
+                  <div>
+                    <p className="mb-2 text-xs font-bold text-brand-ink">ตำแหน่งที่แสดง</p>
+                    <p className="rounded-lg bg-surface-soft p-3 text-[11px] leading-relaxed text-slate-500">
+                      แถบความคืบหน้าและการ์ดของแถมแสดงที่หน้าสินค้าและตะกร้าอยู่แล้ว
+                      เปิด/ปิดได้ที่หน้า{" "}
+                      <span className="font-semibold text-brand-ink">กล่องโปรโมชั่นหน้าเว็บ</span>{" "}
+                      ซึ่งคุมทุกแคมเปญพร้อมกัน ไม่ใช่ทีละตัวแบบแอปบน Shopify
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-xs font-bold text-brand-ink">วิธีให้ของรางวัล</p>
+                    <div className="space-y-2">
+                      {(
+                        [
+                          ["auto", "เติมให้อัตโนมัติ", "ของแถมจะเข้าตะกร้าเองเมื่อเข้าเงื่อนไข"],
+                          ["customer", "ให้ลูกค้าเลือกเอง", "ลูกค้าเลือกของรางวัลเองเมื่อเข้าเงื่อนไข"],
+                        ] as const
+                      ).map(([value, title, desc]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setForm({ ...form, giftChoice: value })}
+                          className={`flex w-full items-start gap-2.5 rounded-xl border-2 p-3 text-left transition-colors ${
+                            form.giftChoice === value
+                              ? "border-brand-teal bg-brand-gradient-soft"
+                              : "border-slate-200"
+                          }`}
+                        >
+                          <span
+                            className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border-2 ${
+                              form.giftChoice === value ? "border-brand-teal" : "border-slate-300"
+                            }`}
+                          >
+                            {form.giftChoice === value && (
+                              <span className="size-2 rounded-full bg-brand-gradient" />
+                            )}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-xs font-bold text-brand-ink">{title}</span>
+                            <span className="mt-0.5 block text-[11px] text-slate-500">{desc}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    {form.giftChoice === "customer" && (
+                      <AdminField
+                        label="ลูกค้าเลือกได้กี่ชิ้น (ไม่กรอก = เลือกได้ทุกชิ้นที่ลิสต์ไว้)"
+                        type="number"
+                        inputMode="numeric"
+                        value={form.maxGifts}
+                        onChange={(v) => setForm({ ...form, maxGifts: v })}
+                        placeholder="เช่น 1"
+                        className="mt-2"
+                      />
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
               {/* 1. ชื่อโปร */}
               <div>
                 <p className="text-xs font-bold text-brand-ink mb-2">
@@ -866,6 +1179,44 @@ export default function AdminFreeGiftsPage() {
                 <p className="text-xs font-bold text-brand-ink mb-2">
                   2. เงื่อนไขการรับของแถม
                 </p>
+                {/* "Tiered reward type" — the app asks this before the
+                    milestones, because it decides what the numbers under them
+                    mean. */}
+                <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg bg-surface-soft px-3 py-2">
+                  <span className="text-[11px] font-semibold text-brand-ink">นับจาก</span>
+                  {(
+                    [
+                      ["cart-value", "ยอดรวมตะกร้า"],
+                      ["quantity", "จำนวนชิ้น"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setForm({ ...form, triggerType: value })}
+                      className="flex items-center gap-1.5 text-[11px] font-semibold text-brand-ink"
+                    >
+                      <span
+                        className={`grid size-4 place-items-center rounded-full border-2 ${
+                          form.triggerType === value ? "border-brand-teal" : "border-slate-300"
+                        }`}
+                      >
+                        {form.triggerType === value && (
+                          <span className="size-2 rounded-full bg-brand-gradient" />
+                        )}
+                      </span>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <SubConditions
+                  open={showSubConditions}
+                  onToggle={() => setShowSubConditions((v) => !v)}
+                  form={form}
+                  setForm={setForm}
+                />
+
                 <div className="grid grid-cols-3 gap-2 mb-3">
                   <button
                     type="button"
@@ -991,6 +1342,8 @@ export default function AdminFreeGiftsPage() {
                 ) : null}
               </div>
 
+                </>
+              )}
               </div>
 
               {/* Right column: what the shopper walks away with, and the
@@ -998,6 +1351,72 @@ export default function AdminFreeGiftsPage() {
                   screen below them, so the two can be checked against each
                   other without scrolling between them. */}
               <div className="min-w-0 space-y-5">
+              {step === 2 ? (
+                /* The app shows a summary beside the display settings rather
+                   than the reward editor again — on this step the question is
+                   how the campaign appears, and the reward is settled. */
+                <div className="rounded-xl2 border border-surface-line p-4">
+                  <p className="mb-2 text-xs font-bold text-brand-ink">สรุปแคมเปญ</p>
+                  <dl className="space-y-1.5 text-[11px]">
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-slate-500">แบบ</dt>
+                      <dd className="font-semibold text-brand-ink">
+                        {form.kind === "tiered"
+                          ? "ขั้นบันได"
+                          : form.kind === "bxgy"
+                            ? "ซื้อครบจำนวน"
+                            : "ซื้อครบยอด"}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-slate-500">นับจาก</dt>
+                      <dd className="font-semibold text-brand-ink">
+                        {form.triggerType === "quantity" ? "จำนวนชิ้น" : "ยอดรวมตะกร้า"}
+                      </dd>
+                    </div>
+                    {form.kind === "tiered" ? (
+                      form.tiers.map((t, i) => (
+                        <div key={i} className="flex justify-between gap-3">
+                          <dt className="text-slate-500">
+                            ระดับ {i + 1} ·{" "}
+                            {form.triggerType === "quantity"
+                              ? `${t.minSubtotal || 0} ชิ้น`
+                              : `฿${Number(t.minSubtotal || 0).toLocaleString()}`}
+                          </dt>
+                          <dd className="min-w-0 text-right font-semibold text-brand-ink">
+                            {describeGifts(t.gifts, shelfNameFor)}
+                          </dd>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-slate-500">ของรางวัล</dt>
+                        <dd className="min-w-0 text-right font-semibold text-brand-ink">
+                          {describeGifts(form.gifts, shelfNameFor)}
+                        </dd>
+                      </div>
+                    )}
+                    {(form.excludedProductSlugs.length > 0 ||
+                      form.scopeBrands.length > 0 ||
+                      form.scopeCategories.length > 0) && (
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-slate-500">เงื่อนไขย่อย</dt>
+                        <dd className="text-right font-semibold text-brand-ink">
+                          {[
+                            form.excludedProductSlugs.length > 0 &&
+                              `ยกเว้น ${form.excludedProductSlugs.length} รายการ`,
+                            form.scopeBrands.length > 0 && `${form.scopeBrands.length} แบรนด์`,
+                            form.scopeCategories.length > 0 && `${form.scopeCategories.length} หมวด`,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                </div>
+              ) : (
+                <>
               {/* The levels live here rather than under the condition picker:
                   they are the longest thing in the form and they are what the
                   shopper gets, which is this column's subject. Beside the
@@ -1051,6 +1470,17 @@ export default function AdminFreeGiftsPage() {
                             placeholder="ยอดขั้นต่ำของระดับนี้ (บาท)"
                             isRequired
                           />
+                          <DiscountTypeField
+                            label={`ประเภทของรางวัลระดับที่ ${i + 1}`}
+                            allowInherit
+                            type={tier.discountType}
+                            value={tier.discountValue}
+                            onChange={(discountType, discountValue) => {
+                              const tiers = [...form.tiers];
+                              tiers[i] = { ...tiers[i], discountType, discountValue };
+                              setForm({ ...form, tiers });
+                            }}
+                          />
                           <GiftListField
                             label={`ของแถมในระดับที่ ${i + 1}`}
                             gifts={tier.gifts}
@@ -1086,6 +1516,19 @@ export default function AdminFreeGiftsPage() {
                   {/* The shop's free-gift shelf, not the catalogue: every gift
                       is UNLISTED in Shopify on purpose and none of them appears
                       in the catalogue the other picker reads. */}
+                  <DiscountTypeField
+                    label="ประเภทของรางวัล"
+                    type={form.discountType}
+                    value={form.discountValue}
+                    onChange={(discountType, discountValue) =>
+                      setForm({
+                        ...form,
+                        discountType: (discountType || "free") as FormState["discountType"],
+                        discountValue,
+                      })
+                    }
+                  />
+                  <div className="h-2" />
                   <GiftListField
                     label="ของแถมที่ลูกค้าจะได้รับ"
                     gifts={form.gifts}
@@ -1119,6 +1562,8 @@ export default function AdminFreeGiftsPage() {
                   </div>
                 )}
 
+                </>
+              )}
               {/* advanced (optional) */}
               <div>
                 <button

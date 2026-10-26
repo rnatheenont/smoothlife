@@ -4,6 +4,7 @@ import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { FreeGiftPromoRow, rowToPromo, FREE_GIFT_COLUMNS } from "@/data/free-gifts";
 import { getProductBySlug } from "@/data/products";
 import { normaliseGifts } from "@/lib/free-gift-input";
+import { campaignSettings } from "@/lib/free-gift-settings";
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
@@ -29,7 +30,16 @@ export async function POST(req: NextRequest) {
   // still written alongside, holding the first one, so anything still reading
   // the old shape keeps working — giftsOf prefers the list when it is there.
   let promoGifts: ReturnType<typeof normaliseGifts> | null = null;
-  const tierGifts: { min_subtotal: number; gift_product_slug: string; gift_variant_id: string | null; gift_qty: number; gifts: { variant_id?: string | null; product_slug?: string | null; qty?: number | null }[]; shopify_discount_id: null }[] = [];
+  const tierGifts: {
+    min_subtotal: number;
+    gift_product_slug: string;
+    gift_variant_id: string | null;
+    gift_qty: number;
+    gifts: { variant_id?: string | null; product_slug?: string | null; qty?: number | null }[];
+    discount_type: "free" | "percentage" | "fixed" | null;
+    discount_value: number | null;
+    shopify_discount_id: null;
+  }[] = [];
 
   if (typeof slug !== "string" || !/^[a-z0-9-]+$/.test(slug)) {
     return NextResponse.json({ ok: false, error: "slug ต้องเป็นตัวพิมพ์เล็ก a-z 0-9 และ - เท่านั้น" }, { status: 400 });
@@ -71,6 +81,8 @@ export async function POST(req: NextRequest) {
         gift_variant_id: level.gifts[0].variant_id ?? null,
         gift_qty: level.gifts[0].qty ?? 1,
         gifts: level.gifts,
+        discount_type: t.discountType ?? null,
+        discount_value: t.discountValue ?? null,
         shopify_discount_id: null,
       });
     }
@@ -99,6 +111,7 @@ export async function POST(req: NextRequest) {
         shopify_discount_id: null,
         starts_at: starts || null,
         expires_at: expires || null,
+        ...campaignSettings(body),
       }),
     });
     return NextResponse.json({ ok: true, promo: { id: row.id, ...rowToPromo(row) } }, { status: 201 });
