@@ -18,7 +18,6 @@ import { subscriptionPlans } from "@/data/subscriptions";
 import CouponPicker from "@/components/CouponPicker";
 import { Button } from "@/components/ui";
 import FreeGiftProgress from "@/components/FreeGiftProgress";
-import TieredRewardBox from "@/components/TieredRewardBox";
 import MobileStickyBar from "@/components/MobileStickyBar";
 import ProductCard from "@/components/ProductCard";
 
@@ -69,7 +68,13 @@ export default function CartView() {
   // here so a customer can see at a glance which items are a recurring
   // commitment vs. a one-off purchase, rather than one undifferentiated list.
   const subscribeLines = lines.filter((l) => !l.isGift && l.subscribeMonths);
-  const normalLines = lines.filter((l) => l.isGift || !l.subscribeMonths);
+  const normalLines = lines.filter((l) => !l.isGift && !l.subscribeMonths);
+  // Gifts come out of the list of things being bought and into a shelf of
+  // their own. They were rows the same size as the paid ones, and a basket
+  // that had earned five of them pushed everything the shopper actually
+  // chose — and the total — most of a screen further down. Nothing here can
+  // be changed, removed or paid for; it only has to be recognised.
+  const giftLines = lines.filter((l) => l.isGift);
 
   if (lines.length === 0) {
     return (
@@ -272,9 +277,45 @@ export default function CartView() {
             </section>
           )}
 
+          {giftLines.length > 0 && (
+            <section className="overflow-hidden rounded-2xl bg-brand-gradient-soft shadow-card">
+              <h2 className="flex items-center gap-1.5 px-4 pt-3.5 text-sm font-bold text-brand-ink">
+                <Gift size={14} className="text-brand-emerald" />
+                {t("ของแถมฟรี", "Free gifts")}
+                <span className="rounded-full bg-white/70 px-1.5 text-[11px] font-bold text-brand-800">
+                  {giftLines.reduce((n, l) => n + l.qty, 0)}
+                </span>
+              </h2>
+              {/* Two across on a phone, four on a laptop: a picture and a
+                  name is all there is to read, and five of them fit in the
+                  height one of the rows above used to take. */}
+              <ul className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-4">
+                {giftLines.map((line) => (
+                  <li
+                    key={`${line.variantId}-${line.giftPromoSlug}`}
+                    className="flex items-center gap-2 rounded-xl bg-white/80 p-2"
+                  >
+                    <span className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-white">
+                      {line.image && (
+                        <Image src={line.image} alt="" fill sizes="44px" className="object-contain" />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1 text-[11px] font-semibold leading-tight text-brand-ink">
+                      <span className="line-clamp-2">{line.name}</span>
+                      <span className="mt-0.5 block font-bold brand-text-gradient">
+                        {t("ฟรี", "Free")}
+                        {line.qty > 1 && (
+                          <span className="font-normal text-slate-500"> × {line.qty}</span>
+                        )}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <CouponPicker />
-          <FreeGiftProgress />
-          <TieredRewardBox />
 
           {bundleSuggestions.length > 0 && (
             <div className="mt-2">
@@ -291,6 +332,8 @@ export default function CartView() {
         </div>
 
         <div className="flex flex-col gap-4 h-fit lg:sticky lg:top-[152px]">
+          <FreeGiftProgress />
+
           <div className="rounded-2xl bg-white p-5 shadow-card">
             <h2 className="font-bold text-brand-ink mb-4">{t("สรุปคำสั่งซื้อ", "Order summary")}</h2>
             <div className="flex justify-between text-sm text-slate-600 mb-2">
