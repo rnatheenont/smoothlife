@@ -165,7 +165,7 @@ export default function Header({
                 seventy is not a shortcut. */}
             <Link
               href={SALE_HREF}
-              className="flex h-8 shrink-0 items-center rounded-full bg-brand-gradient bg-[length:200%_100%] px-4 text-[12.5px] font-bold text-white shadow-xs transition-transform hover:animate-gradientPan hover:scale-105 active:scale-95"
+              className="flex h-8 shrink-0 items-center rounded-full bg-brand-gradient bg-[length:200%_100%] px-4 text-[13px] font-bold text-white shadow-xs transition-transform hover:animate-gradientPan hover:scale-105 active:scale-95"
             >
               Sale
             </Link>
@@ -197,7 +197,7 @@ export default function Header({
                       <span className="relative block h-7 w-7 shrink-0 overflow-hidden rounded-full bg-slate-100">
                         <Image src={shopifyImage(p.image, 96)} alt="" fill sizes="28px" className="object-cover" />
                       </span>
-                      <span translate="no" className="max-w-[210px] truncate text-[12.5px] font-medium text-slate-600">
+                      <span translate="no" className="max-w-[210px] truncate text-[13px] font-medium text-slate-600">
                         {p.name}
                       </span>
                       <span translate="no" className="text-[13px] font-bold tabular-nums text-brand-800">
@@ -338,7 +338,7 @@ export default function Header({
 
       {/* relative: the mega panel hangs off this bar, edge to edge. */}
       <nav className="relative hidden lg:block border-t border-slate-100">
-        <div className="container-page flex items-center gap-8 py-2.5 text-[15px] font-medium text-slate-700">
+        <div className="container-page flex items-center gap-8 py-2.5 text-sm font-medium text-slate-700">
           {deskNav.map((l) =>
             l.mega ? (
               <MegaMenu key={l.href} label={t(l.th, l.en)} href={l.href} menu={menu} />

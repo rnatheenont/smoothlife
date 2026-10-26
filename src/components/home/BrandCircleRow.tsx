@@ -132,7 +132,7 @@ export default function BrandCircleRow({
                 </span>
                 <span
                   translate="no"
-                  className={`line-clamp-1 text-center text-[13px] transition-colors lg:text-[15px] ${
+                  className={`line-clamp-1 text-center text-[13px] transition-colors lg:text-sm ${
                     on ? "font-bold text-brand-800" : "font-medium text-brand-ink group-hover:text-brand-800"
                   }`}
                 >

@@ -128,7 +128,7 @@ export default function ConcernCoverflow({ byConcern }: { byConcern: Record<stri
         <p className="text-sm font-medium text-brand-ink md:text-lg">ปัญหาผิวที่กังวล</p>
         {/* aria-live so the name arriving with a new card is announced; the
             cards themselves are links and say their own name. */}
-        <h2 aria-live="polite" className="mt-1 text-[26px] font-bold text-brand-teal md:text-[36px] lg:text-[42px]">
+        <h2 aria-live="polite" className="mt-1 text-[26px] font-bold text-brand-teal md:text-[36px] lg:text-[40px]">
           {current.nameTh}
         </h2>
       </div>
