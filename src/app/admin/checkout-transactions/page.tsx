@@ -363,12 +363,14 @@ export default function AdminCheckoutTransactionsPage() {
               <thead className={adminTable.thead}>
                 <tr>
                   <th className="w-44">Invoice</th>
+                  {/* Beside the invoice, because the two are the same purchase
+                      under two systems' numbering and are read together.
+                      Narrower than it was: the cell used to hold a number to
+                      read off and copy, and now holds a link to follow. */}
+                  <th className="w-40">Shopify Order</th>
                   <th className="w-24">วันที่</th>
                   <th>ลูกค้า</th>
                   <th className="w-28 text-right">ยอด</th>
-                  {/* Narrower than it was: the cell used to hold a number to
-                      read off and copy, and now holds a link to follow. */}
-                  <th className="w-40">Shopify Order</th>
                   <th className="w-36">สถานะ</th>
                   {/* The collapsed state is one short link; the panel it opens
                       is wider than any column and widens the cell itself. */}
@@ -386,6 +388,18 @@ export default function AdminCheckoutTransactionsPage() {
                             2C2P <TranRefCopy tranRef={tx.tran_ref} />
                           </span>
                         )}
+                    </td>
+                    <td className={adminTable.cell}>
+                      {tx.shopify_order_id ? (
+                        <ShopifyOrderLink
+                          orderId={tx.shopify_order_id}
+                          adminHandle={adminHandle}
+                        />
+                      ) : (
+                        <span className="text-[12px] font-medium text-amber-600">
+                          ยังไม่มีออเดอร์ (ตรวจด้วยตนเอง)
+                        </span>
+                      )}
                     </td>
                     <td className={adminTable.cell}>
                       <span className="whitespace-nowrap tabular-nums">
@@ -409,18 +423,6 @@ export default function AdminCheckoutTransactionsPage() {
                     </td>
                     <td className="px-3 py-2.5 text-right font-semibold tabular-nums">
                       {formatTHB(tx.amount)}
-                    </td>
-                    <td className={adminTable.cell}>
-                      {tx.shopify_order_id ? (
-                        <ShopifyOrderLink
-                          orderId={tx.shopify_order_id}
-                          adminHandle={adminHandle}
-                        />
-                      ) : (
-                        <span className="text-[12px] font-medium text-amber-600">
-                          ยังไม่มีออเดอร์ (ตรวจด้วยตนเอง)
-                        </span>
-                      )}
                     </td>
                     <td className={adminTable.cell}>
                       {tx.status === "refunded" ? (
@@ -458,6 +460,23 @@ export default function AdminCheckoutTransactionsPage() {
                     <p className="font-mono text-[12px] font-semibold text-brand-ink">
                       {tx.invoice_no}
                     </p>
+                    {/* Under the invoice, the same pair in the same order as
+                        the table's first two columns. */}
+                    <p className="mt-0.5 text-[11px] text-slate-500">
+                      {tx.shopify_order_id ? (
+                        <>
+                          Shopify:{" "}
+                          <ShopifyOrderLink
+                            orderId={tx.shopify_order_id}
+                            adminHandle={adminHandle}
+                          />
+                        </>
+                      ) : (
+                        <span className="font-medium text-amber-600">
+                          ยังไม่มีออเดอร์ (ตรวจด้วยตนเอง)
+                        </span>
+                      )}
+                    </p>
                     <p className="mt-0.5 text-[11px] tabular-nums text-slate-400">
                       {thaiDate(paidAt(tx))} {thaiTime(paidAt(tx))}
                       {tx.refunded_at
@@ -483,21 +502,6 @@ export default function AdminCheckoutTransactionsPage() {
                     </span>
                   </div>
                 </div>
-                <p className="mt-1.5 text-[11px] text-slate-500">
-                  {tx.shopify_order_id ? (
-                    <span>
-                      Shopify:{" "}
-                      <ShopifyOrderLink
-                        orderId={tx.shopify_order_id}
-                        adminHandle={adminHandle}
-                      />
-                    </span>
-                  ) : (
-                    <span className="font-medium text-amber-600">
-                      ยังไม่มีออเดอร์ (ตรวจด้วยตนเอง)
-                    </span>
-                  )}
-                </p>
                 {refundRouteFor(tx.tran_ref) === "portal" && tx.tran_ref && (
                   <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-400">
                     2C2P ref: <TranRefCopy tranRef={tx.tran_ref} />
