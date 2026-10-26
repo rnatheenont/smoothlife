@@ -80,8 +80,21 @@ function RefundControls({
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   const [portalDone, setPortalDone] = useState(false);
+  const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  // On the Shopify route the button moves a customer's money the moment it is
+  // pressed, with nothing after it to undo — so it is not a thing that can be
+  // reached by one stray click on the wrong row. Typing the amount is the
+  // cheapest gate that cannot be passed by accident: it takes reading the row
+  // you are on, which is the mistake being guarded against.
+  //
+  // Commas, a ฿ and spaces are all forgiven. What is not forgiven is a
+  // different number.
+  const typedAmount = Number(typed.replace(/[^\d.]/g, ""));
+  const confirmed =
+    route === "portal" ? portalDone : typed.trim() !== "" && typedAmount === Number(tx.amount);
 
   // One endpoint for both routes, because on the Shopify route the record and
   // the refund are the same event and splitting them is how they drift apart.
@@ -186,6 +199,15 @@ function RefundControls({
         </div>
       )}
 
+      {route === "shopify" && (
+        <AdminField
+          label={`พิมพ์ยอด ${Math.round(Number(tx.amount)).toLocaleString("th-TH")} เพื่อยืนยัน`}
+          value={typed}
+          onChange={setTyped}
+          placeholder={String(Math.round(Number(tx.amount)))}
+        />
+      )}
+
       <AdminField
         label="หมายเหตุ"
         value={note}
@@ -199,14 +221,20 @@ function RefundControls({
           size="sm"
           onPress={submit}
           isPending={busy}
-          isDisabled={route === "portal" && !portalDone}
+          isDisabled={!confirmed}
         >
           {busy && <Spinner size="sm" color="current" />}
           {route === "portal"
             ? "บันทึกว่าคืนเงินแล้ว"
             : `คืนเงิน ${formatTHB(tx.amount)} ผ่าน Shopify`}
         </Button>
-        <button onClick={() => setOpen(false)} className="text-slate-400">
+        <button
+          onClick={() => {
+            setOpen(false);
+            setTyped("");
+          }}
+          className="text-slate-400"
+        >
           ยกเลิก
         </button>
       </div>
