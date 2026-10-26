@@ -10,7 +10,7 @@ import { useWidgetSettings } from "@/lib/use-widget-settings";
 import { useCountdown, type CountdownParts } from "@/lib/use-countdown";
 import { useCart } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
-import { giftFaces, type GiftFace } from "@/lib/gift-faces";
+import { availableGiftFaces, type GiftFace } from "@/lib/gift-faces";
 import { BorderBeam } from "@/components/magicui/border-beam";
 
 // The deal, said as the things it gives you.
@@ -76,7 +76,7 @@ export default function DealOfTheDayCard({ config }: { config?: DealOfDayConfig 
   const faces: GiftFace[] = [];
   for (const ev of claimable) {
     const source = ev.promo.kind === "tiered" ? (ev.promo.tiers?.[0] ?? ev.promo) : ev.promo;
-    for (const face of giftFaces(source, productBySlug)) {
+    for (const face of availableGiftFaces(source, productBySlug)) {
       if (!face.title || seen.has(face.key)) continue;
       seen.add(face.key);
       faces.push(face);

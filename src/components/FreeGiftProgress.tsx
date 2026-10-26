@@ -7,7 +7,7 @@ import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
 import { useCart } from "@/lib/cart-context";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
 import { type FreeGiftPromo } from "@/data/free-gifts";
-import { giftFaces } from "@/lib/gift-faces";
+import { availableGiftFaces } from "@/lib/gift-faces";
 
 function thresholdFor(promo: { kind: string; minSubtotal?: number; buyQty?: number; tiers?: { minSubtotal: number }[] }) {
   if (promo.kind === "spend") return promo.minSubtotal ?? 0;
@@ -52,7 +52,7 @@ function giftsOnOffer(ev: { promo: FreeGiftPromo; unlockedTiers?: { tierIndex: n
         })()
       : promo;
   if (!source) return [];
-  return giftFaces(source).filter((g) => g.title);
+  return availableGiftFaces(source).filter((g) => g.title);
 }
 
 // The "Milestone bar" widget. Also reused, scoped to one product, as the

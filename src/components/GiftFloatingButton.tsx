@@ -5,7 +5,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Gift } from "lucide-react";
 import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
-import { giftFaces } from "@/lib/gift-faces";
+import { availableGiftFaces } from "@/lib/gift-faces";
 import { useCart } from "@/lib/cart-context";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
 import { useQuickChat } from "@/lib/quickchat-context";
@@ -88,7 +88,7 @@ export default function GiftFloatingButton() {
   // to tap.
   const giftCount = unlocked.reduce((n, ev) => {
     const sources = ev.unlockedTiers?.length ? ev.unlockedTiers : [ev.promo];
-    return n + sources.reduce((m, src) => m + giftFaces(src, productBySlug).length, 0);
+    return n + sources.reduce((m, src) => m + availableGiftFaces(src, productBySlug).length, 0);
   }, 0);
 
   return (

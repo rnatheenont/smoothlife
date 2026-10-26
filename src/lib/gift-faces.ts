@@ -1,4 +1,4 @@
-import { giftsOf, type FreeGiftItem } from "@/data/free-gifts";
+import { giftsOf, type FreeGiftItem } from "../data/free-gifts.ts";
 
 // What a promo visibly hands over: a picture and a name per gift.
 //
@@ -19,6 +19,9 @@ export type GiftFace = {
   title?: string;
   image?: string | null;
   qty: number;
+  /** The shop has run out. Null stock means we could not ask Shopify, which
+   *  is not the same as none left — see the API route. */
+  soldOut: boolean;
 };
 
 /** The shelf names every gift "[Free Gift] …" so staff can find them in
@@ -48,8 +51,26 @@ export function giftFaces(
       title: giftLabel(item.title) ?? fromCatalogue?.name,
       image: item.image ?? fromCatalogue?.image ?? null,
       qty: item.qty,
+      soldOut: typeof item.stock === "number" && item.stock <= 0,
     };
   });
+}
+
+/**
+ * The gifts still worth advertising.
+ *
+ * A promo survives on the storefront as long as one of its gifts is on the
+ * shelf, which is right — but every widget then drew all of them, sold out or
+ * not. Seen on the live site: the deal card offered Smooth E PHA-AHA SPOT &
+ * PORE at stock 0, which the cart already refuses to add and the checkout
+ * already drops. Promising it is the same mistake the cart was fixed for,
+ * one screen earlier.
+ */
+export function availableGiftFaces(
+  source: Parameters<typeof giftsOf>[0],
+  productBySlug?: (slug: string) => Catalogued,
+): GiftFace[] {
+  return giftFaces(source, productBySlug).filter((f) => !f.soldOut);
 }
 
 /** The one gift worth putting on a card that only has room for one. A gift
@@ -60,5 +81,6 @@ export function leadGiftFace(
   productBySlug?: (slug: string) => Catalogued,
 ): GiftFace | undefined {
   const faces = giftFaces(source, productBySlug);
-  return faces.find((f) => f.image) ?? faces[0];
+  const live = faces.filter((f) => !f.soldOut);
+  return live.find((f) => f.image) ?? live[0] ?? faces.find((f) => f.image) ?? faces[0];
 }
