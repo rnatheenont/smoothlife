@@ -5,6 +5,7 @@ import { ChevronDown, Sliders, Eye, RefreshCw, Upload, Loader2 } from "lucide-re
 import Link from "next/link";
 import { useAdminAction } from "@/components/admin/header-action";
 import { WIDGETS_MOVED_TO_PAGES, widgetIsReadOnly } from "@/lib/pages/moved-widgets";
+import GiftWidgetStyleEditor from "@/components/admin/GiftWidgetStyleEditor";
 import { Input } from "@heroui/react";
 
 type WidgetRow = {
@@ -202,6 +203,9 @@ export default function WidgetsPanel() {
   const [widgets, setWidgets] = useState<WidgetRow[]>([]);
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState<string | null>(null);
+  /** The style editor edits a whole config object rather than a map of
+   *  strings, so it keeps its own draft; the same Save button writes it. */
+  const [styleDrafts, setStyleDrafts] = useState<Record<string, Record<string, unknown>>>({});
   const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>(
     {},
   );
@@ -286,6 +290,20 @@ export default function WidgetsPanel() {
 
   async function saveConfig(w: WidgetRow) {
     setSaving(w.key);
+    const styleDraft = styleDrafts[w.key];
+    if (styleDraft) {
+      try {
+        await fetch(`/api/admin/free-gifts/widgets/${w.key}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ config: styleDraft }),
+        });
+        await load();
+      } finally {
+        setSaving(null);
+      }
+      return;
+    }
     const draft = drafts[w.key] ?? {};
     const config: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(draft)) {
@@ -379,7 +397,15 @@ export default function WidgetsPanel() {
 
           {openKey === w.key && (
             <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-              {fieldsFor(w).length === 0 ? (
+              {/* The milestone bar is the one widget the shop restyles rather
+                  than re-words, so it gets the style editor the app on
+                  Shopify has instead of a list of text fields. */}
+              {w.key === "milestone_bar" ? (
+                <GiftWidgetStyleEditor
+                  config={styleDrafts[w.key] ?? w.config}
+                  onChange={(next) => setStyleDrafts((prev) => ({ ...prev, [w.key]: next }))}
+                />
+              ) : fieldsFor(w).length === 0 ? (
                 <p className="text-[11px] text-slate-400">
                   widget นี้ไม่มีตัวเลือกให้ปรับแต่ง
                 </p>

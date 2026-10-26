@@ -6,6 +6,7 @@ import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
 import { useLang } from "@/lib/lang-context";
 import { availableGiftFaces, type GiftFace } from "@/lib/gift-faces";
+import { giftWidgetStyle } from "@/lib/gift-widget-style";
 
 // The gift, as a thing you get.
 //
@@ -49,19 +50,34 @@ export default function FreeGiftTiles({ scopedToSlug }: { scopedToSlug?: string 
   const faces = facesFor(evals, productBySlug);
   if (faces.length === 0) return null;
 
+  // Whatever the shop set in the widget editor. An untouched widget gives
+  // back the defaults, which are the numbers this was drawn with before the
+  // editor existed — so nothing moves until somebody moves it.
+  const style = giftWidgetStyle(settings.milestone_bar.config);
+
   return (
-    <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+    <ul className="grid grid-cols-2 sm:grid-cols-3" style={{ gap: style.gap }}>
       {faces.map((face) => (
         <li
           key={face.key}
-          className="flex items-center gap-2 rounded-xl2 bg-brand-gradient-soft p-2 ring-1 ring-brand-100"
+          style={{ borderRadius: style.radius }}
+          className="flex items-center gap-2 bg-brand-gradient-soft p-2 ring-1 ring-brand-100"
         >
-          <span className="relative size-11 shrink-0 overflow-hidden rounded-m bg-white">
-            {face.image && <Image src={face.image} alt="" fill sizes="44px" className="object-contain" />}
+          <span
+            style={{ width: style.iconSize, height: style.iconSize, borderRadius: style.radius }}
+            className="relative shrink-0 overflow-hidden bg-white"
+          >
+            {face.image && <Image src={face.image} alt="" fill sizes="64px" className="object-contain" />}
           </span>
-          <span className="min-w-0 flex-1 text-[11px] font-semibold leading-tight text-brand-ink">
+          <span
+            style={{ fontSize: style.tierSize, color: style.text }}
+            className="min-w-0 flex-1 font-semibold leading-tight"
+          >
             <span className="line-clamp-2">{face.title}</span>
-            <span className="brand-text-gradient mt-0.5 block font-bold">
+            <span
+              style={{ color: style.accentFrom }}
+              className="mt-0.5 block font-bold"
+            >
               {t("ฟรี", "Free")}
               {face.qty > 1 && <span className="font-normal text-slate-500"> × {face.qty}</span>}
             </span>
