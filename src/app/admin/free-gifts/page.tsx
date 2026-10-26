@@ -86,13 +86,17 @@ const EMPTY_FORM: FormState = {
 
 /** What the API is told about one chosen gift. The name and picture are for
  *  the operator's eyes only — the server looks both up from the shelf. */
-/** "ยาสีฟัน x2 และ แปรงสีฟัน" — what the operator is about to promise,
- *  read back to them before they save it. */
-function describeGifts(gifts: GiftFormRow[]): string {
+/** "ยาสีฟัน x2 + แปรงสีฟัน" — what the operator is about to promise, read
+ *  back to them before they save it.
+ *
+ *  The names come from the shelf, because a promo loaded for editing arrives
+ *  from the admin API as variant ids: without the resolver this read
+ *  "฿699 → ของแถม", which is the one thing the preview exists not to say. */
+function describeGifts(gifts: GiftFormRow[], nameFor?: (variantId: string) => string | undefined): string {
   if (gifts.length === 0) return "—";
   return gifts
     .map((g) => {
-      const name = giftName(g.title) || "ของแถม";
+      const name = giftName(g.title || nameFor?.(g.variantId) || "") || "ของแถม";
       return Number(g.qty) > 1 ? `${name} x${g.qty}` : name;
     })
     .join(" + ");
@@ -281,6 +285,10 @@ export default function AdminFreeGiftsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  // The shelf is already loaded for the pickers; the preview borrows it to
+  // turn the variant ids an edited promo arrives with into names.
+  const { gifts: shelf } = useGiftShelf();
+  const shelfNameFor = (variantId: string) => shelf?.find((g) => g.variantId === variantId)?.title;
 
   async function loadList() {
     const res = await fetch("/api/admin/free-gifts");
@@ -1063,13 +1071,13 @@ export default function AdminFreeGiftsPage() {
                     </p>
                     <p className="text-xs text-brand-ink">
                       {describeCondition(form)}
-                      {form.kind !== "tiered" && ` → รับฟรี ${describeGifts(form.gifts)}`}
+                      {form.kind !== "tiered" && ` → รับฟรี ${describeGifts(form.gifts, shelfNameFor)}`}
                     </p>
                     {form.kind === "tiered" && (
                       <ul className="mt-1 space-y-0.5">
                         {form.tiers.map((t, i) => (
                           <li key={i} className="text-[11px] text-brand-ink">
-                            ฿{Number(t.minSubtotal || 0).toLocaleString()} → {describeGifts(t.gifts)}
+                            ฿{Number(t.minSubtotal || 0).toLocaleString()} → {describeGifts(t.gifts, shelfNameFor)}
                           </li>
                         ))}
                       </ul>
