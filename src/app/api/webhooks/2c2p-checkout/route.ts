@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { twoC2PConfigured, verifyPaymentCallback } from "@/lib/2c2p";
 import { createPaidShopifyOrder } from "@/lib/shopify-admin";
+import { giftOrderTags } from "@/lib/checkout-gifts-rules";
 import { confirmStock, releaseStock } from "@/lib/stock-reservation";
 import { notifyOrderPaid } from "@/lib/order-notify";
 import { handleOrdersPaid } from "@/lib/order-paid";
@@ -12,7 +13,8 @@ type TransactionRow = {
   status: string;
   amount: number;
   currency_code: string;
-  line_items: { variantId: string; quantity: number; price: number }[] | null;
+  /** Gift lines carry promoSlug as well — see /api/checkout/init. */
+  line_items: { variantId: string; quantity: number; price: number; promoSlug?: string }[] | null;
   discount_code: string | null;
   discount_amount: number | null;
   contact_email: string | null;
@@ -111,6 +113,10 @@ export async function POST(req: NextRequest) {
       },
       note: "สั่งซื้อผ่านหน้าชำระเงินของเว็บไซต์ (2C2P)",
       tranRef: callback.tranRef,
+      // A gift is a ฿0 line and nothing more, so without this an order that
+      // gave five things away is indistinguishable from one that gave none —
+      // and "what did the campaign cost" has no answer in Shopify at all.
+      tags: giftOrderTags(transaction.line_items ?? []),
       discount: transaction.discount_code
         ? { code: transaction.discount_code, amount: transaction.discount_amount ?? 0 }
         : null,

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { giftLinesFrom } from "./checkout-gifts-rules.ts";
+import { giftLinesFrom, giftOrderTags } from "./checkout-gifts-rules.ts";
 import type { FreeGiftPromo } from "../data/free-gifts.ts";
 import type { CartLine } from "../data/coupons.ts";
 
@@ -217,4 +217,54 @@ test("every line it returns is free", () => {
   for (const line of giftLinesFrom([spendPromo()], basket, NONE, NOW, noCatalogue)) {
     assert.equal(line.price, 0);
   }
+});
+
+// The tags the Shopify order is created with. A gift is a ฿0 line and nothing
+// else, so these are the only thing that makes a giveaway countable later.
+
+test("tags name every promo that gave something", () => {
+  assert.deepEqual(
+    giftOrderTags([
+      { price: 679, promoSlug: undefined },
+      { price: 0, promoSlug: "aov-free-gift-orders" },
+      { price: 0, promoSlug: "aov-gwp-oct-25-31::tier-1" },
+    ]),
+    ["free-gift", "free-gift:aov-free-gift-orders", "free-gift:aov-gwp-oct-25-31"],
+  );
+});
+
+test("an order with no gift gets no tag at all", () => {
+  assert.deepEqual(giftOrderTags([{ price: 679 }, { price: 1599 }]), []);
+});
+
+test("a paid line is never mistaken for a gift, even with a slug on it", () => {
+  assert.deepEqual(giftOrderTags([{ price: 10, promoSlug: "spend-1000" }]), []);
+});
+
+test("one campaign named twice is still one tag", () => {
+  assert.deepEqual(
+    giftOrderTags([
+      { price: 0, promoSlug: "gwp::tier-0" },
+      { price: 0, promoSlug: "gwp::tier-1" },
+    ]),
+    ["free-gift", "free-gift:gwp"],
+  );
+});
+
+test("a gift two promos both gave keeps both campaigns", () => {
+  assert.deepEqual(giftOrderTags([{ price: 0, promoSlug: "a,b::tier-2" }]), [
+    "free-gift",
+    "free-gift:a",
+    "free-gift:b",
+  ]);
+});
+
+test("two promos landing on one gift merge without losing either", () => {
+  const promos: FreeGiftPromo[] = [
+    spendPromo({ slug: "first" }),
+    spendPromo({ slug: "second" }),
+  ];
+  const [line] = giftLinesFrom(promos, basket, NONE, NOW, noCatalogue);
+  assert.equal(line.quantity, 2);
+  assert.deepEqual(giftOrderTags([line]), ["free-gift", "free-gift:first", "free-gift:second"]);
 });

@@ -211,7 +211,15 @@ export async function POST(req: NextRequest) {
       // has to learn about gifts; the order simply has them.
       line_items: [
         ...resolved.map((l) => ({ variantId: l.variantId, quantity: l.quantity, price: l.price })),
-        ...gifts.map((g) => ({ variantId: g.variantId, quantity: g.quantity, price: 0 })),
+        // promoSlug rides along so the webhook can tag the Shopify order with
+        // the campaign that paid for the gift — it is the only place that
+        // knowledge still exists by then.
+        ...gifts.map((g) => ({
+          variantId: g.variantId,
+          quantity: g.quantity,
+          price: 0,
+          promoSlug: g.promoSlug,
+        })),
       ],
       discount_code: appliedCode,
       discount_amount: discount,

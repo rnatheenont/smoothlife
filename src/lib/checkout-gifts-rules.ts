@@ -16,7 +16,9 @@ export type CheckoutGiftLine = {
   quantity: number;
   /** Always zero. The line is the gift; the shopper pays nothing for it. */
   price: 0;
-  /** Which promo granted it, so a refund or a question has something to read. */
+  /** Which promo granted it, so a refund or a question has something to read,
+   *  and so the Shopify order can be tagged with it. Two promos landing on the
+   *  same gift merge into one line and keep both slugs, comma-separated. */
   promoSlug: string;
 };
 
@@ -95,8 +97,39 @@ export function giftLinesFrom(
   const merged = new Map<string, CheckoutGiftLine>();
   for (const line of out) {
     const seen = merged.get(line.variantId);
-    if (seen) seen.quantity += line.quantity;
-    else merged.set(line.variantId, { ...line });
+    if (seen) {
+      seen.quantity += line.quantity;
+      // Both promos gave this, and the order should say so — dropping the
+      // second slug would make one campaign's giveaway invisible in every
+      // report that counts by tag.
+      const slugs = new Set(seen.promoSlug.split(","));
+      slugs.add(line.promoSlug);
+      seen.promoSlug = [...slugs].join(",");
+    } else merged.set(line.variantId, { ...line });
   }
   return [...merged.values()];
+}
+
+/** What to tag an order with, read off the lines it is about to be created
+ *  from.
+ *
+ *  A gift is a ฿0 line among paid ones and nothing else, so an order that gave
+ *  three things away looks, in every Shopify report, exactly like one that gave
+ *  none. The flat `free-gift` tag answers "which orders carried a gift"; the
+ *  per-promo ones answer "what did this campaign cost us", which is the
+ *  question actually worth asking at the end of a campaign.
+ *
+ *  Tier slugs arrive as `promo::tier-1`; the campaign is the promo, so the
+ *  tier is dropped — otherwise each tier would count as its own campaign. */
+export function giftOrderTags(lines: { price: number; promoSlug?: string }[]): string[] {
+  const slugs = new Set<string>();
+  for (const line of lines) {
+    if (line.price !== 0 || !line.promoSlug) continue;
+    for (const slug of line.promoSlug.split(",")) {
+      const promo = slug.split("::")[0].trim();
+      if (promo) slugs.add(promo);
+    }
+  }
+  if (slugs.size === 0) return [];
+  return ["free-gift", ...[...slugs].sort().map((s) => `free-gift:${s}`)];
 }
