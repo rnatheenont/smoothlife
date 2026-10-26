@@ -586,14 +586,29 @@ export default function AdminKnowledgeBasePage() {
                   hunt across a grid. Below md the same row is a card, since
                   five columns do not fit a phone. */}
               <div className="hidden md:block">
-                <table className={adminTable.table}>
+                {/* table-fixed, so the columns come from these headers rather
+                    than from the content. Measured on the live console: with
+                    the default auto layout the "สินค้า: …" line under the date
+                    is `truncate`, which is white-space:nowrap, and a nowrap
+                    cell's minimum width is its whole string — 819px of product
+                    handles, which never broke and so never truncated. That one
+                    line set "แก้ไขล่าสุด" to 843px against its declared w-48,
+                    crushed "จัดการ" to 86px so its buttons wrapped onto two
+                    lines, and pushed the table 27px past the card at 1600px
+                    (499px at 900px — and this wrapper has no overflow-x, so
+                    there was nowhere for it to go).
+                    The fixed widths below are what the content actually needs
+                    (pill 66px, status 97px, date 80px, buttons 126px) rather
+                    than the old guesses, so the title column keeps the rest:
+                    756px at 1600, 152px at the md breakpoint. */}
+                <table className={`${adminTable.table} table-fixed`}>
                   <thead className={adminTable.thead}>
                     <tr>
                       <th>หัวข้อ</th>
-                      <th className="w-40">ประเภท</th>
-                      <th className="w-40">สถานะ</th>
-                      <th className="w-48">แก้ไขล่าสุด</th>
-                      <th className="w-64 text-right">จัดการ</th>
+                      <th className="w-28">ประเภท</th>
+                      <th className="w-32">สถานะ</th>
+                      <th className="w-32">แก้ไขล่าสุด</th>
+                      <th className="w-40 text-right">จัดการ</th>
                     </tr>
                   </thead>
                   <tbody>
