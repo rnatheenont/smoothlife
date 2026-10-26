@@ -102,32 +102,62 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
       );
     case "deal_of_day":
       return (
-        <div className="rounded-lg bg-amber-50 border border-amber-200 p-2 text-center">
-          <p className="text-[10px] font-bold text-brand-ink">
-            ดีลวันนี้ รับของแถมได้เลย
-          </p>
-          <p className="text-xs font-bold mt-1">23:59:59</p>
+        <div className="rounded-lg bg-brand-gradient-soft p-2">
+          <p className="text-[10px] font-bold text-brand-ink">ดีลวันนี้ รับของแถมได้เลย</p>
+          <div className="mt-1 flex items-end gap-1">
+            {[
+              ["02", "วัน"],
+              ["11", "ชม."],
+              ["40", "นาที"],
+            ].map(([v, l]) => (
+              <span key={l} className="flex flex-col items-center gap-0.5">
+                <span className="rounded bg-brand-ink px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white">{v}</span>
+                <span className="text-[7px] font-semibold text-brand-800">{l}</span>
+              </span>
+            ))}
+            <span className="ml-auto flex gap-1">
+              {[1, 2].map((i) => (
+                <span key={i} className="h-6 w-6 rounded bg-white/80 ring-1 ring-white" />
+              ))}
+            </span>
+          </div>
+          <div className="mt-1.5 h-4 rounded-full bg-brand-gradient" />
         </div>
       );
     case "tiered_box":
       return (
-        <div className="flex justify-between">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="text-center">
-              <div
-                className={`grid h-6 w-6 place-items-center rounded-full text-[9px] ${i === 1 ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-400"}`}
-              >
-                {i}
+        <div>
+          <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+            <div className="h-full w-2/5 rounded-full bg-brand-gradient" />
+          </div>
+          <div className="flex justify-between gap-1">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex-1 text-center">
+                <div
+                  className={`mx-auto h-8 w-8 rounded-lg ring-1 ${i === 1 ? "bg-brand-50 ring-brand-200" : "bg-slate-50 opacity-60 ring-surface-line"}`}
+                />
+                <p className="mt-1 text-[8px] font-bold text-slate-400">฿{i * 500}</p>
               </div>
-              <p className="text-[8px] text-slate-400 mt-1">฿{i * 500}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       );
     case "promotion_card":
       return (
-        <div className="rounded-lg bg-linear-to-t from-black/60 to-brand-teal/40 h-16 flex items-end p-2">
-          <span className="text-white text-[10px] font-bold">ซื้อครบฟรี</span>
+        <div className="flex gap-1.5">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="flex h-16 flex-1 items-end rounded-lg bg-brand-gradient p-1.5"
+            >
+              <span className="w-full">
+                <span className="inline-block rounded-full bg-white/25 px-1.5 text-[7px] font-bold text-white">
+                  ซื้อครบฟรี
+                </span>
+                <span className="mt-0.5 block h-1.5 w-4/5 rounded-full bg-white/70" />
+              </span>
+            </div>
+          ))}
         </div>
       );
     case "promotion_badge":
@@ -144,14 +174,19 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
       );
     case "congrats_bar":
       return (
-        <div className="rounded-full bg-brand-gradient text-white text-[10px] font-semibold text-center py-2">
-          🎉 ปลดล็อกของแถมแล้ว!
+        <div className="flex items-center gap-2 rounded-full bg-brand-gradient py-1.5 pl-1.5 pr-3 text-white">
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-white/20 text-[11px]">🎉</span>
+          <span className="flex-1 text-[10px] font-semibold">ปลดล็อกของแถมแล้ว!</span>
+          <span className="text-[10px] opacity-70">✕</span>
         </div>
       );
     case "floating_button":
       return (
-        <div className="grid h-12 w-12 place-items-center rounded-full bg-brand-gradient text-white mx-auto text-lg">
+        <div className="relative mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-gradient text-lg text-white ring-2 ring-brand-teal/40">
           🎁
+          <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+            3
+          </span>
         </div>
       );
     default:

@@ -1,11 +1,13 @@
 "use client";
 
-import { Check, Gift } from "lucide-react";
+import Image from "next/image";
+import { Check, Gift, Lock } from "lucide-react";
 import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
 import { useCart } from "@/lib/cart-context";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
 import { useLang } from "@/lib/lang-context";
 import { formatTHB } from "@/lib/format";
+import { leadGiftFace } from "@/lib/gift-faces";
 
 /** Where the fill should stop, as a fraction of the track.
  *
@@ -67,25 +69,49 @@ export default function TieredRewardBox() {
                 style={{ width: `${percent}%` }}
               />
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-2">
               {tiers.map((tier, i) => {
                 const unlocked = i < unlockedCount;
-                const gp = productBySlug(tier.giftProductSlug);
+                // The reward, photographed. This read tier.giftProductSlug
+                // and printed it raw when the catalogue had never heard of
+                // it — which, for every tiered promo currently running, meant
+                // printing an empty string under each rung of the ladder.
+                const face = leadGiftFace(tier, productBySlug);
                 return (
-                  <div key={i} className="flex flex-col items-center gap-1 text-center flex-1">
-                    <div
-                      className={`grid h-8 w-8 place-items-center rounded-full ${unlocked ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-500"}`}
-                    >
-                      {unlocked ? <Check size={14} /> : <span className="text-[10px] font-bold">{i + 1}</span>}
-                    </div>
-                    <span className={`text-[11px] font-semibold ${unlocked ? "text-brand-800" : "text-slate-500"}`}>
+                  <div key={i} className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
+                    <span className="relative">
+                      {face?.image ? (
+                        <Image
+                          src={face.image}
+                          alt=""
+                          width={96}
+                          height={96}
+                          className={`size-12 rounded-xl2 bg-white object-contain ring-1 transition ${
+                            unlocked ? "ring-brand-200" : "opacity-55 grayscale ring-surface-line"
+                          }`}
+                        />
+                      ) : (
+                        <span
+                          className={`grid size-12 place-items-center rounded-xl2 ring-1 ${
+                            unlocked ? "bg-brand-50 text-brand-emerald ring-brand-200" : "bg-slate-50 text-slate-400 ring-surface-line"
+                          }`}
+                        >
+                          <Gift size={18} aria-hidden />
+                        </span>
+                      )}
+                      <span
+                        className={`absolute -bottom-1 -right-1 grid size-5 place-items-center rounded-full text-white ${
+                          unlocked ? "bg-brand-gradient" : "bg-slate-300"
+                        }`}
+                      >
+                        {unlocked ? <Check size={11} /> : <Lock size={9} />}
+                      </span>
+                    </span>
+                    <span className={`text-[11px] font-bold ${unlocked ? "text-brand-800" : "text-slate-500"}`}>
                       ฿{tier.minSubtotal.toLocaleString()}
                     </span>
-                    {/* 9px clamped to one line in 60px, which on a phone was
-                        a grey smudge rather than the name of the thing being
-                        offered. */}
                     <span className="line-clamp-2 px-0.5 text-[11px] leading-tight text-slate-500">
-                      {gp?.name ?? tier.giftProductSlug}
+                      {face?.title ?? ""}
                     </span>
                   </div>
                 );

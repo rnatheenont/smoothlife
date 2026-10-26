@@ -1,9 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
+import { Gift, ArrowRight } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
 import { useLang } from "@/lib/lang-context";
+import { leadGiftFace } from "@/lib/gift-faces";
+import { formatTHB } from "@/lib/format";
+import type { FreeGiftPromo } from "@/data/free-gifts";
 
 const KIND_BADGE: Record<string, { th: string; en: string }> = {
   spend: { th: "ซื้อครบฟรี", en: "Spend & get free" },
@@ -11,10 +16,26 @@ const KIND_BADGE: Record<string, { th: string; en: string }> = {
   tiered: { th: "ยิ่งซื้อยิ่งได้", en: "Tiered rewards" },
 };
 
-// Mirrors src/data/promotions.ts's homepage banner card visual pattern
-// exactly, fed by real active free-gift promos instead of the static
-// hardcoded array.
 export type PromoCardConfig = { maxCards: number };
+
+/** The condition, in the shopper's words rather than the schema's. A card
+ *  that says what the promo is called but not what it asks for leaves the one
+ *  question unanswered. */
+function conditionOf(promo: FreeGiftPromo, en: boolean): string | undefined {
+  if (promo.kind === "spend" && promo.minSubtotal && promo.minSubtotal > 1) {
+    return en ? `Spend ${formatTHB(promo.minSubtotal)}` : `ซื้อครบ ${formatTHB(promo.minSubtotal)}`;
+  }
+  if (promo.kind === "tiered") {
+    const tiers = [...(promo.tiers ?? [])].sort((a, b) => a.minSubtotal - b.minSubtotal);
+    const first = tiers[0]?.minSubtotal;
+    if (first) return en ? `From ${formatTHB(first)}` : `เริ่มที่ ${formatTHB(first)}`;
+  }
+  if (promo.kind === "bxgy" && promo.buyQty) {
+    return en ? `Buy ${promo.buyQty}` : `ซื้อ ${promo.buyQty} ชิ้น`;
+  }
+  // A promo with no threshold worth naming — "every order" — says so.
+  return en ? "Every order" : "ทุกคำสั่งซื้อ";
+}
 
 export default function FreeGiftPromoCard({ config }: { config?: PromoCardConfig }) {
   const { giftPromos, productBySlug } = useCart();
@@ -29,31 +50,64 @@ export default function FreeGiftPromoCard({ config }: { config?: PromoCardConfig
   if (active.length === 0) return null;
   const maxCards = Number(config?.maxCards ?? widget.config.maxCards ?? 4);
   const cards = active.slice(0, maxCards);
+  const en = lang === "en";
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 my-6 md:my-8">
+    <div className="my-6 grid grid-cols-2 gap-3 md:my-8 md:grid-cols-4 md:gap-4">
       {cards.map((promo) => {
-        const imgSlug = promo.kind === "tiered" ? promo.tiers?.[0]?.giftProductSlug : promo.giftProductSlug;
-        const product = imgSlug ? productBySlug(imgSlug) : undefined;
+        // The gift's own photograph, wherever it is written down. This used
+        // to read giftProductSlug and nothing else — the field every promo
+        // currently running leaves empty — so the cards were grey rectangles
+        // with a caption, which is what prompted this rewrite.
+        const source = promo.kind === "tiered" ? (promo.tiers?.[0] ?? promo) : promo;
+        const face = leadGiftFace(source, productBySlug);
         const badge = KIND_BADGE[promo.kind] ?? KIND_BADGE.spend;
+        const title = en ? promo.titleEn : promo.titleTh;
         return (
-          <div key={promo.slug} className="relative rounded-xl2 overflow-hidden aspect-4/3 group shadow-card">
-            {product && (
+          <Link
+            key={promo.slug}
+            href="/cart"
+            aria-label={title}
+            className="group relative flex aspect-4/3 flex-col justify-end overflow-hidden rounded-xl2 bg-brand-dark shadow-card transition-shadow hover:shadow-cardHover"
+          >
+            {face?.image ? (
               <Image
-                src={product.image}
-                alt={product.name}
+                src={face.image}
+                alt=""
                 fill
-                className="object-cover transition-transform duration-500"
+                sizes="(max-width: 768px) 50vw, 25vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
-            )}
-            <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/5 to-transparent" />
-            <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
-              <span className="text-[10px] font-bold bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full">
-                {lang === "en" ? badge.en : badge.th}
+            ) : (
+              // Not a grey void. A promo whose gift has no photograph still
+              // has a brand and a shape, and the card has to stand next to
+              // ones that do without looking broken.
+              <span aria-hidden className="absolute inset-0 grid place-items-center bg-brand-gradient">
+                <Gift size={40} className="text-white/35" />
               </span>
-              <h3 className="font-bold text-sm md:text-base mt-1 line-clamp-1">{lang === "en" ? promo.titleEn : promo.titleTh}</h3>
+            )}
+
+            <span
+              aria-hidden
+              className="absolute inset-x-0 bottom-0 h-3/5 bg-linear-to-t from-black/80 via-black/40 to-transparent"
+            />
+
+            <div className="relative p-3 text-white md:p-4">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm">
+                <Gift size={10} aria-hidden />
+                {en ? badge.en : badge.th}
+              </span>
+              <h3 className="mt-1.5 line-clamp-2 text-sm font-bold leading-snug md:text-base">{title}</h3>
+              <span className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-white/85">
+                {conditionOf(promo, en)}
+                <ArrowRight
+                  size={12}
+                  aria-hidden
+                  className="transition-transform duration-300 group-hover:translate-x-0.5"
+                />
+              </span>
             </div>
-          </div>
+          </Link>
         );
       })}
     </div>

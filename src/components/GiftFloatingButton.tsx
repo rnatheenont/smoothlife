@@ -5,6 +5,8 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Gift } from "lucide-react";
 import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
+import { giftFaces } from "@/lib/gift-faces";
+import { useCart } from "@/lib/cart-context";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
 import { useQuickChat } from "@/lib/quickchat-context";
 import { Button } from "@/components/ui";
@@ -19,6 +21,7 @@ export default function GiftFloatingButton() {
   const { settings } = useWidgetSettings();
   const router = useRouter();
   const { stickyBarVisible } = useQuickChat();
+  const { productBySlug } = useCart();
 
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -77,7 +80,16 @@ export default function GiftFloatingButton() {
   }
 
   if (!settings.floating_button.enabled) return null;
-  if (!evals.some((e) => e.eligible)) return null;
+  const unlocked = evals.filter((e) => e.eligible);
+  if (unlocked.length === 0) return null;
+
+  // How many presents are waiting, not merely that some are. A bare red dot
+  // is the same badge an unread notification wears; a number is the reason
+  // to tap.
+  const giftCount = unlocked.reduce((n, ev) => {
+    const sources = ev.unlockedTiers?.length ? ev.unlockedTiers : [ev.promo];
+    return n + sources.reduce((m, src) => m + giftFaces(src, productBySlug).length, 0);
+  }, 0);
 
   return (
     <div
@@ -87,9 +99,17 @@ export default function GiftFloatingButton() {
         transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
       }}
     >
-      <Button size="none" className="relative grid h-14 w-14 place-items-center shadow-cardHover touch-none" type="button" onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} onClick={handleClick} aria-label="ของแถมที่ปลดล็อกแล้ว">
+      <Button size="none" className="relative grid h-14 w-14 place-items-center shadow-cardHover touch-none" type="button" onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} onClick={handleClick} aria-label={`ของแถมที่ปลดล็อกแล้ว ${giftCount} ชิ้น`}>
         <Gift size={24} />
-        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-rose-500 animate-pop" />
+        {giftCount > 0 && (
+          <span className="animate-pop absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[11px] font-bold leading-5 text-white ring-2 ring-white">
+            {giftCount}
+          </span>
+        )}
+        <span
+          aria-hidden
+          className="animate-glowPulse pointer-events-none absolute inset-0 rounded-full ring-2 ring-brand-teal/50"
+        />
       </Button>
     </div>
   );

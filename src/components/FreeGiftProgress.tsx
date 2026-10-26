@@ -6,7 +6,8 @@ import { useLang } from "@/lib/lang-context";
 import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
 import { useCart } from "@/lib/cart-context";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
-import { giftsOf, type FreeGiftPromo } from "@/data/free-gifts";
+import { type FreeGiftPromo } from "@/data/free-gifts";
+import { giftFaces } from "@/lib/gift-faces";
 
 function thresholdFor(promo: { kind: string; minSubtotal?: number; buyQty?: number; tiers?: { minSubtotal: number }[] }) {
   if (promo.kind === "spend") return promo.minSubtotal ?? 0;
@@ -32,13 +33,6 @@ function percentFor(promo: FreeGiftPromo, subtotal: number, qtyOf: (slugs: strin
   return pct(qtyOf(promo.buyProductSlugs ?? []), promo.buyQty ?? 0);
 }
 
-/** The shelf tags every gift "[Free Gift] …" so staff can find them in
- *  Shopify. A shopper reading a card about free gifts does not need telling
- *  twice — the cart has stripped it for the same reason since it was built. */
-function giftName(title?: string) {
-  return title?.replace(/^\s*(TEST\s*\|\s*)?\[Free Gift\]\s*/i, "").trim() || undefined;
-}
-
 /** What is being offered, rather than what the promo was named.
  *
  *  A promo's title is written by whoever set it up; the gift's name and
@@ -58,9 +52,7 @@ function giftsOnOffer(ev: { promo: FreeGiftPromo; unlockedTiers?: { tierIndex: n
         })()
       : promo;
   if (!source) return [];
-  return giftsOf(source)
-    .map((g) => ({ title: giftName(g.title), image: g.image, qty: g.qty }))
-    .filter((g) => g.title);
+  return giftFaces(source).filter((g) => g.title);
 }
 
 // The "Milestone bar" widget. Also reused, scoped to one product, as the
@@ -142,7 +134,7 @@ export default function FreeGiftProgress({ scopedToSlug }: { scopedToSlug?: stri
                   {gifts.length > 0 && (
                     <span className="mt-2 flex flex-col gap-1.5">
                       {gifts.map((g) => (
-                        <span key={`${g.title}`} className="flex items-center gap-2">
+                        <span key={g.key} className="flex items-center gap-2">
                           {g.image && (
                             <Image
                               src={g.image}

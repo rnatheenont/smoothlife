@@ -7,6 +7,7 @@ import { Gift } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { Modal } from "@/components/ui";
 import { giftsOf, type FreeGiftEval, type FreeGiftItem } from "@/data/free-gifts";
+import { giftLabel } from "@/lib/gift-faces";
 import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
 import { useGiftEligibilityTransitions } from "@/lib/use-gift-eligibility-transitions";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
@@ -26,11 +27,6 @@ import { useLang } from "@/lib/lang-context";
 // It also borrows the shared dialog rather than drawing its own overlay, so
 // Escape, the backdrop, the focus trap and the locked page behind it all work
 // the way they do everywhere else in this app.
-
-/** The shelf names every gift "[Free Gift] …" for staff. Nobody being handed
- *  one needs telling it is free twice. */
-const giftName = (title?: string) =>
-  title?.replace(/^\s*(TEST\s*\|\s*)?\[Free Gift\]\s*/i, "").trim() || undefined;
 
 /** What this promo just handed over — the unlocked tiers' gifts for a ladder,
  *  the promo's own for everything else. */
@@ -71,7 +67,7 @@ export default function GiftUnlockPopup() {
   const won = visible.flatMap((ev) =>
     wonFrom(ev).map((g) => ({
       key: `${ev.promo.slug}-${g.variantId ?? g.productSlug}`,
-      name: giftName(g.title) ?? (lang === "en" ? ev.promo.titleEn : ev.promo.titleTh),
+      name: giftLabel(g.title) ?? (lang === "en" ? ev.promo.titleEn : ev.promo.titleTh),
       image: g.image,
       qty: g.qty,
     })),
