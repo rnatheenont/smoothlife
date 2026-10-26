@@ -6,7 +6,7 @@ import { useLang } from "@/lib/lang-context";
 import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
 import { useCart } from "@/lib/cart-context";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
-import type { FreeGiftPromo } from "@/data/free-gifts";
+import { giftsOf, type FreeGiftPromo } from "@/data/free-gifts";
 
 function thresholdFor(promo: { kind: string; minSubtotal?: number; buyQty?: number; tiers?: { minSubtotal: number }[] }) {
   if (promo.kind === "spend") return promo.minSubtotal ?? 0;
@@ -32,13 +32,6 @@ function percentFor(promo: FreeGiftPromo, subtotal: number, qtyOf: (slugs: strin
   return pct(qtyOf(promo.buyProductSlugs ?? []), promo.buyQty ?? 0);
 }
 
-/** The gift itself — what is being offered, rather than what the promo was
- *  named. A promo's title is written by whoever set it up; the gift's name and
- *  picture come off the shelf it is picked from, and "ถุงผ้า" with a picture of
- *  the bag answers a question that a title never does.
- *
- *  Tiered promos show the next gift still to come when there is one, because
- *  that is the one worth adding to the basket for. */
 /** The shelf tags every gift "[Free Gift] …" so staff can find them in
  *  Shopify. A shopper reading a card about free gifts does not need telling
  *  twice — the cart has stripped it for the same reason since it was built. */
@@ -46,15 +39,28 @@ function giftName(title?: string) {
   return title?.replace(/^\s*(TEST\s*\|\s*)?\[Free Gift\]\s*/i, "").trim() || undefined;
 }
 
-function giftOnOffer(ev: { promo: FreeGiftPromo; unlockedTiers?: { tierIndex: number }[] }) {
+/** What is being offered, rather than what the promo was named.
+ *
+ *  A promo's title is written by whoever set it up; the gift's name and
+ *  picture come off the shelf it is picked from, and a photo of the bag
+ *  answers a question a title never does. A promo can hand over several
+ *  things at once, so this is a list.
+ *
+ *  Tiered promos show the next tier still to come, because that is the one
+ *  worth adding to the basket for. */
+function giftsOnOffer(ev: { promo: FreeGiftPromo; unlockedTiers?: { tierIndex: number }[] }) {
   const { promo } = ev;
-  if (promo.kind === "tiered") {
-    const tiers = [...(promo.tiers ?? [])].sort((a, b) => a.minSubtotal - b.minSubtotal);
-    const reached = ev.unlockedTiers?.length ?? 0;
-    const next = tiers[reached] ?? tiers[tiers.length - 1];
-    return next ? { title: giftName(next.giftTitle), image: next.giftImage } : null;
-  }
-  return { title: giftName(promo.giftTitle), image: promo.giftImage };
+  const source =
+    promo.kind === "tiered"
+      ? (() => {
+          const tiers = [...(promo.tiers ?? [])].sort((a, b) => a.minSubtotal - b.minSubtotal);
+          return tiers[ev.unlockedTiers?.length ?? 0] ?? tiers[tiers.length - 1];
+        })()
+      : promo;
+  if (!source) return [];
+  return giftsOf(source)
+    .map((g) => ({ title: giftName(g.title), image: g.image, qty: g.qty }))
+    .filter((g) => g.title);
 }
 
 // The "Milestone bar" widget. Also reused, scoped to one product, as the
@@ -87,7 +93,7 @@ export default function FreeGiftProgress({ scopedToSlug }: { scopedToSlug?: stri
         {sorted.map((ev, i) => {
           const title = lang === "en" ? ev.promo.titleEn : ev.promo.titleTh;
           const reason = lang === "en" ? ev.reasonEn : ev.reasonTh;
-          const gift = giftOnOffer(ev);
+          const gifts = giftsOnOffer(ev);
           if (connected) {
             return (
               <div key={ev.promo.slug} className="flex items-center flex-1 min-w-0">
@@ -133,30 +139,27 @@ export default function FreeGiftProgress({ scopedToSlug }: { scopedToSlug?: stri
                 <div className="min-w-0 flex-1">
                   <span className="text-sm font-bold text-brand-ink">{title}</span>
                   <p className={`text-xs mt-1 font-semibold ${ev.eligible ? "text-brand-800" : "text-amber-700"}`}>{reason}</p>
-                  {gift?.title && (
-                    <span className="mt-2 flex items-center gap-2">
-                      {gift.image && (
-                        <Image
-                          src={gift.image}
-                          alt=""
-                          width={72}
-                          height={72}
-                          className="size-9 shrink-0 rounded-lg bg-white object-contain ring-1 ring-slate-100"
-                        />
-                      )}
-                      <span className="min-w-0 text-[11px] leading-tight text-slate-500">
-                        {t("ของแถม", "Gift")}:{" "}
-                        <span className="font-semibold text-brand-ink">{gift.title}</span>
-                      </span>
+                  {gifts.length > 0 && (
+                    <span className="mt-2 flex flex-col gap-1.5">
+                      {gifts.map((g) => (
+                        <span key={`${g.title}`} className="flex items-center gap-2">
+                          {g.image && (
+                            <Image
+                              src={g.image}
+                              alt=""
+                              width={72}
+                              height={72}
+                              className="size-9 shrink-0 rounded-lg bg-white object-contain ring-1 ring-slate-100"
+                            />
+                          )}
+                          <span className="min-w-0 text-[11px] leading-tight text-slate-500">
+                            {t("ของแถม", "Gift")}:{" "}
+                            <span className="font-semibold text-brand-ink">{g.title}</span>
+                            {g.qty > 1 ? ` × ${g.qty}` : ""}
+                          </span>
+                        </span>
+                      ))}
                     </span>
-                  )}
-                  {!ev.eligible && (
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className="h-full rounded-full bg-brand-gradient transition-[width] duration-500 ease-out"
-                        style={{ width: `${percentFor(ev.promo, subtotal, qtyOf)}%` }}
-                      />
-                    </div>
                   )}
                 </div>
               </div>

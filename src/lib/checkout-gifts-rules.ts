@@ -1,5 +1,6 @@
 import {
   evaluateActiveFreeGifts,
+  giftsOf,
   type FreeGiftPromo,
 } from "../data/free-gifts.ts";
 import type { CartLine } from "../data/coupons.ts";
@@ -56,8 +57,23 @@ export function giftLinesFrom(
   };
 
   /** The gift's Shopify variant: off the free-gift shelf, or from the catalogue. */
-  const variantFor = (giftVariantId?: string, giftProductSlug?: string) =>
-    giftVariantId ?? (giftProductSlug ? variantOfProduct(giftProductSlug) : undefined);
+  const variantFor = (item: { variantId?: string; productSlug?: string }) =>
+    item.variantId ?? (item.productSlug ? variantOfProduct(item.productSlug) : undefined);
+
+  // One promo can hand over several things — the ฿1,599 tier the shop runs
+  // today gives four. Each is its own line, and each is checked against the
+  // shelf on its own: one of them running out does not cancel the rest.
+  const take = (
+    out: CheckoutGiftLine[],
+    source: Parameters<typeof giftsOf>[0],
+    promoSlug: string,
+  ) => {
+    for (const item of giftsOf(source)) {
+      const variantId = variantFor(item);
+      if (!variantId || !inStock(variantId)) continue;
+      out.push({ variantId, quantity: item.qty, price: 0, promoSlug });
+    }
+  };
 
   const out: CheckoutGiftLine[] = [];
   for (const evaluated of evaluateActiveFreeGifts(promos, lines)) {
@@ -66,21 +82,12 @@ export function giftLinesFrom(
 
     if (unlockedTiers?.length) {
       for (const tier of unlockedTiers) {
-        const variantId = variantFor(tier.giftVariantId, tier.giftProductSlug);
-        if (!variantId || !inStock(variantId)) continue;
-        out.push({
-          variantId,
-          quantity: tier.giftQty,
-          price: 0,
-          promoSlug: `${promo.slug}::tier-${tier.tierIndex}`,
-        });
+        take(out, tier, `${promo.slug}::tier-${tier.tierIndex}`);
       }
       continue;
     }
 
-    const variantId = variantFor(promo.giftVariantId, promo.giftProductSlug);
-    if (!variantId || !inStock(variantId)) continue;
-    out.push({ variantId, quantity: promo.giftQty, price: 0, promoSlug: promo.slug });
+    take(out, promo, promo.slug);
   }
 
   // One line per variant. Two promos can land on the same gift, and an order

@@ -5,7 +5,7 @@ import { ProductVariant } from "@/data/types";
 import type { CartProduct } from "@/data/cart-product";
 import { useAuth } from "@/lib/auth-context";
 import { CartLine } from "@/data/coupons";
-import { evaluateActiveFreeGifts, FreeGiftPromo } from "@/data/free-gifts";
+import { evaluateActiveFreeGifts, FreeGiftPromo, giftsOf } from "@/data/free-gifts";
 import {
   buildLines,
   clampQty,
@@ -345,6 +345,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     };
   }
 
+  /** Every gift a promo or tier hands over, as cart lines. A promo can give
+   *  several at once — the ฿1,599 tier gives four — so this returns a list
+   *  and the catalogue is tried first for each, the shelf second. */
+  const linesForGifts = (source: Parameters<typeof giftsOf>[0], key: string) =>
+    giftsOf(source).flatMap((item, i) => {
+      // Keyed per gift, or two gifts from one promo collide on giftPromoSlug.
+      const itemKey = giftsOf(source).length > 1 ? `${key}::gift-${i}` : key;
+      const fromCatalogue = item.productSlug
+        ? giftLineFrom(bySlug[item.productSlug], item.qty, itemKey)
+        : null;
+      if (fromCatalogue) return [fromCatalogue];
+      return item.variantId
+        ? [shopifyGiftLine(item.variantId, item.title, item.image, item.qty, itemKey)]
+        : [];
+    });
+
   const giftLines = evaluateActiveFreeGifts(giftPromos, cartLinesForEval)
     .filter((e) => e.eligible)
     .flatMap((e) => {
@@ -352,21 +368,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // Tiered promo — one synthetic line per unlocked tier, keyed
         // uniquely per tier so multiple tiers of the same promo don't
         // collide on giftPromoSlug.
-        return e.unlockedTiers.map((t) => {
-          const key = `${e.promo.slug}::tier-${t.tierIndex}`;
-          const fromCatalogue = giftLineFor(bySlug[t.giftProductSlug ?? ""], t.giftQty, key);
-          if (fromCatalogue) return fromCatalogue;
-          return t.giftVariantId ? shopifyGiftLine(t.giftVariantId, t.giftTitle, t.giftImage, t.giftQty, key) : null;
-        });
+        return e.unlockedTiers.flatMap((t) =>
+          linesForGifts(t, `${e.promo.slug}::tier-${t.tierIndex}`),
+        );
       }
       // The gift usually lives on Shopify's free-gift shelf rather than in our
       // catalogue — every one of them is UNLISTED there — so the promo carries
       // its name and picture and the line is built from those. The catalogue
       // lookup stays for promos written before the shelf existed.
-      const fromCatalogue = giftLineFor(bySlug[e.promo.giftProductSlug ?? ""], e.promo.giftQty, e.promo.slug);
-      if (fromCatalogue) return [fromCatalogue];
-      if (!e.promo.giftVariantId) return [];
-      return [shopifyGiftLine(e.promo.giftVariantId, e.promo.giftTitle, e.promo.giftImage, e.promo.giftQty, e.promo.slug)];
+      return linesForGifts(e.promo, e.promo.slug);
     })
     .filter(Boolean) as CartContextValue["lines"];
   const linesWithGifts = [...lines, ...giftLines];

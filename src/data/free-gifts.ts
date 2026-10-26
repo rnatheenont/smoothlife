@@ -7,6 +7,30 @@ import type { CartLine } from "./coupons.ts";
 // actually discount — the same trap the hardcoded coupons in coupons.ts fell
 // into. Keep shopifyDiscountId pointed at the real discount whenever a promo
 // is added or changed.
+/** One thing handed over. A promo or a tier can list several.
+ *
+ *  The three single-gift fields it replaces are still there and still read
+ *  when this list is empty, so nothing written before it existed had to
+ *  change. `giftsOf` is the one place that decides between them — read it
+ *  rather than reaching for either shape directly. */
+export type FreeGiftItem = {
+  /** The real Shopify variant, off the free-gift shelf. */
+  variantId?: string;
+  /** For the handful of gifts that are ordinary catalogue products. */
+  productSlug?: string;
+  qty: number;
+  /** Filled in by /api/free-gifts from Shopify, same as the single gift. */
+  title?: string;
+  image?: string | null;
+  stock?: number | null;
+};
+
+export type FreeGiftItemRow = {
+  variant_id?: string | null;
+  product_slug?: string | null;
+  qty?: number | null;
+};
+
 export type FreeGiftTier = {
   minSubtotal: number;
   giftProductSlug: string;
@@ -16,6 +40,8 @@ export type FreeGiftTier = {
   giftImage?: string | null;
   giftStock?: number | null;
   giftQty: number;
+  /** Several gifts at this tier. Overrides the single-gift fields above. */
+  gifts?: FreeGiftItem[];
   shopifyDiscountId?: string; // one real Shopify discount per tier — see activate route
 };
 
@@ -51,6 +77,8 @@ export type FreeGiftPromo = {
    */
   giftTitle?: string;
   giftImage?: string | null;
+  /** Several gifts at once. Overrides the single-gift fields above. */
+  gifts?: FreeGiftItem[];
 };
 
 // Row shape as stored in the Supabase `free_gift_promos` table (snake_case) —
@@ -60,6 +88,7 @@ export type FreeGiftTierRow = {
   gift_product_slug: string;
   gift_variant_id?: string | null;
   gift_qty: number;
+  gifts?: FreeGiftItemRow[] | null;
   shopify_discount_id: string | null;
 };
 
@@ -81,12 +110,49 @@ export type FreeGiftPromoRow = {
   expires_at: string | null;
   display_only: boolean | null;
   gift_variant_id: string | null;
+  gifts: FreeGiftItemRow[] | null;
 };
 
 // Shared SELECT column list — used by both the public /api/free-gifts route
 // and the admin CRUD routes so they never silently drift out of sync.
 export const FREE_GIFT_COLUMNS =
-  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,created_at,updated_at";
+  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,created_at,updated_at";
+
+const toItems = (rows: FreeGiftItemRow[] | null | undefined): FreeGiftItem[] | undefined => {
+  const list = (rows ?? [])
+    .filter((g) => g && (g.variant_id || g.product_slug))
+    .map((g) => ({
+      variantId: g.variant_id ?? undefined,
+      productSlug: g.product_slug ?? undefined,
+      qty: Number(g.qty) > 0 ? Number(g.qty) : 1,
+    }));
+  return list.length ? list : undefined;
+};
+
+/**
+ * Everything this promo hands over, as one list however it was written.
+ *
+ * A promo written before gifts could be a list says its single gift in three
+ * columns; one written after says it in `gifts`. Everywhere downstream — the
+ * cart, the checkout, the progress card — wants the same answer to the same
+ * question, and this is where the two shapes become one.
+ */
+export function giftsOf(x: {
+  gifts?: FreeGiftItem[];
+  giftVariantId?: string;
+  giftProductSlug?: string;
+  giftQty?: number;
+}): FreeGiftItem[] {
+  if (x.gifts?.length) return x.gifts;
+  if (!x.giftVariantId && !x.giftProductSlug) return [];
+  return [
+    {
+      variantId: x.giftVariantId,
+      productSlug: x.giftProductSlug || undefined,
+      qty: x.giftQty ?? 1,
+    },
+  ];
+}
 
 export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
   return {
@@ -106,6 +172,7 @@ export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
           giftProductSlug: t.gift_product_slug,
           giftVariantId: t.gift_variant_id ?? undefined,
           giftQty: t.gift_qty,
+          gifts: toItems(t.gifts),
           shopifyDiscountId: t.shopify_discount_id ?? undefined,
         }))
       : undefined,
@@ -116,6 +183,7 @@ export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
     // them ever had a Shopify discount attached.
     displayOnly: row.display_only !== false,
     giftVariantId: row.gift_variant_id ?? undefined,
+    gifts: toItems(row.gifts),
   };
 }
 

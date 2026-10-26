@@ -87,6 +87,49 @@ test("a gift with no variant anywhere is skipped rather than guessed at", () => 
   assert.deepEqual(giftLinesFrom([nowhere], basket, NONE, NOW, noCatalogue), []);
 });
 
+// The ฿1,599 tier the shop runs today gives four things at once, which the
+// single-gift columns could not hold.
+test("a promo listing several gifts puts all of them on the order", () => {
+  const many = spendPromo({
+    gifts: [
+      { variantId: "gid://shopify/ProductVariant/1", qty: 1 },
+      { variantId: "gid://shopify/ProductVariant/2", qty: 2 },
+      { variantId: "gid://shopify/ProductVariant/3", qty: 1 },
+    ],
+  });
+  const lines = giftLinesFrom([many], basket, NONE, NOW, noCatalogue);
+  assert.equal(lines.length, 3);
+  assert.deepEqual(
+    lines.map((l) => l.quantity),
+    [1, 2, 1],
+  );
+});
+
+test("the list wins over the single-gift fields when both are written", () => {
+  const both = spendPromo({ gifts: [{ variantId: "gid://shopify/ProductVariant/9", qty: 1 }] });
+  const lines = giftLinesFrom([both], basket, NONE, NOW, noCatalogue);
+  assert.deepEqual(
+    lines.map((l) => l.variantId),
+    ["gid://shopify/ProductVariant/9"],
+  );
+});
+
+// One empty shelf should cost the shopper that one gift, not the other three.
+test("one gift out of stock does not cancel the rest", () => {
+  const many = spendPromo({
+    gifts: [
+      { variantId: "gid://shopify/ProductVariant/1", qty: 1 },
+      { variantId: "gid://shopify/ProductVariant/2", qty: 1 },
+    ],
+  });
+  const empty = new Map<string, number | null>([["gid://shopify/ProductVariant/1", 0]]);
+  const lines = giftLinesFrom([many], basket, empty, NOW, noCatalogue);
+  assert.deepEqual(
+    lines.map((l) => l.variantId),
+    ["gid://shopify/ProductVariant/2"],
+  );
+});
+
 test("every line it returns is free", () => {
   for (const line of giftLinesFrom([spendPromo()], basket, NONE, NOW, noCatalogue)) {
     assert.equal(line.price, 0);
