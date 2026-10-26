@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Loader2, X, ExternalLink, AlertTriangle, Info, Lock } from "lucide-react";
 import { formatTHB } from "@/lib/format";
+import { promptPayAvailable } from "@/lib/payment-limits";
 import { Button } from "@/components/ui";
 
 // Keeps the customer on smoothlife.com through the whole payment: 2C2P's page
@@ -28,7 +29,12 @@ type Phase = "paying" | "verifying" | "success" | "failed" | "unconfirmed";
  * not the bank's vocabulary — and when it is something we cannot read, the
  * honest advice is the general one.
  */
-function failureAdvice(reason: string | null): string {
+function failureAdvice(reason: string | null, amount?: number): string {
+  // Over the PromptPay ceiling a card is the only rail that can carry this
+  // order, so none of the advice below may send the shopper to a QR. Unknown
+  // amount keeps the ordinary wording: the suggestion is right far more
+  // often than not.
+  const qrIsAnOption = amount === undefined || promptPayAvailable(amount);
   const text = (reason ?? "").toLowerCase();
   if (/insufficient|not enough|limit exceed|exceed.*limit/.test(text)) {
     return "ยอดในบัตรไม่พอหรือเกินวงเงิน — ลองใช้บัตรอื่น หรือติดต่อธนาคารเพื่อขอเพิ่มวงเงิน สินค้าในตะกร้ายังอยู่ครบ";
@@ -40,12 +46,16 @@ function failureAdvice(reason: string | null): string {
     return "รายการถูกยกเลิกก่อนชำระเสร็จ สินค้าในตะกร้ายังอยู่ครบ ลองชำระเงินใหม่ได้เลย";
   }
   if (/3ds|otp|authenticat/.test(text)) {
-    return "ยืนยันตัวตนกับธนาคารไม่สำเร็จ (OTP/3-D Secure) — ลองใหม่อีกครั้ง หรือชำระด้วย PromptPay QR แทน";
+    return qrIsAnOption
+      ? "ยืนยันตัวตนกับธนาคารไม่สำเร็จ (OTP/3-D Secure) — ลองใหม่อีกครั้ง หรือชำระด้วย PromptPay QR แทน"
+      : "ยืนยันตัวตนกับธนาคารไม่สำเร็จ (OTP/3-D Secure) — ลองใหม่อีกครั้ง หรือใช้บัตรอื่น สินค้าในตะกร้ายังอยู่ครบ";
   }
   if (/do not honou?r|declin|refus|reject/.test(text)) {
     return "ธนาคารผู้ออกบัตรปฏิเสธรายการนี้ — ลองใช้บัตรอื่น หรือติดต่อธนาคารผู้ออกบัตร สินค้าในตะกร้ายังอยู่ครบ";
   }
-  return "สินค้าในตะกร้ายังอยู่ครบ ลองชำระเงินใหม่ หรือเปลี่ยนวิธีชำระเงินได้เลย";
+  return qrIsAnOption
+    ? "สินค้าในตะกร้ายังอยู่ครบ ลองชำระเงินใหม่ หรือเปลี่ยนวิธีชำระเงินได้เลย"
+    : "สินค้าในตะกร้ายังอยู่ครบ ลองชำระเงินใหม่ หรือใช้บัตรอื่นได้เลย";
 }
 
 const STUCK_HINT_AFTER_MS = 20_000;
@@ -391,7 +401,7 @@ export default function PaymentModal({
             <p className="mt-2 text-sm text-slate-500">
               {failureReason || "การชำระเงินถูกปฏิเสธ ไม่มีการตัดเงินจากบัญชีของคุณ"}
             </p>
-            <p className="mt-2 text-xs text-slate-500">{failureAdvice(failureReason)}</p>
+            <p className="mt-2 text-xs text-slate-500">{failureAdvice(failureReason, summary?.total)}</p>
             <Button fullWidth className="mt-6" type="button" onClick={onClose}>
               ลองใหม่อีกครั้ง
             </Button>

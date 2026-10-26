@@ -3,6 +3,7 @@ import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { products } from "@/data/products";
 import { twoC2PConfigured, createPaymentToken } from "@/lib/2c2p";
+import { paymentChannelsFor } from "@/lib/payment-limits";
 import { reserveStock, releaseStock } from "@/lib/stock-reservation";
 import { isRateLimitedShared, clientIp } from "@/lib/rate-limit";
 import { quoteDiscountCode } from "@/lib/shopify-discounts";
@@ -199,17 +200,9 @@ export async function POST(req: NextRequest) {
       invoiceNo,
       description: `คำสั่งซื้อ Smoothlife.com (${resolved.length} รายการ)`.slice(0, 250),
       amount,
-      // Same as the flash-sale route: the payment account decides which
-      // methods exist, not this file.
-      // Cards and PromptPay QR only. Left open, 2C2P offers twenty-nine
-      // methods — every wallet, kiosk and direct-debit rail it carries — and a
-      // payment page that asks a shopper to choose from twenty-nine things is
-      // a payment page they leave. These two cover what this shop's customers
-      // actually use.
-      //
-      // The catch to know about: PromptPay QR stops at ฿50,000, so on anything
-      // larger this list leaves cards as the only way through.
-      paymentChannel: ["CC", "PPQR"],
+      // Which methods, and the ฿50,000 PromptPay ceiling with it, is
+      // paymentChannelsFor's to decide — see @/lib/2c2p.
+      paymentChannel: paymentChannelsFor(amount),
       frontendReturnUrl: `${origin}/api/payments/return?cartToken=${cartToken}`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p-checkout`,
       customer: { email: contactEmail, mobileNo: phoneDigits },

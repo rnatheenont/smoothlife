@@ -7,6 +7,7 @@ import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { formatTHB } from "@/lib/format";
+import { PROMPTPAY_QR_MAX_THB, promptPayAvailable } from "@/lib/payment-limits";
 import { pointsForAmount } from "@/data/coupons";
 import { AddressFormValue, emptyAddressForm } from "@/components/account/AddressFields";
 import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
@@ -41,6 +42,7 @@ export default function CustomCheckout() {
   const netSubtotal = Math.max(0, subtotal - discount);
   const shipping = 0; // matches SHIPPING_FEE_THB in api/checkout/init — free nationwide, no minimum
   const total = netSubtotal + shipping;
+  const qrAvailable = promptPayAvailable(total);
   const points = pointsForAmount(total);
   // CheckoutAddressPicker owns loading and choosing saved addresses and hands
   // the chosen one up here; this is only ever the address the order ships to.
@@ -220,14 +222,24 @@ export default function CustomCheckout() {
             <h2 className="font-bold text-brand-ink mb-3 flex items-center gap-2">
               <ShieldCheck size={18} className="text-brand-emerald" /> วิธีชำระเงิน
             </h2>
-            <p className="text-sm text-slate-600 mb-3">เลือกวิธีชำระเงินในขั้นตอนถัดไป — รองรับบัตรเครดิต/เดบิต และ QR PromptPay</p>
+            {/* What the next step will actually offer, which over the
+                PromptPay ceiling is a card and nothing else. Said here, with
+                the reason, rather than left for the shopper to discover as a
+                QR that will not scan. */}
+            <p className="text-sm text-slate-600 mb-3">
+              {qrAvailable
+                ? "เลือกวิธีชำระเงินในขั้นตอนถัดไป — รองรับบัตรเครดิต/เดบิต และ QR PromptPay"
+                : `ยอดนี้เกิน ${formatTHB(PROMPTPAY_QR_MAX_THB)} ซึ่งเป็นเพดานของ QR PromptPay — ขั้นตอนถัดไปชำระด้วยบัตรเครดิต/เดบิต`}
+            </p>
             <div className="flex gap-3">
               <span className="flex items-center gap-1.5 rounded-lg bg-surface-soft px-3 py-2 text-xs font-semibold text-slate-600">
                 <CreditCard size={14} /> บัตรเครดิต/เดบิต
               </span>
-              <span className="flex items-center gap-1.5 rounded-lg bg-surface-soft px-3 py-2 text-xs font-semibold text-slate-600">
-                <QrCode size={14} /> QR PromptPay
-              </span>
+              {qrAvailable && (
+                <span className="flex items-center gap-1.5 rounded-lg bg-surface-soft px-3 py-2 text-xs font-semibold text-slate-600">
+                  <QrCode size={14} /> QR PromptPay
+                </span>
+              )}
             </div>
           </div>
 

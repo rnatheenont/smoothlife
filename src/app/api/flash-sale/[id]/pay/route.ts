@@ -3,6 +3,7 @@ import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { isRateLimitedShared } from "@/lib/rate-limit";
 import { createPaymentToken, twoC2PConfigured } from "@/lib/2c2p";
+import { paymentChannelsFor } from "@/lib/payment-limits";
 import { getProductBySlug } from "@/data/products";
 import { startFlashSalePayment, UUID_RE } from "@/lib/flash-sale";
 import {
@@ -200,15 +201,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       invoiceNo,
       description: `Flash Sale: ${product.name}`.slice(0, 250),
       amount,
-      // Cards and PromptPay QR only. Left open, 2C2P offers twenty-nine
-      // methods — every wallet, kiosk and direct-debit rail it carries — and a
-      // payment page that asks a shopper to choose from twenty-nine things is
-      // a payment page they leave. These two cover what this shop's customers
-      // actually use.
-      //
-      // The catch to know about: PromptPay QR stops at ฿50,000, so on anything
-      // larger this list leaves cards as the only way through.
-      paymentChannel: ["CC", "PPQR"],
+      // Which methods, and the ฿50,000 PromptPay ceiling with it, is
+      // paymentChannelsFor's to decide — see @/lib/2c2p. This campaign is
+      // the reason that ceiling is enforced there.
+      paymentChannel: paymentChannelsFor(amount),
       frontendReturnUrl: `${origin}/api/payments/return?cartToken=${cartToken}`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p-flash-sale`,
       customer: { email: contactEmail ?? undefined, mobileNo: shippingAddress.phone },

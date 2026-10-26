@@ -74,7 +74,15 @@ export const helpTopics: HelpTopic[] = [
     title: "ช่องทางการชำระเงิน",
     intro: "เลือกวิธีการชำระเงินที่สะดวกและปลอดภัยที่สุดสำหรับคุณ",
     sections: [
-      { icon: "qr-code", title: "PromptPay QR", body: "สแกนจ่ายผ่านแอปธนาคารได้ทันที ยืนยันคำสั่งซื้อรวดเร็ว" },
+      {
+        icon: "qr-code",
+        title: "PromptPay QR",
+        // The ceiling is said here because it is the shopper's to plan
+        // around, not ours to discover for them at the payment step.
+        // payment-ceiling is checked against PROMPTPAY_QR_MAX_THB by
+        // shop-facts.test.ts, so the number cannot drift from the code.
+        body: "สแกนจ่ายผ่านแอปธนาคารได้ทันที ยืนยันคำสั่งซื้อรวดเร็ว — ใช้ได้กับยอดไม่เกิน 50,000 บาท ยอดสูงกว่านี้ชำระด้วยบัตรเครดิต/เดบิต",
+      },
       {
         icon: "credit-card",
         title: "บัตรเครดิต/เดบิต",

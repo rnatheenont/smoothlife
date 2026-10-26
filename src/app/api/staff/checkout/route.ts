@@ -4,6 +4,7 @@ import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { isRateLimitedShared } from "@/lib/rate-limit";
 import { createPaymentToken, twoC2PConfigured } from "@/lib/2c2p";
+import { paymentChannelsFor } from "@/lib/payment-limits";
 import { releaseStock, reserveStock } from "@/lib/stock-reservation";
 import { reasonTh, type StaffOrderLine } from "@/lib/staff-sale";
 import { staffRpc, type RpcResult } from "@/lib/staff-sale-rpc";
@@ -200,7 +201,11 @@ export async function POST(req: NextRequest) {
       invoiceNo,
       description: `Staff Sale: ${round.name}`.slice(0, 250),
       amount: subtotal,
-      paymentChannel: ["CC", "PPQR"],
+      // Which methods, and the ฿50,000 PromptPay ceiling with it, is
+      // paymentChannelsFor's to decide — see @/lib/2c2p. A staff cart is
+      // capped well under that today, but the cap is a round's setting and
+      // this route should not be the one place that forgets.
+      paymentChannel: paymentChannelsFor(subtotal),
       frontendReturnUrl: `${origin}/api/payments/return?next=staff`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p-staff`,
       customer: { email: standing.staff_email, mobileNo: address.phone },

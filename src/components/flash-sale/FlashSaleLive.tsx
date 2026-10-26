@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Alert, Button, Card, Chip, ProgressBar, Spinner } from "@heroui/react";
 import { AlertTriangle, CheckCircle2, Clock, CreditCard, MessageCircle, RotateCcw, Timer, Users } from "lucide-react";
 import { formatTHB } from "@/lib/format";
+import { PROMPTPAY_QR_MAX_THB, promptPayAvailable } from "@/lib/payment-limits";
 import { UNLIMITED_REQUEUE } from "@/lib/flash-sale-limits";
 import type { FlashSaleStatus } from "@/lib/flash-sale";
 import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
@@ -369,7 +370,15 @@ export default function FlashSaleLive({
           ถ้ายังไม่ได้ชำระ กดชำระเงินอีกครั้งได้
         </p>
       )}
-      <p className="text-center text-xs text-slate-500">บัตรเครดิต/เดบิต, PromptPay QR และช่องทางอื่นที่ร้านเปิดใช้ · ส่งฟรีทั่วไทย</p>
+      {/* The methods this price will actually be offered — not "และช่องทาง
+          อื่นที่ร้านเปิดใช้", which was never true (checkout sends two), and
+          not PromptPay on a price above its ceiling, which is how this
+          campaign sent 46 shoppers to a dead end. */}
+      <p className="text-center text-xs text-slate-500">
+        {promptPayAvailable(price.pay)
+          ? "บัตรเครดิต/เดบิต และ PromptPay QR · ส่งฟรีทั่วไทย"
+          : `ยอดนี้เกินเพดาน ${formatTHB(PROMPTPAY_QR_MAX_THB)} ของ PromptPay QR — ชำระด้วยบัตรเครดิต/เดบิต · ส่งฟรีทั่วไทย`}
+      </p>
     </div>
   );
 

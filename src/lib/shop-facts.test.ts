@@ -42,12 +42,42 @@ const CUSTOMER_FACING = [
   "src/lib/pages/default-docs/system.ts",
 ];
 
+/**
+ * Every channel the shop can offer, read from the one function that decides.
+ *
+ * It used to read the literal out of checkout/init. That literal is gone:
+ * the amount decides now (PromptPay QR cannot carry over
+ * PROMPTPAY_QR_MAX_THB), so all three checkout routes ask
+ * paymentChannelsFor in @/lib/payment-limits instead. What a page may
+ * promise is still the union of what that function can ever return, which
+ * is what this reads.
+ */
 function enabledChannels(): string[] {
-  const src = readFileSync("src/app/api/checkout/init/route.ts", "utf8");
-  const match = src.match(/paymentChannel:\s*\[([^\]]*)\]/);
-  assert.ok(match, "ไม่เจอ paymentChannel ใน checkout — ถ้าย้ายที่แล้วต้องแก้เทสต์นี้ด้วย");
-  return [...match[1].matchAll(/"([A-Z0-9]+)"/g)].map((m) => m[1]);
+  const src = readFileSync("src/lib/payment-limits.ts", "utf8");
+  const body = src.match(/export function paymentChannelsFor\([\s\S]*?\n}/);
+  assert.ok(body, "ไม่เจอ paymentChannelsFor ใน @/lib/payment-limits — ถ้าย้ายที่แล้วต้องแก้เทสต์นี้ด้วย");
+  const channels = [...new Set([...body[0].matchAll(/"([A-Z0-9]+)"/g)].map((m) => m[1]))];
+  assert.ok(
+    readFileSync("src/app/api/checkout/init/route.ts", "utf8").includes("paymentChannelsFor("),
+    "checkout/init ไม่ได้เรียก paymentChannelsFor แล้ว — เทสต์นี้กำลังอ่านช่องทางจากที่ที่ checkout ไม่ได้ใช้"
+  );
+  return channels;
 }
+
+test("เพดาน PromptPay ที่โค้ดใช้ ต้องตรงกับที่หน้าช่วยเหลือบอกลูกค้า", () => {
+  // A shopper over the ceiling is sent to a card. If the page does not say
+  // so, they find out on 2C2P's page — which is exactly the flash sale that
+  // put 46 payment attempts into `pending` and never charged one of them.
+  const ceiling = readFileSync("src/lib/payment-limits.ts", "utf8").match(
+    /PROMPTPAY_QR_MAX_THB\s*=\s*([\d_]+)/
+  );
+  assert.ok(ceiling, "ไม่เจอ PROMPTPAY_QR_MAX_THB");
+  const thb = Number(ceiling[1].replace(/_/g, ""));
+  assert.ok(
+    readFileSync("src/data/help.ts", "utf8").includes(thb.toLocaleString("en-US")),
+    `โค้ดจำกัด PromptPay ที่ ${thb.toLocaleString("en-US")} บาท แต่ /help/payment ไม่ได้บอกตัวเลขนี้`
+  );
+});
 
 test("checkout ยังประกาศช่องทางที่อ่านได้", () => {
   const channels = enabledChannels();
