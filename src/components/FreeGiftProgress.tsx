@@ -39,15 +39,22 @@ function percentFor(promo: FreeGiftPromo, subtotal: number, qtyOf: (slugs: strin
  *
  *  Tiered promos show the next gift still to come when there is one, because
  *  that is the one worth adding to the basket for. */
+/** The shelf tags every gift "[Free Gift] …" so staff can find them in
+ *  Shopify. A shopper reading a card about free gifts does not need telling
+ *  twice — the cart has stripped it for the same reason since it was built. */
+function giftName(title?: string) {
+  return title?.replace(/^\s*(TEST\s*\|\s*)?\[Free Gift\]\s*/i, "").trim() || undefined;
+}
+
 function giftOnOffer(ev: { promo: FreeGiftPromo; unlockedTiers?: { tierIndex: number }[] }) {
   const { promo } = ev;
   if (promo.kind === "tiered") {
     const tiers = [...(promo.tiers ?? [])].sort((a, b) => a.minSubtotal - b.minSubtotal);
     const reached = ev.unlockedTiers?.length ?? 0;
     const next = tiers[reached] ?? tiers[tiers.length - 1];
-    return next ? { title: next.giftTitle, image: next.giftImage } : null;
+    return next ? { title: giftName(next.giftTitle), image: next.giftImage } : null;
   }
-  return { title: promo.giftTitle, image: promo.giftImage };
+  return { title: giftName(promo.giftTitle), image: promo.giftImage };
 }
 
 // The "Milestone bar" widget. Also reused, scoped to one product, as the
