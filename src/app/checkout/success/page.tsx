@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui";
+import ThankYouOffer from "@/components/ThankYouOffer";
 
 // 2C2P's frontendReturnUrl lands here. Two very different arrivals share it:
 //
@@ -48,6 +49,8 @@ function SuccessContent() {
       <p className="text-sm text-slate-500 mt-4">
         เราได้รับคำสั่งซื้อของคุณแล้ว ใบยืนยันคำสั่งซื้อและรายละเอียดการจัดส่งจะถูกส่งไปยังอีเมลที่ระบุไว้กับ Shopify
       </p>
+      <ThankYouOffer />
+
       <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
         <Button size="lg" href="/shop">
           ช้อปต่อ

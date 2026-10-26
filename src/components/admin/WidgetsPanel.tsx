@@ -29,6 +29,7 @@ const DESCRIPTIONS: Record<string, string> = {
   gifts_on_slide_cart: "แสดงรายการของแถมที่ได้รับในตะกร้าแบบเลื่อน",
   flash_sale_bar: "แถบเขียวนับถอยหลังใต้แถวหมวดหมู่ พร้อมโค้ดส่วนลด (หน้าแรก)",
   flash_sale_shelf: "แถบ Flash Sale สีแดง: นับถอยหลัง + ชั้นวางสินค้าจาก collection ที่เลือก (หน้าแรก)",
+  thankyou_offer: "ข้อเสนอมีเวลาจำกัดบนหน้าขอบคุณหลังชำระเงิน (เป็นคำสั่งซื้อใหม่ ไม่ใช่เพิ่มในใบเดิม)",
 };
 
 const CONFIG_LABELS: Record<string, string> = {
@@ -50,6 +51,8 @@ const CONFIG_LABELS: Record<string, string> = {
   titleTh: "หัวข้อบนแบนเนอร์ (ใช้เมื่อไม่ได้ใส่รูป)",
   colorFrom: "สีซ้ายของแถบ",
   colorTo: "สีขวาของแถบ",
+  productSlugs: "slug สินค้าที่เสนอ คั่นด้วยจุลภาค (เช่น acne-aid-foaming-face-wash-oil-control-100-ml)",
+  minutes: "ข้อเสนอหมดอายุในกี่นาที",
 };
 
 // Fields a widget can have, whether or not the stored row happens to carry
@@ -59,6 +62,7 @@ const CONFIG_LABELS: Record<string, string> = {
 const CONFIG_FIELDS: Record<string, string[]> = {
   flash_sale_bar: ["titleTh", "subtitleTh", "endsAt", "code", "href", "colorFrom", "colorTo"],
   flash_sale_shelf: ["titleTh", "endsAt", "href", "collection"],
+  thankyou_offer: ["titleTh", "subtitleTh", "code", "productSlugs", "minutes"],
 };
 
 /** Rendered as a colour well rather than a text box. */
