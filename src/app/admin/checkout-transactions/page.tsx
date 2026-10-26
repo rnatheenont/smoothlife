@@ -260,7 +260,12 @@ function thaiTime(iso: string) {
 
 /** The order number, as a way into Shopify rather than something to copy by
  *  hand. Without the shop's handle — which the list endpoint sends — there is
- *  nowhere to point, so it stays the plain number it was. */
+ *  nowhere to point, so it stays the plain number it was.
+ *
+ *  Drawn the way the tracking-sync screen draws its order links: the number
+ *  still reads as a number, with a dotted rule under it and the destination
+ *  in the tooltip. An icon and a colour would have made the one column a
+ *  person scans down the loudest thing on the row. */
 function ShopifyOrderLink({
   orderId,
   adminHandle,
@@ -276,12 +281,11 @@ function ShopifyOrderLink({
     <a
       href={`https://admin.shopify.com/store/${adminHandle}/orders/${number}`}
       target="_blank"
-      rel="noreferrer"
-      className="inline-flex items-center gap-1 font-mono text-[12px] font-semibold text-brand-800 underline decoration-brand-800/30 underline-offset-2 hover:decoration-brand-800"
+      rel="noopener noreferrer"
+      title={`เปิด ${number} ใน Shopify`}
+      className="font-mono text-[12px] text-slate-700 underline decoration-slate-300 decoration-dotted underline-offset-2 hover:decoration-brand-800"
     >
       {number}
-      <ExternalLink size={11} aria-hidden />
-      <span className="sr-only">เปิดใน Shopify</span>
     </a>
   );
 }
