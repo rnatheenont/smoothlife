@@ -15,7 +15,7 @@ import {
   ChevronDown,
   Sparkles,
 } from "lucide-react";
-import { FreeGiftPromo, FreeGiftTier } from "@/data/free-gifts";
+import { FreeGiftPromo, FreeGiftTier, giftsOf } from "@/data/free-gifts";
 import { getProductBySlug } from "@/data/products";
 import { Badge } from "@/components/ui";
 import ProductPicker from "@/components/admin/ProductPicker";
@@ -31,13 +31,19 @@ import AdminField from "@/components/admin/AdminField";
 
 type AdminPromo = FreeGiftPromo & { id: string };
 
+/** One chosen gift. Every condition holds a list of these: a tier that hands
+ *  over a toothpaste and a toothbrush is one tier, not two. */
+type GiftFormRow = {
+  variantId: string;
+  title: string;
+  image: string | null;
+  qty: string;
+};
+
 type TierFormRow = {
   minSubtotal: string;
   giftProductSlug: string;
-  giftVariantId: string;
-  giftTitle: string;
-  giftImage: string | null;
-  giftQty: string;
+  gifts: GiftFormRow[];
 };
 
 type FormState = {
@@ -49,11 +55,8 @@ type FormState = {
   buyQty: string;
   minSubtotal: string;
   giftProductSlug: string;
-  /** The real Shopify gift, chosen from the shop's free-gift shelf. */
-  giftVariantId: string;
-  giftTitle: string;
-  giftImage: string | null;
-  giftQty: string;
+  /** The real Shopify gifts, chosen from the shop's free-gift shelf. */
+  gifts: GiftFormRow[];
   tiers: TierFormRow[];
   starts: string;
   expires: string;
@@ -62,10 +65,7 @@ type FormState = {
 const EMPTY_TIER_ROW: TierFormRow = {
   minSubtotal: "",
   giftProductSlug: "",
-  giftVariantId: "",
-  giftTitle: "",
-  giftImage: null,
-  giftQty: "1",
+  gifts: [],
 };
 
 const EMPTY_FORM: FormState = {
@@ -77,14 +77,128 @@ const EMPTY_FORM: FormState = {
   buyQty: "1",
   minSubtotal: "",
   giftProductSlug: "",
-  giftVariantId: "",
-  giftTitle: "",
-  giftImage: null,
-  giftQty: "1",
+  gifts: [],
   tiers: [{ ...EMPTY_TIER_ROW }],
   starts: "",
   expires: "",
 };
+
+/** What the API is told about one chosen gift. The name and picture are for
+ *  the operator's eyes only — the server looks both up from the shelf. */
+/** "ยาสีฟัน x2 และ แปรงสีฟัน" — what the operator is about to promise,
+ *  read back to them before they save it. */
+function describeGifts(gifts: GiftFormRow[]): string {
+  if (gifts.length === 0) return "—";
+  return gifts
+    .map((g) => {
+      const name = giftName(g.title) || "ของแถม";
+      return Number(g.qty) > 1 ? `${name} x${g.qty}` : name;
+    })
+    .join(" + ");
+}
+
+function toGiftInput(g: GiftFormRow) {
+  return { variantId: g.variantId, qty: Number(g.qty) || 1 };
+}
+
+/** An existing promo's gifts, in the shape the form edits.
+ *
+ *  giftsOf is the one place that knows whether a promo keeps its gifts in a
+ *  list or in the three older single-gift columns, so reading it here means a
+ *  promo written either way opens in this form without being rewritten. */
+function giftRowsOf(source: Parameters<typeof giftsOf>[0]): GiftFormRow[] {
+  return giftsOf(source).map((item) => ({
+    variantId: item.variantId ?? "",
+    title: item.title ?? "",
+    image: item.image ?? null,
+    qty: String(item.qty ?? 1),
+  }));
+}
+
+/** The gifts one condition hands over, with a picker to add more.
+ *
+ *  Every condition used to hold exactly one gift and one quantity, so a
+ *  campaign giving away a toothpaste AND a toothbrush at ฿1,599 could not be
+ *  written down at all — the operator had to make two promos and hope they
+ *  fired together. The schema has held a list for a while; this is the form
+ *  catching up. */
+function GiftListField({
+  gifts,
+  onChange,
+  label,
+}: {
+  gifts: GiftFormRow[];
+  onChange: (next: GiftFormRow[]) => void;
+  label: string;
+}) {
+  const replace = (i: number, patch: Partial<GiftFormRow>) =>
+    onChange(gifts.map((g, idx) => (idx === i ? { ...g, ...patch } : g)));
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] font-semibold text-brand-ink">
+        {label}
+        {gifts.length > 1 && (
+          <span className="ml-1 font-normal text-slate-400">({gifts.length} ชิ้น)</span>
+        )}
+      </p>
+
+      {gifts.map((g, i) => (
+        <div key={`${g.variantId}-${i}`} className="flex items-center gap-2 rounded-lg bg-surface-soft p-1.5">
+          <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-white">
+            {g.image && <Image src={g.image} alt="" fill sizes="36px" className="object-contain" />}
+          </span>
+          {/* break-words, because the fallback here is a raw variant id —
+              one unbroken 40-character token that pushed the quantity box and
+              the remove button off the side of the card on a phone. */}
+          <span className="line-clamp-2 min-w-0 flex-1 break-words text-xs leading-tight text-brand-ink">
+            {giftName(g.title) || g.variantId}
+          </span>
+          {/* Quantity belongs to the gift, not to the condition: two of one
+              thing and one of another is an ordinary way to run a campaign. */}
+          <label className="flex shrink-0 items-center gap-1 text-[11px] text-slate-400">
+            x
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={g.qty}
+              onChange={(e) => replace(i, { qty: e.target.value })}
+              aria-label={`จำนวนของ ${giftName(g.title) || "ของแถม"}`}
+              className="w-12 rounded-md border border-surface-line bg-white px-1.5 py-1 text-center text-xs text-brand-ink"
+            />
+          </label>
+          <button
+            type="button"
+            aria-label={`เอา ${giftName(g.title) || "ของแถม"} ออก`}
+            onClick={() => onChange(gifts.filter((_, idx) => idx !== i))}
+          >
+            <X size={13} className="text-slate-400" />
+          </button>
+        </div>
+      ))}
+
+      <GiftPicker
+        onSelect={(choice: GiftChoice) => {
+          // The same gift twice is one gift with a bigger number — picking it
+          // again is what somebody does when they mean two.
+          const at = gifts.findIndex((g) => g.variantId === choice.variantId);
+          if (at >= 0) {
+            replace(at, { qty: String((Number(gifts[at].qty) || 1) + 1) });
+            return;
+          }
+          onChange([
+            ...gifts,
+            { variantId: choice.variantId, title: choice.title, image: choice.image, qty: "1" },
+          ]);
+        }}
+      />
+      {gifts.length === 0 && (
+        <p className="text-[11px] text-amber-700">ยังไม่ได้เลือกของแถม — เลือกอย่างน้อย 1 ชิ้น</p>
+      )}
+    </div>
+  );
+}
 
 function slugify(s: string) {
   return s
@@ -180,17 +294,14 @@ export default function AdminFreeGiftsPage() {
           form.kind === "spend" ? Number(form.minSubtotal) : undefined,
         giftProductSlug:
           form.kind === "tiered" ? undefined : form.giftProductSlug,
-        giftQty: form.kind === "tiered" ? undefined : Number(form.giftQty) || 1,
+        gifts: form.kind === "tiered" ? undefined : form.gifts.map(toGiftInput),
         tiers:
           form.kind === "tiered"
             ? form.tiers.map((t) => ({
                 minSubtotal: Number(t.minSubtotal),
-                giftProductSlug: t.giftProductSlug,
-                giftVariantId: t.giftVariantId,
-                giftQty: Number(t.giftQty) || 1,
+                gifts: t.gifts.map(toGiftInput),
               }))
             : undefined,
-        giftVariantId: form.giftVariantId || undefined,
         starts: form.starts || undefined,
         expires: form.expires || undefined,
       };
@@ -225,21 +336,15 @@ export default function AdminFreeGiftsPage() {
       buyQty: String(p.buyQty ?? 1),
       minSubtotal: String(p.minSubtotal ?? ""),
       giftProductSlug: p.giftProductSlug,
-      giftQty: String(p.giftQty ?? 1),
+      gifts: giftRowsOf(p),
       tiers:
         p.tiers && p.tiers.length > 0
           ? p.tiers.map((t) => ({
               minSubtotal: String(t.minSubtotal),
               giftProductSlug: t.giftProductSlug,
-              giftVariantId: t.giftVariantId ?? "",
-              giftTitle: t.giftTitle ?? "",
-              giftImage: t.giftImage ?? null,
-              giftQty: String(t.giftQty ?? 1),
+              gifts: giftRowsOf(t),
             }))
           : [{ ...EMPTY_TIER_ROW }],
-      giftVariantId: p.giftVariantId ?? "",
-      giftTitle: "",
-      giftImage: null,
       starts: p.starts ? p.starts.slice(0, 10) : "",
       expires: p.expires ?? "",
     });
@@ -842,54 +947,14 @@ export default function AdminFreeGiftsPage() {
                           placeholder="ยอดขั้นต่ำของระดับนี้ (บาท)"
                           isRequired
                         />
-                        {tier.giftVariantId ? (
-                          <div className="flex items-center gap-2 rounded-lg bg-surface-soft p-1.5">
-                            <span className="flex-1 text-xs text-brand-ink">
-                              {giftName(tier.giftTitle) || tier.giftVariantId}
-                            </span>
-                            <button
-                              type="button"
-                              aria-label="เปลี่ยนของแถมระดับนี้"
-                              onClick={() => {
-                                const next = [...form.tiers];
-                                next[i] = {
-                                  ...next[i],
-                                  giftVariantId: "",
-                                  giftTitle: "",
-                                  giftImage: null,
-                                };
-                                setForm({ ...form, tiers: next });
-                              }}
-                            >
-                              <X size={13} className="text-slate-400" />
-                            </button>
-                          </div>
-                        ) : (
-                          <GiftPicker
-                            onSelect={(g: GiftChoice) => {
-                              const next = [...form.tiers];
-                              next[i] = {
-                                ...next[i],
-                                giftVariantId: g.variantId,
-                                giftTitle: g.title,
-                                giftImage: g.image,
-                              };
-                              setForm({ ...form, tiers: next });
-                            }}
-                          />
-                        )}
-                        <AdminField
-                          label={`จำนวนที่แถมในระดับที่ ${i + 1}`}
-                          type="number"
-                          inputMode="numeric"
-                          value={tier.giftQty}
-                          onChange={(v) => {
-                            const next = [...form.tiers];
-                            next[i] = { ...next[i], giftQty: v };
-                            setForm({ ...form, tiers: next });
+                        <GiftListField
+                          label={`ของแถมในระดับที่ ${i + 1}`}
+                          gifts={tier.gifts}
+                          onChange={(next) => {
+                            const tiers = [...form.tiers];
+                            tiers[i] = { ...tiers[i], gifts: next };
+                            setForm({ ...form, tiers });
                           }}
-                          placeholder="จำนวนที่แถมในระดับนี้"
-                          isRequired
                         />
                       </div>
                     ))}
@@ -918,57 +983,10 @@ export default function AdminFreeGiftsPage() {
                   {/* The shop's free-gift shelf, not the catalogue: every gift
                       is UNLISTED in Shopify on purpose and none of them appears
                       in the catalogue the other picker reads. */}
-                  {form.giftVariantId ? (
-                    <div className="mb-2 flex items-center gap-2.5 rounded-lg bg-surface-soft p-2">
-                      <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-white">
-                        {form.giftImage && (
-                          <Image
-                            src={form.giftImage}
-                            alt=""
-                            fill
-                            sizes="36px"
-                            className="object-contain"
-                          />
-                        )}
-                      </span>
-                      <span className="flex-1 text-xs text-brand-ink">
-                        {giftName(form.giftTitle) || form.giftVariantId}
-                      </span>
-                      <button
-                        type="button"
-                        aria-label="เปลี่ยนของแถม"
-                        onClick={() =>
-                          setForm({
-                            ...form,
-                            giftVariantId: "",
-                            giftTitle: "",
-                            giftImage: null,
-                          })
-                        }
-                      >
-                        <X size={14} className="text-slate-400" />
-                      </button>
-                    </div>
-                  ) : (
-                    <GiftPicker
-                      onSelect={(g: GiftChoice) =>
-                        setForm({
-                          ...form,
-                          giftVariantId: g.variantId,
-                          giftTitle: g.title,
-                          giftImage: g.image,
-                        })
-                      }
-                    />
-                  )}
-                  <AdminField
-                    label="จำนวนที่แถม (ชิ้น)"
-                    type="number"
-                    inputMode="numeric"
-                    value={form.giftQty}
-                    onChange={(v) => setForm({ ...form, giftQty: v })}
-                    isRequired
-                    className="mt-2"
+                  <GiftListField
+                    label="ของแถมที่ลูกค้าจะได้รับ"
+                    gifts={form.gifts}
+                    onChange={(gifts) => setForm({ ...form, gifts })}
                   />
                 </div>
               )}
@@ -976,17 +994,25 @@ export default function AdminFreeGiftsPage() {
               {/* preview */}
               {form.titleTh &&
                 (form.kind === "tiered"
-                  ? form.tiers.some((t) => t.giftProductSlug)
-                  : form.giftProductSlug) && (
+                  ? form.tiers.some((t) => t.gifts.length > 0)
+                  : form.gifts.length > 0) && (
                   <div className="rounded-xl bg-brand-gradient-soft p-3">
                     <p className="text-[10px] font-bold text-brand-800 uppercase mb-1">
                       ตัวอย่างที่ลูกค้าจะเห็น
                     </p>
                     <p className="text-xs text-brand-ink">
-                      {form.kind === "tiered"
-                        ? describeCondition(form)
-                        : `${describeCondition(form)} → รับฟรี ${getProductBySlug(form.giftProductSlug)?.name} x${form.giftQty || 1}`}
+                      {describeCondition(form)}
+                      {form.kind !== "tiered" && ` → รับฟรี ${describeGifts(form.gifts)}`}
                     </p>
+                    {form.kind === "tiered" && (
+                      <ul className="mt-1 space-y-0.5">
+                        {form.tiers.map((t, i) => (
+                          <li key={i} className="text-[11px] text-brand-ink">
+                            ฿{Number(t.minSubtotal || 0).toLocaleString()} → {describeGifts(t.gifts)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 )}
 
@@ -1042,8 +1068,8 @@ export default function AdminFreeGiftsPage() {
                   // watching the old field left this disabled however many
                   // gifts were picked.
                   (form.kind === "tiered"
-                    ? !form.tiers.every((t) => t.giftVariantId)
-                    : !form.giftVariantId)
+                    ? !form.tiers.every((t) => t.gifts.length > 0)
+                    : form.gifts.length === 0)
                 }
                 className="w-full rounded-full bg-brand-gradient text-white text-sm font-semibold py-3 disabled:opacity-50"
               >

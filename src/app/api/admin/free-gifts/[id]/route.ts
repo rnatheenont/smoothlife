@@ -3,6 +3,7 @@ import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { FreeGiftPromoRow, rowToPromo } from "@/data/free-gifts";
 import { getProductBySlug } from "@/data/products";
+import { normaliseGifts } from "@/lib/free-gift-input";
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
@@ -43,21 +44,43 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   }
   if (typeof body.giftQty === "number") patch.gift_qty = body.giftQty;
   if (typeof body.giftVariantId === "string" || body.giftVariantId === null) patch.gift_variant_id = body.giftVariantId;
+  // A promo can hand over several things. The single-gift columns keep the
+  // first of them so anything still reading the old shape sees something
+  // sensible; giftsOf prefers the list wherever both exist.
+  if (body.gifts !== undefined) {
+    const promoGifts = normaliseGifts(body.gifts, "");
+    if (promoGifts.ok === false) return NextResponse.json({ ok: false, error: promoGifts.error }, { status: 400 });
+    patch.gifts = promoGifts.gifts;
+    patch.gift_variant_id = promoGifts.gifts[0].variant_id ?? null;
+    patch.gift_qty = promoGifts.gifts[0].qty ?? 1;
+  }
   if (typeof body.starts === "string" || body.starts === null) patch.starts_at = body.starts || null;
   if (typeof body.expires === "string" || body.expires === null) patch.expires_at = body.expires || null;
   if (Array.isArray(body.tiers)) {
-    for (const t of body.tiers) {
-      if (typeof t.giftVariantId !== "string" || !t.giftVariantId.startsWith("gid://shopify/ProductVariant/")) {
-        return NextResponse.json({ ok: false, error: "กรุณาเลือกของแถมของทุกระดับจากรายการของแถมใน Shopify" }, { status: 400 });
-      }
+    type TierBody = {
+      minSubtotal: number;
+      giftVariantId?: string;
+      giftQty?: number;
+      gifts?: unknown;
+      shopifyDiscountId?: string;
+    };
+    const rows = [];
+    for (const [i, t] of (body.tiers as TierBody[]).entries()) {
+      const level = normaliseGifts(
+        t.gifts ?? (t.giftVariantId ? [{ variantId: t.giftVariantId, qty: t.giftQty ?? 1 }] : []),
+        `ในระดับที่ ${i + 1}`,
+      );
+      if (level.ok === false) return NextResponse.json({ ok: false, error: level.error }, { status: 400 });
+      rows.push({
+        min_subtotal: t.minSubtotal,
+        gift_product_slug: "",
+        gift_variant_id: level.gifts[0].variant_id ?? null,
+        gift_qty: level.gifts[0].qty ?? 1,
+        gifts: level.gifts,
+        shopify_discount_id: t.shopifyDiscountId ?? null,
+      });
     }
-    patch.tiers = body.tiers.map((t: { minSubtotal: number; giftProductSlug?: string; giftVariantId?: string; giftQty: number; shopifyDiscountId?: string }) => ({
-      min_subtotal: t.minSubtotal,
-      gift_product_slug: t.giftProductSlug ?? "",
-      gift_variant_id: t.giftVariantId ?? null,
-      gift_qty: t.giftQty && t.giftQty > 0 ? t.giftQty : 1,
-      shopify_discount_id: t.shopifyDiscountId ?? null,
-    }));
+    patch.tiers = rows;
   }
   patch.updated_at = new Date().toISOString();
 
