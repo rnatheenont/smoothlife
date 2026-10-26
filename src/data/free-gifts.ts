@@ -1,12 +1,14 @@
 import type { CartLine } from "./coupons.ts";
 
-// Real Shopify Automatic Discount is what actually zeroes the gift's price
-// at checkout — this file only computes eligibility/progress text for the
-// UI. If a promo here is active but its matching Shopify discount isn't (or
-// drifts out of sync), the cart would show a "free" line Shopify doesn't
-// actually discount — the same trap the hardcoded coupons in coupons.ts fell
-// into. Keep shopifyDiscountId pointed at the real discount whenever a promo
-// is added or changed.
+// These rules are the whole story for orders this site creates.
+//
+// They used to be half of one: a Shopify Automatic Discount did the zeroing
+// and this file only drew the progress text, so a promo whose discount had
+// drifted showed a "free" line nothing honoured. Orders built through the
+// Admin API never run automatic discounts at all, so lib/checkout-gifts.ts
+// now reads these same rules and puts the gift on the order itself at ฿0.
+// shopifyDiscountId is only for the other shopfront, the theme on www, and
+// nothing here depends on it.
 /** One thing handed over. A promo or a tier can list several.
  *
  *  The three single-gift fields it replaces are still there and still read
