@@ -619,10 +619,17 @@ export default function AdminCustomersPage() {
         )}
       </Card>
 
-      {/* min-w-0 on both halves: a grid item defaults to min-width:auto, so
-          a table wider than its track widens the track instead of scrolling —
-          which is how one overgrown column ends up squeezing the card beside
-          it and pushing its buttons off the edge. */}
+      {/* Both tables are table-fixed, and both halves are min-w-0.
+          Measured on the live console: with the default auto layout the
+          accounts table insisted on 851px inside a 604px card, so "การผูก"
+          and "เลือก" sat outside it entirely. The cause was one cell — the
+          address line is `truncate`, which is white-space:nowrap, and a
+          nowrap cell's minimum width is its whole string. Thai addresses do
+          not break, so a single customer with a long address set the width
+          of the column for all 25 rows. min-width on the span does not help;
+          only taking the column width out of the content's hands does.
+          min-w-0 on the halves then stops a grid item (min-width:auto by
+          default) from widening its own track instead of scrolling. */}
       {accounts && (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card className="min-w-0 p-4">
@@ -646,12 +653,12 @@ export default function AdminCustomersPage() {
                 button inside a button, which is why it was a span with
                 role="button". Cards below md. */}
             <div className={clsx(adminCards.forTable, adminTable.scroll)}>
-              <table className={adminTable.table}>
+              <table className={clsx(adminTable.table, "table-fixed")}>
                 <thead className={adminTable.thead}>
                   <tr>
                     <th>บัญชี</th>
-                    <th className="w-44">การผูก</th>
-                    <th className="w-44 text-right">เลือก</th>
+                    <th className="w-36">การผูก</th>
+                    <th className="w-28 text-right">เลือก</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -977,7 +984,7 @@ export default function AdminCustomersPage() {
                 against each other, so they should not be two different
                 things to read. */}
             <div className={clsx(adminCards.forTable, adminTable.scroll)}>
-              <table className={adminTable.table}>
+              <table className={clsx(adminTable.table, "table-fixed")}>
                 <thead className={adminTable.thead}>
                   <tr>
                     <th>ใบลูกค้า</th>
