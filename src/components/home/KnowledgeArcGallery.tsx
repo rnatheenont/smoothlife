@@ -319,7 +319,7 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
                 className="pointer-events-none object-cover"
               />
             )}
-            <span className="absolute bottom-3 left-3 max-w-[85%] truncate rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-800 shadow-sm backdrop-blur-sm sm:text-[13px] sm:px-3.5 sm:py-1.5">
+            <span className="absolute bottom-3 left-3 max-w-[85%] truncate rounded-full bg-white/85 px-3 py-1 text-[13px] font-semibold text-slate-800 shadow-sm backdrop-blur-sm sm:px-3.5 sm:py-1.5">
               {a.title}
             </span>
           </Link>

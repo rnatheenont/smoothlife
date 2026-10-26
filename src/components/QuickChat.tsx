@@ -288,7 +288,7 @@ export default function QuickChat() {
                 />
                 <span
                   ref={badgeBubbleRef}
-                  className="relative z-10 block whitespace-nowrap rounded-2xl bg-brand-gradient px-2.5 py-1.5 text-[8px] lg:text-[11px] font-bold leading-none text-white shadow-md"
+                  className="relative z-10 block whitespace-nowrap rounded-2xl bg-brand-gradient px-2.5 py-1.5 text-[11px] font-bold leading-none text-white shadow-md"
                 >
                   {t(...CHAT_BADGE_PHRASES[badgeIndex])}
                 </span>
