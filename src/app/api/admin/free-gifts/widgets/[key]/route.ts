@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { WidgetRow } from "@/app/api/free-gifts/widgets/route";
+import { widgetDefault, type WidgetRow } from "@/lib/widget-defaults";
 import { WIDGETS_MOVED_TO_PAGES, widgetIsReadOnly } from "@/lib/pages/moved-widgets";
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ key: string }> }) {
@@ -36,6 +36,17 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ key: st
     method: "PATCH",
     body: JSON.stringify(patch),
   });
-  if (!row) return NextResponse.json({ ok: false, error: "ไม่พบ widget นี้" }, { status: 404 });
-  return NextResponse.json({ ok: true, widget: row });
+  if (row) return NextResponse.json({ ok: true, widget: row });
+
+  // A widget the code knows about but the table has never held: the admin
+  // can see it (the read route fills gaps from the same list) so switching
+  // it on has to work, not 404. Anything not in that list really is unknown.
+  const fallback = widgetDefault(params.key);
+  if (!fallback) return NextResponse.json({ ok: false, error: "ไม่พบ widget นี้" }, { status: 404 });
+
+  const [created] = await supabaseRest<WidgetRow[]>("free_gift_widgets", {
+    method: "POST",
+    body: JSON.stringify({ ...fallback, ...patch, key: params.key, label_th: fallback.label_th }),
+  });
+  return NextResponse.json({ ok: true, widget: created });
 }

@@ -1,23 +1,9 @@
 import { NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
+import { WIDGET_DEFAULTS as DEFAULTS, type WidgetRow } from "@/lib/widget-defaults";
 
-export type WidgetRow = { key: string; label_th: string; enabled: boolean; config: Record<string, unknown> };
+export type { WidgetRow };
 
-const DEFAULTS: WidgetRow[] = [
-  { key: "milestone_bar", label_th: "มิลสโตนบาร์", enabled: true, config: {} },
-  { key: "deal_of_day", label_th: "ดีลประจำวัน", enabled: false, config: {} },
-  { key: "tiered_box", label_th: "กล่องรางวัลขั้นบันได", enabled: false, config: {} },
-  { key: "promotion_card", label_th: "การ์ดโปรโมชั่น", enabled: false, config: {} },
-  { key: "promotion_badge", label_th: "แบดจ์โปรโมชั่น", enabled: false, config: {} },
-  { key: "cart_drawer_offer", label_th: "ข้อเสนอในตะกร้าเลื่อน", enabled: false, config: {} },
-  { key: "popup", label_th: "ป๊อปอัพ", enabled: false, config: {} },
-  { key: "floating_button", label_th: "ปุ่มลอย", enabled: false, config: {} },
-  { key: "congrats_bar", label_th: "แถบแสดงความยินดี", enabled: false, config: {} },
-  { key: "gifts_on_slide_cart", label_th: "ของแถมในตะกร้าเลื่อน", enabled: false, config: {} },
-  { key: "flash_sale_bar", label_th: "แถบ Flash Sale นับถอยหลัง", enabled: false, config: {} },
-  { key: "flash_sale_shelf", label_th: "แบนเนอร์ Flash Sale + ชั้นวางสินค้า", enabled: false, config: {} },
-  { key: "thankyou_offer", label_th: "ข้อเสนอหน้าขอบคุณ", enabled: false, config: {} },
-];
 
 // No dynamic API is used here, so Next.js would otherwise treat this as a
 // static route and cache its response forever within a server process —
@@ -33,7 +19,20 @@ export async function GET() {
   if (!supabaseConfigured()) return NextResponse.json({ widgets: DEFAULTS });
   try {
     const rows = await supabaseRest<WidgetRow[]>("free_gift_widgets?select=key,label_th,enabled,config&order=key.asc");
-    return NextResponse.json({ widgets: rows.length ? rows : DEFAULTS }, { headers: CACHE_HEADERS });
+    if (rows.length === 0) return NextResponse.json({ widgets: DEFAULTS }, { headers: CACHE_HEADERS });
+
+    // A widget added in code has no row until somebody writes one, and the
+    // list used to be whatever the table happened to hold — so a new widget
+    // was invisible in the admin, which is a deploy that silently does
+    // nothing. The defaults fill the gaps; the stored rows win where they
+    // exist, because those carry the shop's own on/off and settings.
+    const stored = new Map(rows.map((r) => [r.key, r]));
+    const widgets = [...stored.values()];
+    for (const fallback of DEFAULTS) {
+      if (!stored.has(fallback.key)) widgets.push(fallback);
+    }
+    widgets.sort((a, b) => a.key.localeCompare(b.key));
+    return NextResponse.json({ widgets }, { headers: CACHE_HEADERS });
   } catch (err) {
     // Not cached, so the next request tries the database again.
     console.error("[free-gifts/widgets] fetch failed", err);
