@@ -17,7 +17,6 @@ import { pointsForAmount } from "@/data/coupons";
 import { subscriptionPlans } from "@/data/subscriptions";
 import CouponPicker from "@/components/CouponPicker";
 import { Button } from "@/components/ui";
-import FreeGiftProgress from "@/components/FreeGiftProgress";
 import MobileStickyBar from "@/components/MobileStickyBar";
 import ProductCard from "@/components/ProductCard";
 
@@ -331,9 +330,12 @@ export default function CartView() {
           )}
         </div>
 
+        {/* The gift progress card used to sit here, above the summary. It
+            says the same thing as the gift shelf beside the cart lines — the
+            same promo, the same gift, the same photograph — so on this page
+            it was the message repeated, not reinforced. It still runs on the
+            product pages, where there is nothing else saying it. */}
         <div className="flex flex-col gap-4 h-fit lg:sticky lg:top-[152px]">
-          <FreeGiftProgress />
-
           <div className="rounded-2xl bg-white p-5 shadow-card">
             <h2 className="font-bold text-brand-ink mb-4">{t("สรุปคำสั่งซื้อ", "Order summary")}</h2>
             <div className="flex justify-between text-sm text-slate-600 mb-2">
