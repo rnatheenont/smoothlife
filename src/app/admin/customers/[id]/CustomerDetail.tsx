@@ -119,9 +119,13 @@ type ShopifyOrders = {
   orders: ShopifyOrder[];
   visible: number;
   canReadAllOrders: boolean | null;
+  /** The store's handle in admin.shopify.com, for linking an order number
+   *  to the order. Null when it could not be worked out. */
+  adminHandle: string | null;
 };
 
 type ShopifyOrder = {
+  id: string;
   name: string;
   createdAt: string;
   total: string;
@@ -420,6 +424,7 @@ export default function CustomerDetail({ userId }: { userId: string }) {
       orders: [],
       visible: 0,
       canReadAllOrders: null,
+      adminHandle: null,
     };
     fetch(`/api/admin/customers/orders?id=${encodeURIComponent(shopifyId)}`)
       .then((r) => r.json())
@@ -1076,9 +1081,32 @@ function OrdersTab({
               cols={[
                 {
                   head: "ออเดอร์",
-                  cell: (o) => <span className="font-semibold">{o.name}</span>,
+                  className: "whitespace-nowrap",
+                  // The number is what support is looking at; the order is
+                  // what they need. Reading one and searching Shopify for the
+                  // other by hand was the whole gap.
+                  cell: (o) =>
+                    orders.adminHandle ? (
+                      <a
+                        href={`https://admin.shopify.com/store/${orders.adminHandle}/orders/${o.id.split("/").pop()}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`เปิด ${o.name} ใน Shopify`}
+                        className="font-semibold underline decoration-slate-300 decoration-dotted underline-offset-2 hover:decoration-brand-800"
+                      >
+                        {o.name}
+                      </a>
+                    ) : (
+                      <span className="font-semibold">{o.name}</span>
+                    ),
                 },
-                { head: "วันที่", cell: (o) => fmtDate(o.createdAt) },
+                {
+                  head: "วันที่",
+                  // "31 ส.ค. 69" was breaking across three lines and making
+                  // every row three times as tall as it needed to be.
+                  className: "whitespace-nowrap",
+                  cell: (o) => fmtDate(o.createdAt),
+                },
                 {
                   head: "ยอด",
                   className: "text-right tabular-nums",

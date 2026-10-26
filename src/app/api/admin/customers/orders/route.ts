@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { getCustomerOrders, ordersByCustomerId, orderProbe, grantedScopes, shopifyAdminConfigured } from "@/lib/shopify-admin";
+import { getCustomerOrders, ordersByCustomerId, orderProbe, grantedScopes, shopifyAdminConfigured, storeAdminHandle } from "@/lib/shopify-admin";
 
 // Exactly what the customer's own order page would show them.
 //
@@ -50,7 +50,12 @@ export async function GET(req: NextRequest) {
     orderProbe: probeId ? (probe ? `${probe.name} ${probe.createdAt.slice(0, 10)}` : "อ่านไม่ได้") : null,
     canReadAllOrders: scopes?.scopes.includes("read_all_orders") ?? null,
     scopes: scopes?.scopes ?? null,
+    // The handle and the id are what an order number needs to become a link
+    // to the order itself — support reading this list is one click from the
+    // thing they are reading about, instead of searching Shopify by hand.
+    adminHandle: storeAdminHandle("smoothlife"),
     orders: (orders || []).map((o) => ({
+      id: o.id,
       name: o.name,
       createdAt: o.createdAt,
       total: o.total,
