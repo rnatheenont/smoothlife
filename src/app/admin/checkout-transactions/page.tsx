@@ -28,6 +28,9 @@ type Transaction = {
   currency_code: string;
   status: "success" | "refunded";
   shopify_order_id: string | null;
+  /** "#4639" — what the order is called in Shopify. Absent when it could not
+   *  be read, and then the id is shown instead rather than nothing. */
+  order_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;
   tran_ref: string | null;
@@ -273,9 +276,9 @@ function RouteBadge({ route }: { route: RefundRoute }) {
 }
 
 /** The column holds two shapes — a GID from the checkout webhooks, a bare
- *  number from the Shopify one — so the table was printing two different
- *  kinds of thing under one heading. The number is the half a person can
- *  paste into Shopify's admin search, so that is what is shown. */
+ *  number from the Shopify one — and neither is a thing a person reads. The
+ *  number is still what the link is built from, because it is what Shopify's
+ *  admin addresses an order by; it is the name that is shown. */
 function orderNumber(id: string) {
   return id.startsWith("gid://") ? (id.split("/").pop() ?? id) : id;
 }
@@ -316,24 +319,28 @@ function thaiTime(iso: string) {
  *  person scans down the loudest thing on the row. */
 function ShopifyOrderLink({
   orderId,
+  orderName,
   adminHandle,
 }: {
   orderId: string;
+  orderName: string | null;
   adminHandle: string | null;
 }) {
+  // The address is always the id; the label is the name when there is one.
   const number = orderNumber(orderId);
+  const label = orderName ?? number;
   if (!adminHandle) {
-    return <span className="font-mono text-[12px] text-slate-700">{number}</span>;
+    return <span className="font-mono text-[12px] text-slate-700">{label}</span>;
   }
   return (
     <a
       href={`https://admin.shopify.com/store/${adminHandle}/orders/${number}`}
       target="_blank"
       rel="noopener noreferrer"
-      title={`เปิด ${number} ใน Shopify`}
+      title={`เปิด ${label} ใน Shopify`}
       className="font-mono text-[12px] text-slate-700 underline decoration-slate-300 decoration-dotted underline-offset-2 hover:decoration-brand-800"
     >
-      {number}
+      {label}
     </a>
   );
 }
@@ -441,6 +448,7 @@ export default function AdminCheckoutTransactionsPage() {
                       {tx.shopify_order_id ? (
                         <ShopifyOrderLink
                           orderId={tx.shopify_order_id}
+                          orderName={tx.order_name}
                           adminHandle={adminHandle}
                         />
                       ) : (
@@ -521,6 +529,7 @@ export default function AdminCheckoutTransactionsPage() {
                           Shopify:{" "}
                           <ShopifyOrderLink
                             orderId={tx.shopify_order_id}
+                            orderName={tx.order_name}
                             adminHandle={adminHandle}
                           />
                         </>

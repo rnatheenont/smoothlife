@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
-import { storeAdminHandle } from "@/lib/shopify-admin";
+import { orderNamesByGid, storeAdminHandle } from "@/lib/shopify-admin";
 
 // Lists recent one-time custom-checkout purchases (src/app/api/checkout/init)
 // so an admin can find a transaction to refund. Distinct from
@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
       currency_code: string;
       status: string;
       shopify_order_id: string | null;
+      tran_ref: string | null;
       contact_email: string | null;
       contact_phone: string | null;
       refunded_at: string | null;
@@ -41,5 +42,28 @@ export async function GET(req: NextRequest) {
     "payment_transactions?status=in.(success,refunded)&select=id,invoice_no,amount,currency_code,status,shopify_order_id,contact_email,contact_phone,tran_ref,refunded_at,refund_note,created_at,confirmed_at&order=created_at.desc&limit=100"
   );
 
-  return NextResponse.json({ ok: true, transactions: rows, adminHandle });
+  // The order's name — "#4639" — rather than the 14-digit id Shopify keys it
+  // by. The name is what the order is called everywhere a person looks at it,
+  // and the id is not written on anything they can compare it against.
+  //
+  // Half of them cost nothing: the flash-sale checkout already writes the name
+  // into tran_ref (see refund-route.ts, which tells the two checkouts apart by
+  // exactly that). Only our own 2C2P rows have to be asked for, and that call
+  // is batched and cached by order — a name never changes once it exists.
+  const needLookup = rows
+    .filter((r) => !r.tran_ref?.trim().startsWith("#"))
+    .map((r) => r.shopify_order_id);
+  const looked = await orderNamesByGid(needLookup).catch(
+    () => new Map<string, string>(),
+  );
+
+  const transactions = rows.map((r) => ({
+    ...r,
+    order_name:
+      r.tran_ref?.trim().startsWith("#")
+        ? r.tran_ref.trim()
+        : (r.shopify_order_id ? looked.get(r.shopify_order_id) : null) ?? null,
+  }));
+
+  return NextResponse.json({ ok: true, transactions, adminHandle });
 }
