@@ -12,6 +12,7 @@ import {
   Award,
   Heart,
   KeyRound,
+  ShieldCheck,
   LogOut,
   CalendarCheck,
   Trophy,
@@ -70,6 +71,10 @@ const NAV_GROUPS: NavGroup[] = [
     label: "ตั้งค่าบัญชี",
     items: [
       { href: "/account/profile", label: "ข้อมูลส่วนตัว", icon: User },
+      // Above the addresses rather than beside the password, because what it
+      // settles — which account this even is — comes before anything stored
+      // in one.
+      { href: "/account/verify", label: "ช่องทางเข้าสู่ระบบ", icon: ShieldCheck },
       { href: "/account/addresses", label: "ที่อยู่จัดส่ง", icon: MapPin },
       { href: "/account/tax-addresses", label: "ที่อยู่ใบกำกับภาษี", icon: Receipt },
       { href: "/account/change-password", label: "เปลี่ยนรหัสผ่าน", icon: KeyRound },
