@@ -629,9 +629,16 @@ export default function AdminCustomersPage() {
           of the column for all 25 rows. min-width on the span does not help;
           only taking the column width out of the content's hands does.
           min-w-0 on the halves then stops a grid item (min-width:auto by
-          default) from widening its own track instead of scrolling. */}
+          default) from widening its own track instead of scrolling.
+
+          Side by side only from 2xl. The two lists are read against each
+          other, so they want to be side by side — but on a 1280 laptop that
+          leaves each card 484px, under the 560px the table needs, and
+          "เลือก" was off the edge of its own card at every width below
+          1536. Measured at 1280: two columns gives each table 444px with
+          116px hidden; stacked gives each 948px with nothing hidden. */}
       {accounts && (
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid gap-5 2xl:grid-cols-2">
           <Card className="min-w-0 p-4">
             <SectionTitle className="mb-1">
               บัญชีในเว็บ ({accounts.length})
