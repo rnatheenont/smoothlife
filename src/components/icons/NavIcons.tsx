@@ -6,6 +6,7 @@ import {
   LayoutGrid,
   Percent,
   Repeat,
+  ScanFace,
   ShieldCheck,
   Sparkles,
   Tag,
@@ -13,7 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-// The marks the drawer's links can wear — the eleven the drawer already
+// The marks the drawer's links can wear — the ones the drawer already
 // uses, by the names the stored document refers to them by. A closed set,
 // because a mistyped name in the main menu is a blank space in the only
 // navigation a phone has.
@@ -24,6 +25,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   percent: Percent,
   droplets: Droplets,
   repeat: Repeat,
+  scan: ScanFace,
   sparkles: Sparkles,
   book: BookOpen,
   heart: Heart,

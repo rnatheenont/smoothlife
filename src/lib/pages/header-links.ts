@@ -56,6 +56,10 @@ export const HEADER_LINKS_DEFAULT: HeaderLinks = {
   desk: [
     { href: "/brands", th: "แบรนด์ทั้งหมด", en: "All brands", mega: true },
     { href: "/shop", th: "สินค้าแนะนำ", en: "Recommended", mega: false },
+    // The skin check the tab bar has had on a phone from the start: on a wide
+    // screen it was reachable only from the home page, which is the one place
+    // somebody who has already started shopping is not.
+    { href: "/advisor", th: "ประเมินผิว", en: "Skin Check", mega: false },
     { href: "/subscription", th: "เซ็ตสมาชิก", en: "Member sets", mega: false },
     { href: "/knowledge", th: "บทความ", en: "Articles", mega: false },
     { href: "/promotions", th: "โปรโมชั่น", en: "Promotions", mega: false },
@@ -64,7 +68,9 @@ export const HEADER_LINKS_DEFAULT: HeaderLinks = {
     // Labelled "คำถามที่พบบ่อย" and pointed at /help, which is the help hub
     // and not that page. /faq is now the page with that name on it.
     { href: "/faq", th: "คำถามที่พบบ่อย", en: "FAQ" },
-    { href: "/account/referral", th: "โปรแกรม Affiliate", en: "Affiliate program" },
+    // The affiliate programme is out of the navigation for now, by request.
+    // The page itself is still there and still works — this is one line to
+    // put back when it is ready to be pushed again.
   ],
   drawer: [
     { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: "grid" },
@@ -72,10 +78,10 @@ export const HEADER_LINKS_DEFAULT: HeaderLinks = {
     { href: "/promotions", th: "โปรโมชั่น", en: "Promotions", icon: "percent" },
     { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern", icon: "droplets" },
     { href: "/subscription", th: "เซ็ตสมาชิก", en: "Member sets", icon: "repeat" },
+    { href: "/advisor", th: "ประเมินผิว", en: "Skin Check", icon: "scan" },
     { href: "/ai-assistant", th: "ผู้ช่วย AI", en: "AI Assistant", icon: "sparkles" },
     { href: "/knowledge", th: "ความรู้ความงาม", en: "Beauty Knowledge", icon: "book" },
     { href: "/account/wishlist", th: "รายการโปรด", en: "Wishlist", icon: "heart" },
-    { href: "/account/referral", th: "โปรแกรม Affiliate", en: "Affiliate program", icon: "users" },
     { href: "/about", th: "ทำไมต้อง Smooth Life", en: "Why Smooth Life", icon: "shield" },
     { href: "/faq", th: "คำถามที่พบบ่อย", en: "FAQ", icon: "help" },
     { href: "/help", th: "ช่วยเหลือ", en: "Help", icon: "help" },

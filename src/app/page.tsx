@@ -14,7 +14,6 @@ import { articleProductSlugs, cardsForSlugs, brandShelves, concernShelves } from
 import HeroCarousel from "@/components/HeroCarousel";
 import CategoryIconRow from "@/components/home/CategoryIconRow";
 import FlashSaleBar from "@/components/home/FlashSaleBar";
-import FlashSaleShelf from "@/components/home/FlashSaleShelf";
 import SmoothieHeroBand from "@/components/home/SmoothieHeroBand";
 import HeroTrio from "@/components/home/HeroTrio";
 import ConcernCoverflow from "@/components/home/ConcernCoverflow";
@@ -200,10 +199,12 @@ async function LegacyHomePage() {
           follow it. Full-bleed: it carries its own tint. */}
       <CategoryIconRow />
 
-      {/* Both draw themselves from widgets the admin edits, and render
-          nothing at all until one is switched on — see WidgetsPanel. */}
+      {/* Draws itself from a widget the admin edits, and renders nothing at
+          all until it is switched on — see WidgetsPanel. The flash-sale
+          shelf that used to stand under it belongs to an event now: it is a
+          section in the library, dragged onto whichever page the event runs
+          on, rather than a fixture of the home page waiting to be filled. */}
       <FlashSaleBar />
-      <FlashSaleShelf />
 
 
       {/* Free-gift promos — real active promos, rendered only when the
