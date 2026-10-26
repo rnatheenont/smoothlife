@@ -345,9 +345,16 @@ export default function AdminCheckoutTransactionsPage() {
         <Panel>
           {/* The table was 12px with a sideways scroll on anything narrower
               than a laptop, which hid the status and the refund button — the
-              two columns the page exists for. Full width on a desktop, one
-              card per payment on a phone. */}
-          <div className="hidden md:block">
+              two columns the page exists for. Full width where it fits, one
+              card per payment everywhere else.
+
+              "Where it fits" is xl, not md. This page is full-width, so the
+              table gets the window less the 228px menu and the 64px gutter:
+              988px at 1280, and the columns need 816 of it before the
+              customer's email has anywhere to go. A tablet has 756px, which
+              is less than the columns alone — the table was running off the
+              side of the page there long before the date column arrived. */}
+          <div className="hidden xl:block">
             <table className={adminTable.table}>
               <thead className={adminTable.thead}>
                 <tr>
@@ -358,8 +365,10 @@ export default function AdminCheckoutTransactionsPage() {
                   {/* Narrower than it was: the cell used to hold a number to
                       read off and copy, and now holds a link to follow. */}
                   <th className="w-40">Shopify Order</th>
-                  <th className="w-44">สถานะ</th>
-                  <th className="w-64 text-right">คืนเงิน</th>
+                  <th className="w-36">สถานะ</th>
+                  {/* The collapsed state is one short link; the panel it opens
+                      is wider than any column and widens the cell itself. */}
+                  <th className="w-32 text-right">คืนเงิน</th>
                 </tr>
               </thead>
               <tbody>
@@ -437,7 +446,7 @@ export default function AdminCheckoutTransactionsPage() {
             </table>
           </div>
 
-          <ul className="divide-y divide-slate-100 md:hidden">
+          <ul className="divide-y divide-slate-100 xl:hidden">
             {transactions.map((tx) => (
               <li key={tx.id} className="p-3">
                 <div className="flex items-start justify-between gap-2">
