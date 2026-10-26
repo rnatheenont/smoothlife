@@ -61,10 +61,12 @@ export const HEADER_LINKS_DEFAULT: HeaderLinks = {
     // somebody who has already started shopping is not.
     { href: "/advisor", th: "ประเมินผิว", en: "Skin Check", mega: false },
     { href: "/knowledge", th: "บทความ", en: "Articles", mega: false },
-    // เซ็ตสมาชิก and โปรโมชั่น are out of the desktop bar for now, by
-    // request — the same way the affiliate link left it. Both pages still
-    // exist and still work, and both are still in the drawer below, which
-    // is the full map rather than the curated row. Two lines to put back.
+    // เซ็ตสมาชิก and โปรโมชั่น are out of the navigation for now, by
+    // request — the same way the affiliate link left it. Out of the drawer
+    // below as well: the drawer is a superset of this row, not a second
+    // opinion about it, and a destination that is hidden on a desktop and
+    // offered on a phone is not hidden. Both pages still exist and still
+    // work, and this is four lines to put back.
   ],
   deskUtility: [
     // Labelled "คำถามที่พบบ่อย" and pointed at /help, which is the help hub
@@ -77,9 +79,7 @@ export const HEADER_LINKS_DEFAULT: HeaderLinks = {
   drawer: [
     { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: "grid" },
     { href: "/brands", th: "แบรนด์ทั้งหมด", en: "All brands", icon: "tag" },
-    { href: "/promotions", th: "โปรโมชั่น", en: "Promotions", icon: "percent" },
     { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern", icon: "droplets" },
-    { href: "/subscription", th: "เซ็ตสมาชิก", en: "Member sets", icon: "repeat" },
     { href: "/advisor", th: "ประเมินผิว", en: "Skin Check", icon: "scan" },
     { href: "/ai-assistant", th: "ผู้ช่วย AI", en: "AI Assistant", icon: "sparkles" },
     { href: "/knowledge", th: "ความรู้ความงาม", en: "Beauty Knowledge", icon: "book" },
