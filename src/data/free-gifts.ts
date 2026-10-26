@@ -132,6 +132,15 @@ export type FreeGiftPromo = {
    */
   discountType?: "free" | "percentage" | "fixed";
   discountValue?: number;
+  /**
+   * What reaching a tier actually gets you.
+   *
+   * "gift" hands over a product, which is all this table could do. The app on
+   * Shopify also sells two campaigns — Order Goal and Volume Discount — that
+   * are this same ladder with money off the order at the top instead, so they
+   * are a kind of reward rather than a second system.
+   */
+  rewardType?: "gift" | "order_discount";
 };
 
 // Row shape as stored in the Supabase `free_gift_promos` table (snake_case) —
@@ -169,6 +178,7 @@ export type FreeGiftPromoRow = {
   tier_mode: "cumulative" | "highest" | null;
   trigger_type: "cart-value" | "quantity" | null;
   gift_choice: "auto" | "customer" | null;
+  reward_type: "gift" | "order_discount" | null;
   discount_type: "free" | "percentage" | "fixed" | null;
   discount_value: number | string | null;
   excluded_product_slugs: string[] | null;
@@ -180,7 +190,7 @@ export type FreeGiftPromoRow = {
 // Shared SELECT column list — used by both the public /api/free-gifts route
 // and the admin CRUD routes so they never silently drift out of sync.
 export const FREE_GIFT_COLUMNS =
-  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,trigger_type,excluded_product_slugs,scope_brands,scope_categories,max_gifts,gift_choice,discount_type,discount_value,created_at,updated_at";
+  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,trigger_type,excluded_product_slugs,scope_brands,scope_categories,max_gifts,gift_choice,discount_type,discount_value,reward_type,created_at,updated_at";
 
 const toItems = (rows: FreeGiftItemRow[] | null | undefined): FreeGiftItem[] | undefined => {
   const list = (rows ?? [])
@@ -270,6 +280,7 @@ export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
     discountType:
       row.discount_type === "percentage" || row.discount_type === "fixed" ? row.discount_type : "free",
     discountValue: Number(row.discount_value ?? 0) || 0,
+    rewardType: row.reward_type === "order_discount" ? "order_discount" : "gift",
   };
 }
 

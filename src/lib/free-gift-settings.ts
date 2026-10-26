@@ -14,6 +14,7 @@ export type CampaignSettings = {
   gift_choice: "auto" | "customer";
   discount_type: "free" | "percentage" | "fixed";
   discount_value: number;
+  reward_type: "gift" | "order_discount";
 };
 
 const strings = (v: unknown): string[] =>
@@ -37,5 +38,6 @@ export function campaignSettings(body: Record<string, unknown>): CampaignSetting
     gift_choice: body.giftChoice === "customer" ? "customer" : "auto",
     discount_type: discountType,
     discount_value: discountType === "percentage" ? Math.min(value, 100) : value,
+    reward_type: body.rewardType === "order_discount" ? "order_discount" : "gift",
   };
 }

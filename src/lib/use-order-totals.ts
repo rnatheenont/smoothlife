@@ -16,7 +16,7 @@ export const FREE_SHIPPING_THRESHOLD = 0;
 export const SHIPPING_FEE = 50;
 
 export function useOrderTotals() {
-  const { lines, subtotal, couponCode, couponQuote } = useCart();
+  const { lines, subtotal, couponCode, couponQuote, orderDiscount } = useCart();
   const { user } = useAuth();
 
   // Read once on mount, not during render, so the server-rendered pass
@@ -59,7 +59,12 @@ export function useOrderTotals() {
     : applied
     ? applied.discount
     : subscribeDiscount;
-  const netSubtotal = Math.max(0, subtotal - discount);
+  // An Order Goal / Volume Discount campaign is not a coupon: the shopper
+  // did not type anything and nothing was quoted for them, so it does not
+  // compete for the single discount-code slot above. It comes off after it,
+  // the way the app on Shopify applies it.
+  const campaignDiscount = Math.min(orderDiscount?.amount ?? 0, Math.max(0, subtotal - discount));
+  const netSubtotal = Math.max(0, subtotal - discount - campaignDiscount);
   const qualifiesFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0;
   const freeShipping = qualifiesFreeShipping;
   const shipping = freeShipping ? 0 : SHIPPING_FEE;
@@ -79,6 +84,8 @@ export function useOrderTotals() {
   return {
     subtotal,
     discount,
+    campaignDiscount,
+    orderDiscount: campaignDiscount > 0 ? orderDiscount : null,
     netSubtotal,
     shipping,
     freeShipping,

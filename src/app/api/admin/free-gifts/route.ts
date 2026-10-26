@@ -57,14 +57,18 @@ export async function POST(req: NextRequest) {
     for (const s of buyProductSlugs) {
       if (!getProductBySlug(s)) return NextResponse.json({ ok: false, error: `ไม่พบสินค้า: ${s}` }, { status: 400 });
     }
-    promoGifts = normaliseGifts(gifts ?? (giftVariantId ? [{ variantId: giftVariantId, qty: giftQty ?? 1 }] : []), "");
-    if (promoGifts.ok === false) return NextResponse.json({ ok: false, error: promoGifts.error }, { status: 400 });
+    if (body.rewardType !== "order_discount") {
+      promoGifts = normaliseGifts(gifts ?? (giftVariantId ? [{ variantId: giftVariantId, qty: giftQty ?? 1 }] : []), "");
+      if (promoGifts.ok === false) return NextResponse.json({ ok: false, error: promoGifts.error }, { status: 400 });
+    }
   } else if (kind === "spend") {
     if (!minSubtotal || minSubtotal <= 0) {
       return NextResponse.json({ ok: false, error: "กรุณาระบุยอดขั้นต่ำ" }, { status: 400 });
     }
-    promoGifts = normaliseGifts(gifts ?? (giftVariantId ? [{ variantId: giftVariantId, qty: giftQty ?? 1 }] : []), "");
-    if (promoGifts.ok === false) return NextResponse.json({ ok: false, error: promoGifts.error }, { status: 400 });
+    if (body.rewardType !== "order_discount") {
+      promoGifts = normaliseGifts(gifts ?? (giftVariantId ? [{ variantId: giftVariantId, qty: giftQty ?? 1 }] : []), "");
+      if (promoGifts.ok === false) return NextResponse.json({ ok: false, error: promoGifts.error }, { status: 400 });
+    }
   } else {
     if (!Array.isArray(tiers) || tiers.length === 0) {
       return NextResponse.json({ ok: false, error: "กรุณาระบุอย่างน้อย 1 ระดับ" }, { status: 400 });
@@ -73,13 +77,16 @@ export async function POST(req: NextRequest) {
       if (!t.minSubtotal || t.minSubtotal <= 0) {
         return NextResponse.json({ ok: false, error: "กรุณาระบุยอดขั้นต่ำของแต่ละระดับ" }, { status: 400 });
       }
-      const level = normaliseGifts(t.gifts ?? (t.giftVariantId ? [{ variantId: t.giftVariantId, qty: t.giftQty ?? 1 }] : []), `ในระดับที่ ${i + 1}`);
+      const level =
+        body.rewardType === "order_discount"
+          ? ({ ok: true as const, gifts: [] })
+          : normaliseGifts(t.gifts ?? (t.giftVariantId ? [{ variantId: t.giftVariantId, qty: t.giftQty ?? 1 }] : []), `ในระดับที่ ${i + 1}`);
       if (level.ok === false) return NextResponse.json({ ok: false, error: level.error }, { status: 400 });
       tierGifts.push({
         min_subtotal: t.minSubtotal,
         gift_product_slug: "",
-        gift_variant_id: level.gifts[0].variant_id ?? null,
-        gift_qty: level.gifts[0].qty ?? 1,
+        gift_variant_id: level.gifts[0]?.variant_id ?? null,
+        gift_qty: level.gifts[0]?.qty ?? 1,
         gifts: level.gifts,
         discount_type: t.discountType ?? null,
         discount_value: t.discountValue ?? null,

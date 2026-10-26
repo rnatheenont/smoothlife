@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { CartLine } from "@/data/coupons";
 import { evaluateActiveFreeGifts, FreeGiftPromo, giftsOf } from "@/data/free-gifts";
 import { rewardPrice } from "@/lib/checkout-gifts-rules";
+import { orderDiscountFrom, type OrderDiscount } from "@/lib/order-discounts";
 import {
   buildLines,
   clampQty,
@@ -93,6 +94,8 @@ type CartContextValue = {
     options: { variantId?: string; title?: string; image?: string | null; qty: number }[];
     chosen: string[];
   }[];
+  /** The order discount this basket has earned, if any. */
+  orderDiscount: OrderDiscount | null;
   giftChoices: Record<string, string[]>;
   chooseGift: (promoSlug: string, variantIds: string[]) => void;
   /** One of the products the cart has already fetched — the lines in it and
@@ -436,7 +439,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  const evaluated = evaluateActiveFreeGifts(giftPromos, cartLinesForEval);
+  // Campaigns that discount the order hand over no product — they are read
+  // by orderDiscountFrom below, not drawn as gift lines.
+  const evaluated = evaluateActiveFreeGifts(
+    giftPromos.filter((p) => p.rewardType !== "order_discount"),
+    cartLinesForEval,
+  );
 
   /** Campaigns that ask the shopper to pick, and what they may pick from.
    *  Nothing from these lands in the cart until a choice is made, so the cart
@@ -458,6 +466,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       };
     })
     .filter((o) => o.options.length > 0);
+
+  /** Money off the order from an Order Goal / Volume Discount campaign. One
+   *  at most — see orderDiscountFrom. The checkout works it out again from
+   *  the lines it resolved; this is what the shopper is shown. */
+  const orderDiscount = orderDiscountFrom(giftPromos, cartLinesForEval, Date.now());
 
   const giftLines = evaluated
     .filter((e) => e.eligible)
@@ -497,6 +510,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         couponPending,
         giftPromos,
         giftOffers,
+        orderDiscount,
         giftChoices,
         chooseGift,
         productBySlug: (slug: string) => bySlug[slug],

@@ -426,6 +426,17 @@ export default function CartView() {
                 <span>-{formatTHB(totals.discount)}</span>
               </div>
             )}
+            {totals.orderDiscount && (
+              <div className="mb-2 flex justify-between text-sm text-brand-800">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <Gift size={13} className="shrink-0" />
+                  <span className="truncate">
+                    {lang === "en" ? totals.orderDiscount.titleEn : totals.orderDiscount.titleTh}
+                  </span>
+                </span>
+                <span className="shrink-0">-{formatTHB(totals.campaignDiscount)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm text-slate-600 mb-4">
               <span>{t("ค่าจัดส่ง", "Shipping")}</span>
               <span>{totals.freeShipping ? t("ฟรี", "Free") : formatTHB(totals.shipping)}</span>

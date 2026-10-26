@@ -77,6 +77,9 @@ type FormState = {
   /** Its per-campaign "Discount type". */
   discountType: "free" | "percentage" | "fixed";
   discountValue: string;
+  /** The app's Order Goal and Volume Discount: the same ladder with money off
+   *  the order instead of a product at the top. */
+  rewardType: "gift" | "order_discount";
 };
 
 const EMPTY_TIER_ROW: TierFormRow = {
@@ -108,6 +111,7 @@ const EMPTY_FORM: FormState = {
   giftChoice: "auto",
   discountType: "free",
   discountValue: "",
+  rewardType: "gift",
 };
 
 /** What the API is told about one chosen gift. The name and picture are for
@@ -588,6 +592,7 @@ export default function AdminFreeGiftsPage() {
         giftChoice: form.giftChoice,
         discountType: form.discountType,
         discountValue: form.discountValue ? Number(form.discountValue) : 0,
+        rewardType: form.rewardType,
       };
       const url = editingId
         ? `/api/admin/free-gifts/${editingId}`
@@ -641,6 +646,7 @@ export default function AdminFreeGiftsPage() {
       giftChoice: p.giftChoice === "customer" ? "customer" : "auto",
       discountType: p.discountType ?? "free",
       discountValue: p.discountValue ? String(p.discountValue) : "",
+      rewardType: p.rewardType === "order_discount" ? "order_discount" : "gift",
     });
     setFormError("");
     setShowAdvanced(false);
@@ -1179,6 +1185,34 @@ export default function AdminFreeGiftsPage() {
                 <p className="text-xs font-bold text-brand-ink mb-2">
                   2. เงื่อนไขการรับของแถม
                 </p>
+                {/* What the campaign gives. The app sells these as separate
+                    campaign types (Order Goal, Volume Discount), but they are
+                    this same ladder with money at the top instead of a
+                    product — so it is one choice here rather than two more
+                    forms to learn. */}
+                <div className="mb-3 grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      ["gift", "ให้ของแถม", "ลูกค้าได้สินค้าเพิ่มในตะกร้า"],
+                      ["order_discount", "ลดท้ายบิล", "หักเงินจากยอดรวม ไม่ได้ของเพิ่ม"],
+                    ] as const
+                  ).map(([value, title, desc]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setForm({ ...form, rewardType: value })}
+                      className={`rounded-xl border-2 p-2.5 text-left transition-colors ${
+                        form.rewardType === value
+                          ? "border-brand-teal bg-brand-gradient-soft"
+                          : "border-slate-200"
+                      }`}
+                    >
+                      <span className="block text-xs font-bold text-brand-ink">{title}</span>
+                      <span className="mt-0.5 block text-[10px] text-slate-500">{desc}</span>
+                    </button>
+                  ))}
+                </div>
+
                 {/* "Tiered reward type" — the app asks this before the
                     milestones, because it decides what the numbers under them
                     mean. */}
@@ -1481,6 +1515,7 @@ export default function AdminFreeGiftsPage() {
                               setForm({ ...form, tiers });
                             }}
                           />
+                          {form.rewardType === "gift" && (
                           <GiftListField
                             label={`ของแถมในระดับที่ ${i + 1}`}
                             gifts={tier.gifts}
@@ -1490,6 +1525,7 @@ export default function AdminFreeGiftsPage() {
                               setForm({ ...form, tiers });
                             }}
                           />
+                          )}
                         </div>
                       ))}
                       <button
@@ -1508,7 +1544,7 @@ export default function AdminFreeGiftsPage() {
                 </div>
               )}
               {/* 3. ของแถม (spend/bxgy only — tiered sets gift per level above) */}
-              {form.kind !== "tiered" && (
+              {form.kind !== "tiered" && form.rewardType === "gift" && (
                 <div>
                   <p className="text-xs font-bold text-brand-ink mb-2">
                     3. สินค้าที่จะแถมฟรี
@@ -1619,9 +1655,14 @@ export default function AdminFreeGiftsPage() {
                   // The gift is a Shopify variant now, not a catalogue slug:
                   // watching the old field left this disabled however many
                   // gifts were picked.
-                  (form.kind === "tiered"
-                    ? !form.tiers.every((t) => t.gifts.length > 0)
-                    : form.gifts.length === 0)
+                  (form.rewardType === "order_discount"
+                    ? // Money off the order needs a number, not a product.
+                      form.kind === "tiered"
+                      ? !form.tiers.every((t) => Number(t.discountValue || form.discountValue) > 0)
+                      : Number(form.discountValue) <= 0
+                    : form.kind === "tiered"
+                      ? !form.tiers.every((t) => t.gifts.length > 0)
+                      : form.gifts.length === 0)
                 }
                 className="w-full rounded-full bg-brand-gradient text-white text-sm font-semibold py-3 disabled:opacity-50"
               >

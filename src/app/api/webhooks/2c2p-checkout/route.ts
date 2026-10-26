@@ -17,6 +17,8 @@ type TransactionRow = {
   line_items: { variantId: string; quantity: number; price: number; promoSlug?: string }[] | null;
   discount_code: string | null;
   discount_amount: number | null;
+  campaign_discount_code: string | null;
+  campaign_discount_amount: number | null;
   contact_email: string | null;
   shipping_address: {
     firstName?: string;
@@ -52,7 +54,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [transaction] = await supabaseRest<TransactionRow[]>(
-    `payment_transactions?invoice_no=eq.${callback.invoiceNo}&select=id,cart_token,status,amount,currency_code,line_items,contact_email,shipping_address,discount_code,discount_amount`
+    `payment_transactions?invoice_no=eq.${callback.invoiceNo}&select=id,cart_token,status,amount,currency_code,line_items,contact_email,shipping_address,discount_code,discount_amount,campaign_discount_code,campaign_discount_amount`
   );
   if (!transaction) {
     console.error("[webhooks/2c2p-checkout] no transaction matches invoice", callback.invoiceNo);
@@ -117,9 +119,18 @@ export async function POST(req: NextRequest) {
       // gave five things away is indistinguishable from one that gave none —
       // and "what did the campaign cost" has no answer in Shopify at all.
       tags: giftOrderTags(transaction.line_items ?? []),
+      // The order carries whichever discount actually applied. Shopify's
+      // order takes one discount, and a campaign that fired on its own is
+      // still money off this order — leaving it out would build an order
+      // worth more than the card was charged.
       discount: transaction.discount_code
         ? { code: transaction.discount_code, amount: transaction.discount_amount ?? 0 }
-        : null,
+        : transaction.campaign_discount_code
+          ? {
+              code: transaction.campaign_discount_code,
+              amount: Number(transaction.campaign_discount_amount ?? 0),
+            }
+          : null,
     });
     shopifyOrderId = String(order.id).replace("gid://shopify/Order/", "");
     // "#1042" — what the customer will see everywhere else. Without it the

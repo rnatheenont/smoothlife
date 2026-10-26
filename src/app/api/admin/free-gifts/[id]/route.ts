@@ -48,7 +48,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   // A promo can hand over several things. The single-gift columns keep the
   // first of them so anything still reading the old shape sees something
   // sensible; giftsOf prefers the list wherever both exist.
-  if (body.gifts !== undefined) {
+  if (body.gifts !== undefined && body.rewardType !== "order_discount") {
     const promoGifts = normaliseGifts(body.gifts, "");
     if (promoGifts.ok === false) return NextResponse.json({ ok: false, error: promoGifts.error }, { status: 400 });
     patch.gifts = promoGifts.gifts;
@@ -69,16 +69,19 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     };
     const rows = [];
     for (const [i, t] of (body.tiers as TierBody[]).entries()) {
-      const level = normaliseGifts(
-        t.gifts ?? (t.giftVariantId ? [{ variantId: t.giftVariantId, qty: t.giftQty ?? 1 }] : []),
-        `ในระดับที่ ${i + 1}`,
-      );
+      const level =
+        body.rewardType === "order_discount"
+          ? ({ ok: true as const, gifts: [] as { variant_id?: string | null; product_slug?: string | null; qty?: number | null }[] })
+          : normaliseGifts(
+              t.gifts ?? (t.giftVariantId ? [{ variantId: t.giftVariantId, qty: t.giftQty ?? 1 }] : []),
+              `ในระดับที่ ${i + 1}`,
+            );
       if (level.ok === false) return NextResponse.json({ ok: false, error: level.error }, { status: 400 });
       rows.push({
         min_subtotal: t.minSubtotal,
         gift_product_slug: "",
-        gift_variant_id: level.gifts[0].variant_id ?? null,
-        gift_qty: level.gifts[0].qty ?? 1,
+        gift_variant_id: level.gifts[0]?.variant_id ?? null,
+        gift_qty: level.gifts[0]?.qty ?? 1,
         gifts: level.gifts,
         discount_type: t.discountType ?? null,
         discount_value: t.discountValue ?? null,

@@ -25,15 +25,21 @@ export function useFreeGiftEvals(scopedToSlug?: string): FreeGiftEval[] {
   const reachableFromAnything = (p: (typeof giftPromos)[number]) =>
     p.kind === "spend" || p.kind === "tiered" || (p.buyProductSlugs ?? []).length === 0;
 
+  // An Order Goal / Volume Discount campaign hands over no product, so the
+  // gift widgets have nothing to draw for it — the cart shows it as a line on
+  // the total instead. Leaving it in here would put an empty tile on the
+  // shelf and a gift popup over a campaign that gave no gift.
+  const giftPromosOnly = giftPromos.filter((p) => p.rewardType !== "order_discount");
+
   const promos = scopedToSlug
-    ? giftPromos.filter(
+    ? giftPromosOnly.filter(
         (p) =>
           reachableFromAnything(p) ||
           p.giftProductSlug === scopedToSlug ||
           (p.buyProductSlugs ?? []).includes(scopedToSlug) ||
           (p.tiers ?? []).some((t) => t.giftProductSlug === scopedToSlug)
       )
-    : giftPromos;
+    : giftPromosOnly;
 
   return useMemo(
     () => evaluateActiveFreeGifts(promos, cartLines),

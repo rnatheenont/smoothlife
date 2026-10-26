@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { giftLinesForCheckout, type CheckoutGiftLine } from "@/lib/checkout-gifts";
+import { orderDiscountForCheckout } from "@/lib/checkout-order-discount";
 import type { CartLine } from "@/data/coupons";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
@@ -210,7 +211,26 @@ export async function POST(req: NextRequest) {
   // the order says it is worth, and Shopify's order total is built from the
   // same lines.
   const giftTotal: number = (gifts as CheckoutGiftLine[]).reduce((sum, g) => sum + g.price * g.quantity, 0);
-  const amount = subtotal - discount + giftTotal + SHIPPING_FEE_THB;
+
+  // Money off the order from an Order Goal / Volume Discount campaign. Worked
+  // out here from the lines this route resolved, never taken from the browser
+  // — the cart showed the shopper a figure, and this is the one that is
+  // charged.
+  const campaign = await orderDiscountForCheckout(
+    resolved.map((l) => ({
+      slug: l.slug,
+      qty: l.quantity,
+      price: l.price,
+      brand: l.brand,
+      category: l.category as CartLine["category"],
+    })),
+  ).catch((err) => {
+    console.error("[checkout/init] campaign discount failed", err);
+    return null;
+  });
+  const campaignDiscount = Math.min(campaign?.amount ?? 0, Math.max(0, subtotal - discount));
+
+  const amount = subtotal - discount - campaignDiscount + giftTotal + SHIPPING_FEE_THB;
   const invoiceNo = `CHKT${Date.now().toString(36).toUpperCase()}`.slice(0, 30);
 
   const [transaction] = await supabaseRest<{ id: string }[]>("payment_transactions", {
@@ -246,6 +266,11 @@ export async function POST(req: NextRequest) {
       ],
       discount_code: appliedCode,
       discount_amount: discount,
+      // Kept apart from the coupon: one is a code the shopper typed, the
+      // other is a campaign that fired on its own, and a refund has to be
+      // able to tell them apart.
+      campaign_discount_code: campaign?.promoSlug ?? null,
+      campaign_discount_amount: campaignDiscount,
       ...attributionColumns(req.cookies.get(ATTRIBUTION_COOKIE)?.value),
     }),
   });
