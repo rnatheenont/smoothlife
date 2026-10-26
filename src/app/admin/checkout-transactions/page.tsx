@@ -456,7 +456,12 @@ export default function AdminCheckoutTransactionsPage() {
             {transactions.map((tx) => (
               <li key={tx.id} className="p-3">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
+                  {/* flex-1, or the text block stays as narrow as its longest
+                      line and leaves a hole in the middle of the card: these
+                      run to a tablet's full width now that the cards are what
+                      everything under 1280 gets, and 190px of text against a
+                      756px card is mostly gap. */}
+                  <div className="min-w-0 flex-1">
                     <p className="font-mono text-[12px] font-semibold text-brand-ink">
                       {tx.invoice_no}
                     </p>
