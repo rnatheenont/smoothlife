@@ -12,6 +12,23 @@
 @source not '../app/admin/**';
 @source not '../components/admin/**';
 
+/* `dark:` follows a `dark` class, not the visitor's operating system.
+
+   Tailwind v4 makes the variant a `prefers-color-scheme` media query unless
+   told otherwise, and the move to v4 dropped the `darkMode: "class"` that the
+   old config carried. Nothing else in the project answers that setting — the
+   page background, the tokens and `color-scheme: light` all stay light — so
+   every `dark:` utility was firing on its own on a machine set to dark and
+   painting half a component for a theme the other half had never heard of.
+   The refund dialog's heading came out slate-100 on a panel that stayed
+   white; /admin/design's dark preview, which switches a `dark` class on one
+   subtree and says so in a comment, could not work at all.
+
+   Scoped to `.dark` the variant does what the components were written for:
+   nothing outside that subtree, and the preview works. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+
 /* The design tokens — see theme.css for why they are a file of their own. */
 @import './theme.css';
 

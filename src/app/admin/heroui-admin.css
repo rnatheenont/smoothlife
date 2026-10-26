@@ -34,6 +34,11 @@
 
 @source '../../app/admin/**/*.{js,ts,jsx,tsx,mdx}';
 @source '../../components/admin/**/*.{js,ts,jsx,tsx,mdx}';
+/* Same reason as the copy in globals.css: `dark:` is a class here too.
+   This sheet builds the console's utilities from theme.css rather than
+   from globals.css, so the variant has to be declared in both or the
+   console's own `dark:` classes keep answering the operating system. */
+@custom-variant dark (&:where(.dark, .dark *));
 @import 'tailwindcss/utilities.css' layer(utilities) source(none);
 
 @import "@heroui/styles/components/tooltip.css" layer(components);
