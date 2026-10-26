@@ -272,7 +272,8 @@ export default function QuickChat() {
                   tail, not just a clipped corner) aimed down at the
                   mascot's head, in the original brand-gradient color. */}
               <span
-                className={`absolute -top-3 transition-opacity ${snapSide === "left" ? "left-0" : "right-0"} ${
+                key={badgeIndex}
+                className={`absolute -top-3 transition-opacity max-lg:animate-chatBadgeLife ${snapSide === "left" ? "left-0" : "right-0"} ${
                   badgeFading ? "opacity-0" : "opacity-100"
                 }`}
                 style={{ transitionDuration: `${CHAT_BADGE_FADE_MS}ms` }}

@@ -206,6 +206,7 @@
   --animate-haloC: haloC 4s ease-in-out infinite;
   --animate-heartPop: heartPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
   --animate-heartRing: heartRing 0.55s ease-out forwards;
+  --animate-chatBadgeLife: chatBadgeLife 11s linear forwards;
   --animate-scanSweep: scanSweep 2.6s ease-in-out infinite;
   --animate-iconBob: iconBob 0.6s ease-out;
 
@@ -365,6 +366,24 @@
      the heart gives way first, then overshoots, then settles. The ring is
      the press leaving the finger — it only plays on the way in, because
      taking a product off a list is not a moment worth celebrating. */
+  /* The chat bubble on a phone: there it sits over whatever is at the
+     bottom right of the first screen (the end of a product title, a price),
+     so it is shown for the first 6s of each 11s phrase and then steps aside.
+     11s matches CHAT_BADGE_INTERVAL_MS in QuickChat.tsx. */
+  @keyframes chatBadgeLife {
+    0% {
+      opacity: 0;
+    }
+    3%,
+    55% {
+      opacity: 1;
+    }
+    60%,
+    100% {
+      opacity: 0;
+    }
+  }
+
   @keyframes heartPop {
     0% {
       transform: scale(1);
