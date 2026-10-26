@@ -109,6 +109,10 @@ export default function SmoothieHeroBand() {
   }, [showHits]);
   useEffect(() => {
     if (typing) return;
+    // The global reduced-motion rule only shortens the slide to nothing; the
+    // sentence would still swap itself every few seconds. For someone who has
+    // asked for less movement it stays on the first line.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const timer = setInterval(
       () => setLine((n) => ({ prev: n.cur, cur: (n.cur + 1) % headlines.length })),
       HEADLINE_MS
