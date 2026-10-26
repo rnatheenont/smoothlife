@@ -10,7 +10,7 @@ import {
   Check,
 } from "lucide-react";
 import { formatTHB } from "@/lib/format";
-import { Badge } from "@/components/ui";
+import { Badge, Modal } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
 import { Button, Checkbox, Spinner } from "@heroui/react";
@@ -122,7 +122,7 @@ function RefundControls({
         setError(data.error || "บันทึกไม่สำเร็จ");
         return;
       }
-      setOpen(false);
+      close();
       onDone();
     } catch {
       setError("เชื่อมต่อไม่สำเร็จ");
@@ -131,114 +131,134 @@ function RefundControls({
     }
   }
 
-  if (!open) {
-    return (
+  function close() {
+    setOpen(false);
+    setTyped("");
+    setError("");
+  }
+
+  // A dialog rather than a panel inside the row. Three reasons, in order of
+  // how much they cost: the panel was wider than the column it opened in, so
+  // opening it pushed the table's own layout around; on a phone it unfolded
+  // inside a card in a list and the rest of the list went on scrolling past
+  // it; and this is the control that moves a customer's money, which is worth
+  // taking over the screen for rather than tucking into a cell.
+  //
+  // Dismissable, because dismissing it is the safe outcome — Escape, the
+  // backdrop and the X all mean "no refund", which is what someone who opened
+  // the wrong row wants to happen as quickly as possible.
+  return (
+    <>
       <button
         onClick={() => setOpen(true)}
         className="flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700"
       >
         <Undo2 size={13} /> คืนเงิน
       </button>
-    );
-  }
 
-  return (
-    <div className="flex w-72 flex-col gap-2 rounded-lg border border-slate-100 bg-surface-soft p-3 text-left text-xs">
-      {route === "portal" ? (
-        <>
-          <div className="rounded-md bg-amber-50 p-2.5 text-amber-900">
-            <p className="font-semibold">
-              Shopify คืนเงินออเดอร์นี้ให้ลูกค้าไม่ได้
-            </p>
-            <p className="mt-1 leading-relaxed">
-              เงินเข้ามาทางหน้าชำระเงินของเว็บ (2C2P) — ใน Shopify เป็นแค่
-              รายการที่เราบันทึกเอง กดคืนเงินใน Shopify ออเดอร์จะขึ้นว่า
-              คืนแล้วแต่ลูกค้าไม่ได้เงิน
-            </p>
-            <p className="mt-2 leading-relaxed">
-              ให้คืนใน 2C2P portal ด้วย tran ref{" "}
-              {tx.tran_ref ? (
-                <TranRefCopy tranRef={tx.tran_ref} />
-              ) : (
-                <span className="font-mono">
-                  (ไม่มี — ค้นด้วย invoice {tx.invoice_no})
-                </span>
-              )}{" "}
-              ยอด {formatTHB(tx.amount)}
-            </p>
-            <a
-              href={PORTAL_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 inline-flex items-center gap-1 font-semibold underline"
+      <Modal
+        open={open}
+        onClose={close}
+        title={`คืนเงิน ${formatTHB(tx.amount)}`}
+        // The invoice and the customer, because the mistake this whole screen
+        // guards against is acting on the row next to the one you meant.
+        description={`${tx.invoice_no}${tx.contact_email ? ` · ${tx.contact_email}` : ""}`}
+        size="sm"
+        footer={
+          <>
+            <button onClick={close} className="text-sm text-slate-400">
+              ยกเลิก
+            </button>
+            <Button
+              variant="danger"
+              size="sm"
+              onPress={submit}
+              isPending={busy}
+              isDisabled={!confirmed}
             >
-              เปิด 2C2P portal <ExternalLink size={11} />
-            </a>
-          </div>
-          <Checkbox
-            isSelected={portalDone}
-            onChange={setPortalDone}
-            className="items-start leading-relaxed text-slate-600"
-          >
-            <Checkbox.Content className="flex items-start gap-2">
-              <Checkbox.Control>
-                <Checkbox.Indicator />
-              </Checkbox.Control>
-              คืนเงินใน 2C2P portal เรียบร้อยแล้ว
-            </Checkbox.Content>
-          </Checkbox>
-        </>
-      ) : (
-        <div className="rounded-md bg-rose-50 p-2.5 text-rose-900">
-          <p className="font-semibold">คืนเงินจริงให้ลูกค้าทันที</p>
-          <p className="mt-1 leading-relaxed">
-            ออเดอร์นี้จ่ายผ่านหน้าชำระเงินของ Shopify เอง กดแล้ว Shopify
-            จะคืนเงิน {formatTHB(tx.amount)} เต็มจำนวนให้ลูกค้าเลย
-            (คืนบางส่วนต้องทำในหน้า Shopify)
-          </p>
+              {busy && <Spinner size="sm" color="current" />}
+              {route === "portal"
+                ? "บันทึกว่าคืนเงินแล้ว"
+                : `คืนเงิน ${formatTHB(tx.amount)} ผ่าน Shopify`}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3 text-left text-xs">
+          {route === "portal" ? (
+            <>
+              <div className="rounded-md bg-amber-50 p-2.5 text-amber-900">
+                <p className="font-semibold">
+                  Shopify คืนเงินออเดอร์นี้ให้ลูกค้าไม่ได้
+                </p>
+                <p className="mt-1 leading-relaxed">
+                  เงินเข้ามาทางหน้าชำระเงินของเว็บ (2C2P) — ใน Shopify เป็นแค่
+                  รายการที่เราบันทึกเอง กดคืนเงินใน Shopify ออเดอร์จะขึ้นว่า
+                  คืนแล้วแต่ลูกค้าไม่ได้เงิน
+                </p>
+                <p className="mt-2 leading-relaxed">
+                  ให้คืนใน 2C2P portal ด้วย tran ref{" "}
+                  {tx.tran_ref ? (
+                    <TranRefCopy tranRef={tx.tran_ref} />
+                  ) : (
+                    <span className="font-mono">
+                      (ไม่มี — ค้นด้วย invoice {tx.invoice_no})
+                    </span>
+                  )}{" "}
+                  ยอด {formatTHB(tx.amount)}
+                </p>
+                <a
+                  href={PORTAL_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex items-center gap-1 font-semibold underline"
+                >
+                  เปิด 2C2P portal <ExternalLink size={11} />
+                </a>
+              </div>
+              <Checkbox
+                isSelected={portalDone}
+                onChange={setPortalDone}
+                className="items-start leading-relaxed text-slate-600"
+              >
+                <Checkbox.Content className="flex items-start gap-2">
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  คืนเงินใน 2C2P portal เรียบร้อยแล้ว
+                </Checkbox.Content>
+              </Checkbox>
+            </>
+          ) : (
+            <div className="rounded-md bg-rose-50 p-2.5 text-rose-900">
+              <p className="font-semibold">คืนเงินจริงให้ลูกค้าทันที</p>
+              <p className="mt-1 leading-relaxed">
+                ออเดอร์นี้จ่ายผ่านหน้าชำระเงินของ Shopify เอง กดแล้ว Shopify
+                จะคืนเงิน {formatTHB(tx.amount)} เต็มจำนวนให้ลูกค้าเลย
+                (คืนบางส่วนต้องทำในหน้า Shopify)
+              </p>
+            </div>
+          )}
+
+          {route === "shopify" && (
+            <AdminField
+              label={`พิมพ์ยอด ${Math.round(Number(tx.amount)).toLocaleString("th-TH")} เพื่อยืนยัน`}
+              value={typed}
+              onChange={setTyped}
+              placeholder={String(Math.round(Number(tx.amount)))}
+            />
+          )}
+
+          <AdminField
+            label="หมายเหตุ"
+            value={note}
+            onChange={setNote}
+            placeholder="หมายเหตุ (ถ้ามี)"
+          />
+          {error && <p className="text-rose-600">{error}</p>}
         </div>
-      )}
-
-      {route === "shopify" && (
-        <AdminField
-          label={`พิมพ์ยอด ${Math.round(Number(tx.amount)).toLocaleString("th-TH")} เพื่อยืนยัน`}
-          value={typed}
-          onChange={setTyped}
-          placeholder={String(Math.round(Number(tx.amount)))}
-        />
-      )}
-
-      <AdminField
-        label="หมายเหตุ"
-        value={note}
-        onChange={setNote}
-        placeholder="หมายเหตุ (ถ้ามี)"
-      />
-      {error && <p className="text-rose-600">{error}</p>}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="danger"
-          size="sm"
-          onPress={submit}
-          isPending={busy}
-          isDisabled={!confirmed}
-        >
-          {busy && <Spinner size="sm" color="current" />}
-          {route === "portal"
-            ? "บันทึกว่าคืนเงินแล้ว"
-            : `คืนเงิน ${formatTHB(tx.amount)} ผ่าน Shopify`}
-        </Button>
-        <button
-          onClick={() => {
-            setOpen(false);
-            setTyped("");
-          }}
-          className="text-slate-400"
-        >
-          ยกเลิก
-        </button>
-      </div>
-    </div>
+      </Modal>
+    </>
   );
 }
 

@@ -13,6 +13,13 @@ import clsx from "clsx";
 // inside while it is open and restored to the trigger afterwards, and the
 // element is announced as a dialog. Those are the reasons this exists — the
 // visual part was never the hard bit.
+//
+// No `dark:` classes. The site declares `color-scheme: light` and says in
+// globals.css that it is designed light-only, so nothing else repaints for a
+// dark preference — but these utilities answer the browser's setting anyway.
+// On a machine set to dark that made the heading slate-100 on a panel that
+// stayed white: a dialog whose title could not be read, on the screen that
+// confirms refunds.
 
 const FOCUSABLE =
   'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -118,17 +125,17 @@ export default function Modal({
         tabIndex={-1}
         className={clsx(
           "relative z-10 max-h-[90vh] w-full overflow-y-auto rounded-t-xl2 bg-white p-5 shadow-layer-lg",
-          "animate-slideUp sm:rounded-xl2 dark:bg-slate-900 dark:text-slate-100",
+          "animate-slideUp sm:rounded-xl2",
           width
         )}
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 id="modal-title" className="text-title font-bold text-brand-ink dark:text-slate-100">
+            <h2 id="modal-title" className="text-title font-bold text-brand-ink">
               {title}
             </h2>
             {description && (
-              <p id="modal-description" className="mt-0.5 text-body-xs text-slate-500 dark:text-slate-400">
+              <p id="modal-description" className="mt-0.5 text-body-xs text-slate-500">
                 {description}
               </p>
             )}
@@ -138,7 +145,7 @@ export default function Modal({
               type="button"
               onClick={onClose}
               aria-label="ปิด"
-              className="shrink-0 rounded-full p-1.5 text-slate-500 transition hover:bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 dark:hover:bg-slate-800"
+              className="shrink-0 rounded-full p-1.5 text-slate-500 transition hover:bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
             >
               <X size={18} />
             </button>
