@@ -29,6 +29,7 @@ import { PageHeader, adminTable } from "@/components/admin/layout-kit";
 import GiftStockPanel from "./GiftStockPanel";
 import { Button } from "@heroui/react";
 import AdminField from "@/components/admin/AdminField";
+import { CAMPAIGN_PRESETS } from "@/lib/campaign-types";
 
 type AdminPromo = FreeGiftPromo & { id: string };
 
@@ -565,7 +566,10 @@ export default function AdminFreeGiftsPage() {
   // Two steps, the way the app on Shopify splits this: what the campaign is,
   // then how it shows up. Operators move between the two consoles all day and
   // a form shaped differently is a form they have to re-learn each time.
-  const [step, setStep] = useState<1 | 2>(1);
+  // 0 is the app's "Choose campaign type" screen. Editing an existing
+  // campaign skips it — the type was a way of choosing, not a property of
+  // the row, and re-asking would imply the answer could be changed.
+  const [step, setStep] = useState<0 | 1 | 2>(1);
   const [showSubConditions, setShowSubConditions] = useState(false);
   // The shelf is already loaded for the pickers; the preview borrows it to
   // turn the variant ids an edited promo arrives with into names.
@@ -600,9 +604,15 @@ export default function AdminFreeGiftsPage() {
     setForm(EMPTY_FORM);
     setFormError("");
     setShowAdvanced(false);
-    setStep(1);
+    setStep(0);
     setShowSubConditions(false);
     setShowForm(true);
+  }
+
+  function startFromPreset(preset: (typeof CAMPAIGN_PRESETS)[number]) {
+    setForm({ ...EMPTY_FORM, ...preset.preset });
+    setShowSubConditions(Boolean(preset.openSubConditions));
+    setStep(1);
   }
 
   async function submitForm(e: React.FormEvent) {
@@ -1126,13 +1136,59 @@ export default function AdminFreeGiftsPage() {
               time you were working. */}
           <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl2 bg-white">
             <div className="flex shrink-0 items-center justify-between border-b border-surface-line px-5 py-4">
-              <h2 className="text-lg font-bold text-brand-ink">
-                {editingId ? "แก้ไขโปรโมชั่น" : "สร้างโปรโมชั่นใหม่"}
+              <h2 className="flex items-center gap-2 text-lg font-bold text-brand-ink">
+                {!editingId && step > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setStep(0)}
+                    aria-label="กลับไปเลือกประเภท"
+                    className="text-slate-400 hover:text-brand-ink"
+                  >
+                    <ChevronDown size={16} className="rotate-90" />
+                  </button>
+                )}
+                {editingId ? "แก้ไขโปรโมชั่น" : step === 0 ? "เลือกประเภทแคมเปญ" : "สร้างโปรโมชั่นใหม่"}
               </h2>
               <button onClick={() => setShowForm(false)} aria-label="ปิด">
                 <X size={18} />
               </button>
             </div>
+            {step === 0 ? (
+              /* "Choose campaign type", as the app opens with. The nine cards
+                 are presets over the same four settings, not nine kinds of
+                 row — but nobody opening this screen is thinking "tiered,
+                 quantity, order discount". They are thinking "ยิ่งซื้อยิ่งลด". */
+              <div className="min-h-0 flex-1 overflow-y-auto p-5">
+                <p className="mb-3 text-xs text-slate-500">
+                  เลือกแบบที่ใกล้เคียงที่สุด — ตั้งค่าทุกอย่างแก้ได้ในขั้นถัดไป
+                </p>
+                <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                  {CAMPAIGN_PRESETS.map((preset) => (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      onClick={() => startFromPreset(preset)}
+                      className="flex flex-col rounded-xl2 border-2 border-slate-200 p-3 text-left transition-colors hover:border-brand-teal hover:bg-brand-gradient-soft"
+                    >
+                      <span className="text-xs font-bold text-brand-ink">{preset.title}</span>
+                      <span className="mt-1 text-[11px] leading-snug text-slate-500">{preset.blurb}</span>
+                      <span className="mt-2 rounded-lg bg-surface-soft px-2 py-1 text-[10px] text-brand-800">
+                        {preset.example}
+                      </span>
+                    </button>
+                  ))}
+                  {/* The tenth is not a campaign at all — it lives with the
+                      widgets, and saying so here is quicker than letting
+                      somebody hunt for it. */}
+                  <div className="flex flex-col rounded-xl2 border-2 border-dashed border-slate-200 p-3">
+                    <span className="text-xs font-bold text-slate-500">ข้อเสนอหน้าขอบคุณ</span>
+                    <span className="mt-1 text-[11px] leading-snug text-slate-400">
+                      ไม่ใช่โปรโมชั่น — ตั้งที่หน้า “กล่องโปรโมชั่นหน้าเว็บ”
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
             <form onSubmit={submitForm} className="flex min-h-0 flex-1 flex-col">
               {/* Same two steps as the app on Shopify, in the same order and
                   with the same split: the campaign, then how it is shown. */}
@@ -1753,6 +1809,7 @@ export default function AdminFreeGiftsPage() {
               </p>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}
