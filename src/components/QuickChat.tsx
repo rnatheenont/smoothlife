@@ -361,16 +361,16 @@ export default function QuickChat() {
         {showWelcome && (
           <div
             role="status"
-            className={`absolute bottom-full mb-3 w-[min(260px,calc(100vw-2rem))] animate-fadeUp ${
+            className={`absolute bottom-full mb-3 w-max max-w-[min(280px,calc(100vw-2rem))] animate-fadeUp ${
               snapSide === "left" ? "left-0" : "right-0"
             }`}
           >
             <span
-              className={`absolute -bottom-1.5 h-3.5 w-3.5 rotate-45 rounded-[3px] border-b border-r border-slate-200 bg-white ${
+              className={`absolute -bottom-1 h-3 w-3 rotate-45 rounded-[2px] bg-brand-800 ${
                 snapSide === "left" ? "left-[25px] lg:left-[41px]" : "right-[25px] lg:right-[41px]"
               }`}
             />
-            <div className="relative rounded-2xl border border-slate-200 bg-white py-3 pl-3.5 pr-8 text-left shadow-cardHover">
+            <div className="relative rounded-2xl bg-brand-800 py-2 pl-3 pr-7 text-left text-white shadow-md">
               <button
                 type="button"
                 onClick={() => {
@@ -380,7 +380,7 @@ export default function QuickChat() {
                 }}
                 className="block text-left"
               >
-                <span className="block text-[13px] font-bold leading-snug text-brand-ink">
+                <span className="block text-[12px] font-bold leading-snug">
                   {welcome?.kind === "member"
                     ? welcome.name
                       ? t(`ยินดีต้อนรับกลับมานะคะ คุณ${welcome.name}`, `Welcome back, ${welcome.name}!`)
@@ -389,7 +389,7 @@ export default function QuickChat() {
                       ? t("สวัสดีค่ะ ยินดีต้อนรับสู่ Smoothlife.com", "Hi! Welcome to Smoothlife.com")
                       : t("สวัสดีค่ะ ดีใจที่แวะมาอีกนะคะ", "Hi! Nice to see you again")}
                 </span>
-                <span className="mt-0.5 block text-[12px] leading-snug text-slate-500">
+                <span className="mt-0.5 block text-[11px] leading-snug text-white/80">
                   {welcome?.kind === "member"
                     ? t("วันนี้ให้น้อง Smoothie ช่วยอะไรดีคะ", "What can Smoothie help you with today?")
                     : t("มีอะไรให้น้อง Smoothie ช่วยแนะนำไหมคะ", "Can Smoothie help you find something?")}
@@ -399,9 +399,9 @@ export default function QuickChat() {
                 type="button"
                 onClick={() => setWelcome(null)}
                 aria-label={t("ปิด", "Close")}
-                className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full text-white/60 hover:bg-white/10 hover:text-white"
               >
-                <X size={13} />
+                <X size={12} />
               </button>
             </div>
           </div>
