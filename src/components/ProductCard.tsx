@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
-import { Heart, Check, Flame, ShoppingCart, Star } from "lucide-react";
+import { Heart, Check, Flame, Plus, Star } from "lucide-react";
 import type { ProductCardData } from "@/data/card";
 import { formatTHB } from "@/lib/format";
 import { useCart, useWishlist } from "@/lib/cart-context";
@@ -269,12 +269,11 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
               )}
             </div>
           </div>
-          {/* The buy row. This used to be a 36px round + beside the price,
-              deliberately, because a full-width green bar under every card
-              turned a grid of products into a grid of green bars — the design
-              asks for the bar, so the card keeps the colour to one element and
-              the wishlist heart comes down off the photo to share the row
-              rather than adding a third accent on the image. */}
+          {/* The buy row: the wishlist heart, and the + that adds to the
+              cart. Not a full-width green bar — that turned a grid of
+              products into a grid of green bars — and not a control on the
+              photo either, so the image keeps its one accent and the heart
+              has company on this line rather than sitting on it alone. */}
           <div className="flex items-center gap-2 pt-2">
             <button
               onClick={handleWish}
@@ -293,7 +292,11 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
                 />
               )}
               <span key={`heart-${beat}`} className={clsx(beat > 0 && "animate-heartPop")}>
-                <Heart size={20} className={isWished ? "fill-sale text-sale" : "text-brand-800"} />
+                {/* Grey until it means something. Unsaved, it inherits the
+                    button's slate — and with it the hover that warms to the
+                    sale red, so the colour previews what pressing it does.
+                    Saved, it is filled red and says so on its own. */}
+                <Heart size={20} className={clsx(isWished && "fill-sale text-sale")} />
               </span>
             </button>
             {soldOut ? (
@@ -303,54 +306,37 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
             ) : (
               <button
                 onClick={handleAdd}
-                // The label is a trolley below md, so the button needs the words
-                // back for anyone who cannot see the icon.
-                aria-label={added ? t("เพิ่มแล้ว", "Added") : t("ใส่ตะกร้า", "Add to cart")}
+                // Icon-only, so the words move into the label: a screen
+                // reader now hears which product it belongs to, which the
+                // bare "ใส่ตะกร้า" pill never said on a grid of twenty.
+                aria-label={
+                  added
+                    ? t(`เพิ่ม ${product.name} แล้ว`, `Added ${product.name}`)
+                    : t(`ใส่ ${product.name} ลงตะกร้า`, `Add ${product.name} to cart`)
+                }
+                title={added ? t("เพิ่มแล้ว", "Added") : t("ใส่ตะกร้า", "Add to cart")}
                 className={clsx(
-                  "ml-auto flex h-9 items-center justify-center gap-1.5 rounded-full px-4 text-[11px] font-bold text-white transition active:scale-[0.97] @[9rem]:text-[13px] @[14rem]:h-10 @[14rem]:min-w-28 @[14rem]:px-5 @[14rem]:text-sm",
-                  // Sized by the card, not by the window.
+                  // Where the pill was, at the end of its row, now a round +
+                  // — the same control the staff shop uses, so the two shops
+                  // stop looking like two different products.
                   //
-                  // This used to switch on md:, and the card is not the window:
-                  // the same 248px card showed a trolley on a 540px screen and
-                  // the words on a 1280px one, and a seven-column grid on a
-                  // wide desktop gave 190px cards that were handed the full
-                  // "ใส่ตะกร้า" pill plus a 40px heart and had nowhere to put
-                  // them. Measured both ways before changing it. The card is
-                  // already a @container — everything else in it had moved to
-                  // container queries and this row had been left behind.
+                  // One size at every card width. The pill needed container
+                  // queries because its label changed length; a + is a + at
+                  // 176px and at 280px, and 40px is the smallest comfortable
+                  // target, so the row no longer has a size condition on it
+                  // at all.
                   //
-                  // Only as wide as its label, at the end of the row, so the
-                  // green reads as one control rather than a bar under every
-                  // card in the grid — the same reason the wishlist heart was
-                  // brought down here instead of sitting on the photo.
-                  //
-                  // px-4 rather than the px-1 this had while it was stretching:
-                  // on a narrow card the label is a trolley icon alone, and
-                  // without padding the pill would collapse to about 25px on
-                  // the card size where the thumb has least room to begin
-                  // with. With it the target is 49×36.
-                  //
-                  // min-w-28 from 14rem holds one width across both states.
-                  // Sized to its label, the button grew 21px the moment it
-                  // turned into "เพิ่มแล้ว", which shifted the pill sideways
-                  // just as the eye went to read it. flex-1 used to hide that.
-                  // Solid and dark, not the brand gradient: white 13px bold on
-                  // the gradient's green-to-sky run is 2.5-3.0:1, under the 4.5:1
-                  // that text this size needs. brand-800 is 5.65:1, and
-                  // confirmation steps one shade darker (9.18:1) so the state
-                  // still reads as a change.
-                  added ? "bg-brand-1000" : "bg-brand-800 hover:bg-brand-1000"
+                  // Confirmation goes flat: a state that keeps moving reads
+                  // as still working.
+                  "ml-auto grid size-10 shrink-0 place-items-center rounded-full text-white shadow-card transition-[filter,background-color] active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2",
+                  added ? "bg-brand-emerald" : "bg-brand-gradient hover:brightness-105"
                 )}
               >
-                {added ? <Check size={16} strokeWidth={2.75} /> : <ShoppingCart size={17} className="@[11rem]:hidden" />}
-                {/* 11rem is where the words start fitting: the row is the
-                    heart (36) plus this pill, and "ใส่ตะกร้า" at 13px inside
-                    px-4 is about 94px — 165px of row inside a 176px card.
-                    Below that the trolley says the same thing at a size that
-                    can actually be hit. */}
-                <span className="hidden @[11rem]:inline">
-                  {added ? t("เพิ่มแล้ว", "Added") : t("ใส่ตะกร้า", "Add to cart")}
-                </span>
+                {added ? (
+                  <Check className="h-5 w-5" strokeWidth={2.75} aria-hidden />
+                ) : (
+                  <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
+                )}
               </button>
             )}
           </div>
