@@ -210,6 +210,9 @@ export type FreeGiftEval = {
     giftTitle?: string;
     giftImage?: string | null;
     giftQty: number;
+    /** What is left of this tier's single gift, carried through so the cart
+     *  can leave out a gift the shop has run out of. */
+    giftStock?: number | null;
     /** The tier's own list, carried through so the cart and the checkout can
      *  read it with giftsOf. Left out, a tier that lists its gifts here hands
      *  over nothing: the fallback looks at the single-gift fields, which a
@@ -252,6 +255,7 @@ export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeG
         giftTitle: t.giftTitle,
         giftImage: t.giftImage,
         giftQty: t.giftQty,
+        giftStock: t.giftStock,
         gifts: t.gifts,
       }));
     if (unlockedTiers.length > 0) {

@@ -347,11 +347,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   /** Every gift a promo or tier hands over, as cart lines. A promo can give
    *  several at once — the ฿1,599 tier gives four — so this returns a list
-   *  and the catalogue is tried first for each, the shelf second. */
-  const linesForGifts = (source: Parameters<typeof giftsOf>[0], key: string) =>
-    giftsOf(source).flatMap((item, i) => {
+   *  and the catalogue is tried first for each, the shelf second.
+   *
+   *  A gift the shop has run out of is left out, by the same rule the
+   *  checkout uses (lib/checkout-gifts-rules.ts): a number at or below zero
+   *  means gone, and anything else — including a stock nobody could read —
+   *  means it stands. Without this the cart showed a line the order would
+   *  not carry, which is the promise-then-take-away the rest of this feature
+   *  exists to avoid.
+   *
+   *  `fallbackStock` covers the gifts still written in the single-gift
+   *  fields, where what is left is on the promo or the tier rather than on
+   *  the gift. */
+  const gone = (stock: number | null | undefined) => typeof stock === "number" && stock <= 0;
+
+  const linesForGifts = (
+    source: Parameters<typeof giftsOf>[0],
+    key: string,
+    fallbackStock?: number | null,
+  ) => {
+    const items = giftsOf(source);
+    return items.flatMap((item, i) => {
+      if (gone(item.stock ?? (items.length === 1 ? fallbackStock : undefined))) return [];
       // Keyed per gift, or two gifts from one promo collide on giftPromoSlug.
-      const itemKey = giftsOf(source).length > 1 ? `${key}::gift-${i}` : key;
+      const itemKey = items.length > 1 ? `${key}::gift-${i}` : key;
       const fromCatalogue = item.productSlug
         ? giftLineFrom(bySlug[item.productSlug], item.qty, itemKey)
         : null;
@@ -360,6 +379,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ? [shopifyGiftLine(item.variantId, item.title, item.image, item.qty, itemKey)]
         : [];
     });
+  };
 
   const giftLines = evaluateActiveFreeGifts(giftPromos, cartLinesForEval)
     .filter((e) => e.eligible)
@@ -369,14 +389,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // uniquely per tier so multiple tiers of the same promo don't
         // collide on giftPromoSlug.
         return e.unlockedTiers.flatMap((t) =>
-          linesForGifts(t, `${e.promo.slug}::tier-${t.tierIndex}`),
+          linesForGifts(t, `${e.promo.slug}::tier-${t.tierIndex}`, t.giftStock),
         );
       }
       // The gift usually lives on Shopify's free-gift shelf rather than in our
       // catalogue — every one of them is UNLISTED there — so the promo carries
       // its name and picture and the line is built from those. The catalogue
       // lookup stays for promos written before the shelf existed.
-      return linesForGifts(e.promo, e.promo.slug);
+      return linesForGifts(e.promo, e.promo.slug, e.promo.giftStock);
     })
     .filter(Boolean) as CartContextValue["lines"];
   const linesWithGifts = [...lines, ...giftLines];

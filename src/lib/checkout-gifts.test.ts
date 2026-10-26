@@ -193,6 +193,26 @@ test("tierMode highest pays only the tier reached, not the ones below", () => {
   );
 });
 
+// The cart applies the same rule, in cart-context's linesForGifts: a number
+// at or below zero means gone, anything else stands. Written down here
+// because the two drifting apart is what put an out-of-stock gift in a
+// shopper's cart that the order would not have carried.
+test("stock at or below zero is gone, anything else stands", () => {
+  const cases: [number | null | undefined, boolean][] = [
+    [0, false],
+    [-3, false],
+    [1, true],
+    [null, true],
+    [undefined, true],
+  ];
+  for (const [stock, expected] of cases) {
+    const map = new Map<string, number | null>();
+    if (stock !== undefined) map.set("gid://shopify/ProductVariant/1", stock);
+    const lines = giftLinesFrom([spendPromo()], basket, map, NOW, noCatalogue);
+    assert.equal(lines.length > 0, expected, `stock ${String(stock)}`);
+  }
+});
+
 test("every line it returns is free", () => {
   for (const line of giftLinesFrom([spendPromo()], basket, NONE, NOW, noCatalogue)) {
     assert.equal(line.price, 0);
