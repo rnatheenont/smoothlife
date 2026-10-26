@@ -35,6 +35,10 @@ export async function giftLinesForCheckout(
    *  rather than trusted — it can only ever narrow what a promo would have
    *  given, never add to it. */
   chosen: Map<string, string[]> = new Map(),
+  /** Who is checking out. Looked up from the account on the server, never
+   *  taken from the browser — a campaign aimed at Gold members must not be
+   *  claimable by saying you are one. */
+  customer?: { tier?: string; orderCount?: number },
 ): Promise<CheckoutGiftLine[]> {
   if (!supabaseConfigured() || lines.length === 0) return [];
 
@@ -72,6 +76,7 @@ export async function giftLinesForCheckout(
     (slug) => getProductBySlug(slug)?.variants[0]?.variantId,
     (variantId) => retail.get(variantId),
     chosen,
+    customer,
   );
 }
 

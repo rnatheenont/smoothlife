@@ -11,13 +11,16 @@ import type { CartLine } from "@/data/coupons";
 // a number the browser sent. This re-reads the campaigns and re-evaluates
 // them against the lines the route resolved.
 
-export async function orderDiscountForCheckout(lines: CartLine[]): Promise<OrderDiscount | null> {
+export async function orderDiscountForCheckout(
+  lines: CartLine[],
+  customer?: { tier?: string; orderCount?: number },
+): Promise<OrderDiscount | null> {
   if (!supabaseConfigured() || lines.length === 0) return null;
   try {
     const rows = await supabaseRest<FreeGiftPromoRow[]>(
       `free_gift_promos?active=eq.true&select=${FREE_GIFT_COLUMNS}`,
     );
-    return orderDiscountFrom(rows.map(rowToPromo), lines, Date.now());
+    return orderDiscountFrom(rows.map(rowToPromo), lines, Date.now(), customer);
   } catch (err) {
     // No discount is the safe direction to fail in: the shopper is charged
     // the full price they can see rather than the checkout collapsing.

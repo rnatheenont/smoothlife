@@ -80,6 +80,10 @@ type FormState = {
   /** The app's Order Goal and Volume Discount: the same ladder with money off
    *  the order instead of a product at the top. */
   rewardType: "gift" | "order_discount";
+  /** The app's customer-segment targeting, in the segments this shop has. */
+  customerTiers: string[];
+  firstOrderOnly: boolean;
+  minQty: string;
 };
 
 const EMPTY_TIER_ROW: TierFormRow = {
@@ -112,6 +116,9 @@ const EMPTY_FORM: FormState = {
   discountType: "free",
   discountValue: "",
   rewardType: "gift",
+  customerTiers: [],
+  firstOrderOnly: false,
+  minQty: "",
 };
 
 /** What the API is told about one chosen gift. The name and picture are for
@@ -299,6 +306,55 @@ function SubConditions({
                     : [...form.excludedProductSlugs, slug],
                 })
               }
+            />
+          </div>
+
+          <div>
+            <p className="text-[11px] font-semibold text-brand-ink">เฉพาะลูกค้ากลุ่มนี้</p>
+            <p className="mb-1.5 text-[10px] text-slate-400">
+              ไม่เลือกเลย = ทุกคน (แอปบน Shopify ใช้ customer segment — ของเราใช้ระดับสมาชิกที่ร้านมีจริง)
+            </p>
+            <div className="flex flex-wrap items-center gap-1">
+              {(["Bronze", "Silver", "Gold"] as const).map((tier) => (
+                <button
+                  key={tier}
+                  type="button"
+                  onClick={() => setForm({ ...form, customerTiers: toggleIn(form.customerTiers, tier) })}
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                    form.customerTiers.includes(tier)
+                      ? "bg-brand-gradient text-white"
+                      : "bg-surface-soft text-slate-500"
+                  }`}
+                >
+                  {tier}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, firstOrderOnly: !form.firstOrderOnly })}
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                  form.firstOrderOnly ? "bg-brand-gradient text-white" : "bg-surface-soft text-slate-500"
+                }`}
+              >
+                เฉพาะออเดอร์แรก
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[11px] font-semibold text-brand-ink">และต้องซื้อครบกี่ชิ้น</p>
+            <p className="mb-1.5 text-[10px] text-slate-400">
+              เงื่อนไขที่สอง ต้องเข้าพร้อมกับเงื่อนไขหลัก — ไม่กรอก = ไม่บังคับจำนวน
+            </p>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={form.minQty}
+              onChange={(e) => setForm({ ...form, minQty: e.target.value })}
+              placeholder="เช่น 3"
+              aria-label="จำนวนชิ้นขั้นต่ำ"
+              className="w-28 rounded-lg border border-surface-line bg-white px-2 py-2 text-xs text-brand-ink"
             />
           </div>
 
@@ -593,6 +649,9 @@ export default function AdminFreeGiftsPage() {
         discountType: form.discountType,
         discountValue: form.discountValue ? Number(form.discountValue) : 0,
         rewardType: form.rewardType,
+        customerTiers: form.customerTiers,
+        firstOrderOnly: form.firstOrderOnly,
+        minQty: form.minQty ? Number(form.minQty) : null,
       };
       const url = editingId
         ? `/api/admin/free-gifts/${editingId}`
@@ -647,6 +706,9 @@ export default function AdminFreeGiftsPage() {
       discountType: p.discountType ?? "free",
       discountValue: p.discountValue ? String(p.discountValue) : "",
       rewardType: p.rewardType === "order_discount" ? "order_discount" : "gift",
+      customerTiers: p.customerTiers ?? [],
+      firstOrderOnly: p.firstOrderOnly === true,
+      minQty: p.minQty != null ? String(p.minQty) : "",
     });
     setFormError("");
     setShowAdvanced(false);
@@ -1432,7 +1494,10 @@ export default function AdminFreeGiftsPage() {
                     )}
                     {(form.excludedProductSlugs.length > 0 ||
                       form.scopeBrands.length > 0 ||
-                      form.scopeCategories.length > 0) && (
+                      form.scopeCategories.length > 0 ||
+                      form.customerTiers.length > 0 ||
+                      form.firstOrderOnly ||
+                      form.minQty !== "") && (
                       <div className="flex justify-between gap-3">
                         <dt className="text-slate-500">เงื่อนไขย่อย</dt>
                         <dd className="text-right font-semibold text-brand-ink">
@@ -1441,6 +1506,9 @@ export default function AdminFreeGiftsPage() {
                               `ยกเว้น ${form.excludedProductSlugs.length} รายการ`,
                             form.scopeBrands.length > 0 && `${form.scopeBrands.length} แบรนด์`,
                             form.scopeCategories.length > 0 && `${form.scopeCategories.length} หมวด`,
+                            form.customerTiers.length > 0 && form.customerTiers.join("/"),
+                            form.firstOrderOnly && "ออเดอร์แรก",
+                            form.minQty && `≥ ${form.minQty} ชิ้น`,
                           ]
                             .filter(Boolean)
                             .join(" · ")}

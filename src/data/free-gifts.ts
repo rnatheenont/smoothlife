@@ -141,7 +141,29 @@ export type FreeGiftPromo = {
    * are a kind of reward rather than a second system.
    */
   rewardType?: "gift" | "order_discount";
+  /**
+   * Who the campaign is for.
+   *
+   * The app calls this targeting by customer segment. The segments here are
+   * the loyalty tiers this shop already computes for every account, because
+   * those are the groups anyone can name — an imported Shopify segment list
+   * would be a second source of truth to keep in step.
+   *
+   * Empty means everyone, which is what every campaign written before this
+   * did.
+   */
+  customerTiers?: string[];
+  /** Only a shopper who has never ordered before. */
+  firstOrderOnly?: boolean;
+  /** A second cart rule, joined with AND: this many qualifying items on top
+   *  of whatever the main trigger asks for. */
+  minQty?: number;
 };
+
+/** What the rules need to know about the shopper. Undefined is a guest, or
+ *  a page that has not loaded the account yet — a campaign that targets a
+ *  tier does not apply to somebody we cannot place. */
+export type PromoCustomer = { tier?: string; orderCount?: number };
 
 // Row shape as stored in the Supabase `free_gift_promos` table (snake_case) —
 // used by /api/free-gifts and the /api/admin/free-gifts routes.
@@ -179,6 +201,9 @@ export type FreeGiftPromoRow = {
   trigger_type: "cart-value" | "quantity" | null;
   gift_choice: "auto" | "customer" | null;
   reward_type: "gift" | "order_discount" | null;
+  customer_tiers: string[] | null;
+  first_order_only: boolean | null;
+  min_qty: number | null;
   discount_type: "free" | "percentage" | "fixed" | null;
   discount_value: number | string | null;
   excluded_product_slugs: string[] | null;
@@ -190,7 +215,7 @@ export type FreeGiftPromoRow = {
 // Shared SELECT column list — used by both the public /api/free-gifts route
 // and the admin CRUD routes so they never silently drift out of sync.
 export const FREE_GIFT_COLUMNS =
-  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,trigger_type,excluded_product_slugs,scope_brands,scope_categories,max_gifts,gift_choice,discount_type,discount_value,reward_type,created_at,updated_at";
+  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,trigger_type,excluded_product_slugs,scope_brands,scope_categories,max_gifts,gift_choice,discount_type,discount_value,reward_type,customer_tiers,first_order_only,min_qty,created_at,updated_at";
 
 const toItems = (rows: FreeGiftItemRow[] | null | undefined): FreeGiftItem[] | undefined => {
   const list = (rows ?? [])
@@ -281,6 +306,9 @@ export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
       row.discount_type === "percentage" || row.discount_type === "fixed" ? row.discount_type : "free",
     discountValue: Number(row.discount_value ?? 0) || 0,
     rewardType: row.reward_type === "order_discount" ? "order_discount" : "gift",
+    customerTiers: row.customer_tiers?.length ? row.customer_tiers : undefined,
+    firstOrderOnly: row.first_order_only === true,
+    minQty: row.min_qty ?? undefined,
   };
 }
 
@@ -353,8 +381,34 @@ export function formatTrigger(promo: FreeGiftPromo, amount: number, en = false):
   return `฿${amount.toLocaleString()}`;
 }
 
-export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeGiftEval {
+export function evaluateFreeGift(
+  promo: FreeGiftPromo,
+  lines: CartLine[],
+  customer?: PromoCustomer,
+): FreeGiftEval {
   if (!promo.active) return { promo, eligible: false, reasonTh: "", reasonEn: "" };
+
+  // Who it is for, before how much they have to spend. A campaign aimed at
+  // Gold members is not something a Bronze member is "฿400 away from" — that
+  // sentence would be a promise nothing can keep.
+  if (promo.customerTiers?.length) {
+    if (!customer?.tier || !promo.customerTiers.includes(customer.tier)) {
+      return {
+        promo,
+        eligible: false,
+        reasonTh: `เฉพาะสมาชิกระดับ ${promo.customerTiers.join(" / ")}`,
+        reasonEn: `For ${promo.customerTiers.join(" / ")} members only`,
+      };
+    }
+  }
+  if (promo.firstOrderOnly && (customer?.orderCount ?? 0) > 0) {
+    return {
+      promo,
+      eligible: false,
+      reasonTh: "เฉพาะคำสั่งซื้อแรกเท่านั้น",
+      reasonEn: "First order only",
+    };
+  }
   // A campaign can be written today and start on a date, rather than waiting
   // for somebody to remember to switch it on at nine in the morning.
   if (promo.starts && new Date(promo.starts).getTime() > Date.now()) {
@@ -366,6 +420,22 @@ export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeG
   // Promising a gift the shop has run out of is worse than not promising one.
   if (promo.giftStock !== undefined && promo.giftStock !== null && promo.giftStock <= 0) {
     return { promo, eligible: false, reasonTh: "ของแถมหมดแล้ว", reasonEn: "This gift is out of stock" };
+  }
+
+  // A second cart rule, joined with AND. "Spend ฿1,000 AND buy 3 items" is
+  // one campaign, not two, and the app sells exactly that under Custom
+  // Discount.
+  if (promo.minQty) {
+    const items = qualifyingLines(promo, lines).reduce((n, l) => n + l.qty, 0);
+    if (items < promo.minQty) {
+      const short = promo.minQty - items;
+      return {
+        promo,
+        eligible: false,
+        reasonTh: `ซื้อเพิ่มอีก ${short} ชิ้นเพื่อเข้าเงื่อนไข`,
+        reasonEn: `Add ${short} more item${short === 1 ? "" : "s"} to qualify`,
+      };
+    }
   }
 
   if (promo.kind === "tiered") {
@@ -449,6 +519,10 @@ export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeG
   };
 }
 
-export function evaluateActiveFreeGifts(promos: FreeGiftPromo[], lines: CartLine[]): FreeGiftEval[] {
-  return promos.filter((p) => p.active).map((p) => evaluateFreeGift(p, lines));
+export function evaluateActiveFreeGifts(
+  promos: FreeGiftPromo[],
+  lines: CartLine[],
+  customer?: PromoCustomer,
+): FreeGiftEval[] {
+  return promos.filter((p) => p.active).map((p) => evaluateFreeGift(p, lines, customer));
 }

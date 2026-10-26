@@ -189,6 +189,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Who the campaigns are being evaluated for, read from the account rather
+  // than the request: a campaign aimed at Gold members must not be claimable
+  // by claiming to be one. A guest is nobody in particular, which is what
+  // those campaigns exclude.
+  const loyalty = uid ? await getUserLoyalty(uid).catch(() => null) : null;
+  const promoCustomer = loyalty ? { tier: loyalty.tier, orderCount: loyalty.orders } : undefined;
+
   const gifts = await giftLinesForCheckout(
     resolved.map((l) => ({
       slug: l.slug,
@@ -198,6 +205,7 @@ export async function POST(req: NextRequest) {
       category: l.category as CartLine["category"],
     })),
     chosen,
+    promoCustomer,
   ).catch((err) => {
     console.error("[checkout/init] gift evaluation failed", err);
     return [];
@@ -224,6 +232,7 @@ export async function POST(req: NextRequest) {
       brand: l.brand,
       category: l.category as CartLine["category"],
     })),
+    promoCustomer,
   ).catch((err) => {
     console.error("[checkout/init] campaign discount failed", err);
     return null;

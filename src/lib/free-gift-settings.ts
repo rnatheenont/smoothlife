@@ -15,6 +15,9 @@ export type CampaignSettings = {
   discount_type: "free" | "percentage" | "fixed";
   discount_value: number;
   reward_type: "gift" | "order_discount";
+  customer_tiers: string[];
+  first_order_only: boolean;
+  min_qty: number | null;
 };
 
 const strings = (v: unknown): string[] =>
@@ -28,6 +31,7 @@ export function campaignSettings(body: Record<string, unknown>): CampaignSetting
   // negative one would charge more than retail for a reward.
   const value = Number.isFinite(rawValue) ? Math.max(0, rawValue) : 0;
   const maxGifts = Number(body.maxGifts);
+  const minQty = Number(body.minQty);
 
   return {
     trigger_type: body.triggerType === "quantity" ? "quantity" : "cart-value",
@@ -39,5 +43,8 @@ export function campaignSettings(body: Record<string, unknown>): CampaignSetting
     discount_type: discountType,
     discount_value: discountType === "percentage" ? Math.min(value, 100) : value,
     reward_type: body.rewardType === "order_discount" ? "order_discount" : "gift",
+    customer_tiers: strings(body.customerTiers),
+    first_order_only: body.firstOrderOnly === true,
+    min_qty: Number.isInteger(minQty) && minQty >= 1 && minQty <= 999 ? minQty : null,
   };
 }

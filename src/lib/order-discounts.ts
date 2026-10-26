@@ -3,6 +3,7 @@ import {
   triggerAmount,
   qualifyingLines,
   type FreeGiftPromo,
+  type PromoCustomer,
 } from "../data/free-gifts.ts";
 import type { CartLine } from "../data/coupons.ts";
 
@@ -59,6 +60,7 @@ export function orderDiscountFrom(
   all: FreeGiftPromo[],
   lines: CartLine[],
   now: number,
+  customer?: PromoCustomer,
 ): OrderDiscount | null {
   const promos = all.filter(
     (p) =>
@@ -74,7 +76,7 @@ export function orderDiscountFrom(
 
   let best: OrderDiscount | null = null;
 
-  for (const evaluated of evaluateActiveFreeGifts(promos, lines)) {
+  for (const evaluated of evaluateActiveFreeGifts(promos, lines, customer)) {
     if (!evaluated.eligible) continue;
     const { promo } = evaluated;
     const reached = triggerAmount(promo, lines);

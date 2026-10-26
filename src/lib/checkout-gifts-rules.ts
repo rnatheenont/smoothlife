@@ -2,6 +2,7 @@ import {
   evaluateActiveFreeGifts,
   giftsOf,
   type FreeGiftPromo,
+  type PromoCustomer,
 } from "../data/free-gifts.ts";
 import type { CartLine } from "../data/coupons.ts";
 
@@ -69,6 +70,8 @@ export function giftLinesFrom(
   /** Which rewards the shopper picked, by promo slug, for campaigns that let
    *  them choose. Nothing is granted from those campaigns until they do. */
   chosen: Map<string, string[]> = new Map(),
+  /** Who is checking out, for campaigns aimed at a tier or a first order. */
+  customer?: PromoCustomer,
 ): CheckoutGiftLine[] {
   const promos = all
     // Only a promo that says outright it is not display-only is granted here.
@@ -144,7 +147,7 @@ export function giftLinesFrom(
   };
 
   const out: CheckoutGiftLine[] = [];
-  for (const evaluated of evaluateActiveFreeGifts(promos, lines)) {
+  for (const evaluated of evaluateActiveFreeGifts(promos, lines, customer)) {
     if (!evaluated.eligible) continue;
     const { promo, unlockedTiers } = evaluated;
 

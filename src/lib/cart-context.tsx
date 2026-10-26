@@ -8,6 +8,7 @@ import { CartLine } from "@/data/coupons";
 import { evaluateActiveFreeGifts, FreeGiftPromo, giftsOf } from "@/data/free-gifts";
 import { rewardPrice } from "@/lib/checkout-gifts-rules";
 import { orderDiscountFrom, type OrderDiscount } from "@/lib/order-discounts";
+import { loyaltyTierProgress } from "@/lib/loyalty-shared";
 import {
   buildLines,
   clampQty,
@@ -115,6 +116,10 @@ const GIFT_CHOICE_KEY = "sl_gift_choices";
 const COUPON_KEY = "sl_coupon";
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  // Read here rather than threaded in: campaigns can be aimed at a loyalty
+  // tier or at a first order, and the cart is where that is decided for the
+  // shopper's eyes. The checkout decides it again on its own.
+  const { user: shopper } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [couponCode, setCouponCodeState] = useState<string | null>(null);
   /** Which rewards the shopper picked, by promo slug — only used by campaigns
@@ -441,9 +446,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Campaigns that discount the order hand over no product — they are read
   // by orderDiscountFrom below, not drawn as gift lines.
+  // Who is shopping, for the campaigns that are aimed at somebody. A guest
+  // is nobody in particular, which is exactly what a tier-targeted campaign
+  // excludes.
+  const promoCustomer = shopper
+    ? {
+        tier: loyaltyTierProgress(shopper.tierSpend || 0, shopper.tierOrders || 0).current,
+        orderCount: shopper.tierOrders || 0,
+      }
+    : undefined;
+
   const evaluated = evaluateActiveFreeGifts(
     giftPromos.filter((p) => p.rewardType !== "order_discount"),
     cartLinesForEval,
+    promoCustomer,
   );
 
   /** Campaigns that ask the shopper to pick, and what they may pick from.
@@ -470,7 +486,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /** Money off the order from an Order Goal / Volume Discount campaign. One
    *  at most — see orderDiscountFrom. The checkout works it out again from
    *  the lines it resolved; this is what the shopper is shown. */
-  const orderDiscount = orderDiscountFrom(giftPromos, cartLinesForEval, Date.now());
+  const orderDiscount = orderDiscountFrom(giftPromos, cartLinesForEval, Date.now(), promoCustomer);
 
   const giftLines = evaluated
     .filter((e) => e.eligible)

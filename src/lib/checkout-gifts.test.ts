@@ -443,3 +443,52 @@ test("the cap still applies to what the shopper picked", () => {
   );
   assert.equal(lines.length, 1);
 });
+
+// Who a campaign is for, and a second cart rule joined with AND — the two
+// halves of the app's "Custom Discount" that this table could not express.
+
+test("a tier-targeted campaign skips everyone else", () => {
+  const goldOnly = spendPromo({ minSubtotal: 1000, customerTiers: ["Gold"] });
+  assert.deepEqual(giftLinesFrom([goldOnly], basket, NONE, NOW, noCatalogue), []);
+  assert.equal(
+    giftLinesFrom([goldOnly], basket, NONE, NOW, noCatalogue, undefined, new Map(), {
+      tier: "Gold",
+    }).length,
+    1,
+  );
+});
+
+test("a guest is nobody in particular, so a targeted campaign excludes them", () => {
+  // Undefined is a guest or a page that has not loaded the account — either
+  // way we cannot place them, and placing them wrongly gives product away.
+  const silverOnly = spendPromo({ minSubtotal: 1000, customerTiers: ["Silver"] });
+  assert.deepEqual(
+    giftLinesFrom([silverOnly], basket, NONE, NOW, noCatalogue, undefined, new Map(), undefined),
+    [],
+  );
+});
+
+test("a first-order campaign is for somebody who has not ordered", () => {
+  const firstOnly = spendPromo({ minSubtotal: 1000, firstOrderOnly: true });
+  assert.equal(
+    giftLinesFrom([firstOnly], basket, NONE, NOW, noCatalogue, undefined, new Map(), {
+      orderCount: 0,
+    }).length,
+    1,
+  );
+  assert.deepEqual(
+    giftLinesFrom([firstOnly], basket, NONE, NOW, noCatalogue, undefined, new Map(), {
+      orderCount: 3,
+    }),
+    [],
+  );
+});
+
+test("both cart rules have to hold, not either", () => {
+  // The basket is 2 items worth ฿1,000: it clears the money and misses the
+  // count, and a campaign asking for both is not earned.
+  const both = spendPromo({ minSubtotal: 1000, minQty: 3 });
+  assert.deepEqual(giftLinesFrom([both], basket, NONE, NOW, noCatalogue), []);
+  const three: CartLine[] = [{ ...basket[0], qty: 3 }];
+  assert.equal(giftLinesFrom([both], three, NONE, NOW, noCatalogue).length, 1);
+});
