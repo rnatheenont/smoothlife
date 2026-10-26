@@ -91,21 +91,13 @@ const knowledge = (): PageDoc =>
         source: "shopify",
         category: "",
         limit: 24,
-        room: "between",
-      },
-    },
-    {
-      type: "article_grid",
-      v: 1,
-      settings: {
-        heading: "Expert Guides",
-        headingSize: "base",
-        source: "static",
-        category: "",
-        limit: 24,
         room: "end",
       },
     },
+    // The "Expert Guides" grid of static articles was here under the Shopify
+    // posts. Off by request — the shop writes in Shopify now, and a second
+    // grid underneath repeated the page's whole subject in a hand-maintained
+    // copy. The articles themselves are untouched in src/data/articles.
   ]);
 
 const knowledgeIngredients = (): PageDoc =>

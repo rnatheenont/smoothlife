@@ -60,9 +60,11 @@ export const HEADER_LINKS_DEFAULT: HeaderLinks = {
     // screen it was reachable only from the home page, which is the one place
     // somebody who has already started shopping is not.
     { href: "/advisor", th: "ประเมินผิว", en: "Skin Check", mega: false },
-    { href: "/subscription", th: "เซ็ตสมาชิก", en: "Member sets", mega: false },
     { href: "/knowledge", th: "บทความ", en: "Articles", mega: false },
-    { href: "/promotions", th: "โปรโมชั่น", en: "Promotions", mega: false },
+    // เซ็ตสมาชิก and โปรโมชั่น are out of the desktop bar for now, by
+    // request — the same way the affiliate link left it. Both pages still
+    // exist and still work, and both are still in the drawer below, which
+    // is the full map rather than the curated row. Two lines to put back.
   ],
   deskUtility: [
     // Labelled "คำถามที่พบบ่อย" and pointed at /help, which is the help hub

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { articles } from "@/data/articles";
 import ArticleGrid from "@/components/ArticleGrid";
 import { getStoreArticles, thaiDate } from "@/lib/storefront-articles";
 import { pageMetadata } from "@/lib/site-pages";
@@ -49,8 +48,10 @@ async function KnowledgePageWritten() {
           </div>
         </>
       )}
-      <h2 className="font-bold text-brand-ink mb-4">Expert Guides</h2>
-      <ArticleGrid articles={articles} />
+      {/* The "Expert Guides" grid was here. Taken out of the document this
+          page actually renders, and out of this half too: the flag below is
+          an emergency switch, and a switch that shows a different page is
+          not one worth throwing. */}
     </div>
   );
 }
