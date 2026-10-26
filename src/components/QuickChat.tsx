@@ -11,7 +11,7 @@ import {
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
-import SmoothieRig from "@/components/mascot/SmoothieRig";
+import SmoothieRig, { type SmoothieRigHandle } from "@/components/mascot/SmoothieRig";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
@@ -39,6 +39,21 @@ const CHAT_BADGE_PHRASES: [string, string][] = [
   ["ปรึกษาปัญหาผิวฟรี", "Free skin advice"],
 ];
 const CHAT_BADGE_INTERVAL_MS = 11000;
+
+// A signed-in customer coming back gets one hello from Smoothie per visit
+// (per browser tab session), a moment after the page settles. Only when the
+// sign-in was already there on arrival — someone who has just logged in has
+// just been greeted by the login itself.
+const WELCOME_KEY = "sl_welcome_back_shown";
+const WELCOME_DELAY_MS = 1500;
+const WELCOME_SHOW_MS = 9000;
+
+/** First name only, and nothing that is really an email or a phone number. */
+function greetingName(name: string | undefined | null): string {
+  const first = (name ?? "").trim().replace(/^คุณ\s*/, "").split(/\s+/)[0] ?? "";
+  if (!first || first.includes("@") || /^[+\d\s-]+$/.test(first)) return "";
+  return first;
+}
 const CHAT_BADGE_FADE_MS = 175;
 
 // What the launcher has to clear at the bottom of a phone screen. Both are
@@ -55,7 +70,7 @@ const LAUNCHER_H = 64;
 
 export default function QuickChat() {
   const { lang, t } = useLang();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { open, setOpen, stickyBarVisible } = useQuickChat();
   const pathname = usePathname();
   const viewingSlug = pathname?.match(/^\/product\/([a-z0-9-]+)/i)?.[1];
@@ -63,6 +78,37 @@ export default function QuickChat() {
   // The badge, without the conversation behind it: a small poll of its own
   // that only runs for someone who has chatted before. See use-chat-unread.
   const unread = useChatUnread(open);
+
+  const rigRef = useRef<SmoothieRigHandle>(null);
+  // null = no bubble; "" = greet without a name.
+  const [welcomeName, setWelcomeName] = useState<string | null>(null);
+  const welcomeChecked = useRef(false);
+  useEffect(() => {
+    // Decided once, on the first answer from auth: signed in already → hello.
+    if (authLoading || welcomeChecked.current) return;
+    welcomeChecked.current = true;
+    if (!user) return;
+    try {
+      if (sessionStorage.getItem(WELCOME_KEY)) return;
+      sessionStorage.setItem(WELCOME_KEY, "1");
+    } catch {
+      // Storage blocked (private mode): greeting once per page load is fine.
+    }
+    const name = greetingName(user.name);
+    // Deliberately not cleared by a cleanup: a re-render of the user object
+    // (or Strict Mode's mount-unmount-mount) would cancel the hello for good,
+    // since it is decided once. After an unmount the setState is a no-op.
+    setTimeout(() => {
+      setWelcomeName(name);
+      rigRef.current?.play("happy");
+    }, WELCOME_DELAY_MS);
+  }, [authLoading, user]);
+  useEffect(() => {
+    if (welcomeName === null) return;
+    const id = setTimeout(() => setWelcomeName(null), WELCOME_SHOW_MS);
+    return () => clearTimeout(id);
+  }, [welcomeName]);
+  const showWelcome = welcomeName !== null && !open;
 
   // The tab bar is always there; the buy bar appears only once a product
   // page scrolls past its own button, so the launcher still has to follow
@@ -170,6 +216,7 @@ export default function QuickChat() {
     // close ("X") button could end up stranded wherever it was last dragged,
     // far from the chat panel it's meant to sit next to.
     if (!open) setDragPos({ x: 0, y: 0 });
+    setWelcomeName(null); // opening the chat answers the hello
     setOpen(!open);
   }
 
@@ -261,6 +308,7 @@ export default function QuickChat() {
               {/* Inside a draggable button: no click gestures of its own (the button
                   owns the tap), just breathing, blinking and the odd wave. */}
               <SmoothieRig
+                ref={rigRef}
                 framing="bust"
                 className="absolute inset-0 rounded-full drop-shadow-md"
                 playOnClick={false}
@@ -271,6 +319,9 @@ export default function QuickChat() {
               {/* Real speech bubble shape (rounded rect + an actual pointed
                   tail, not just a clipped corner) aimed down at the
                   mascot's head, in the original brand-gradient color. */}
+              {/* Not while the welcome bubble is up — on a phone this badge
+                  runs its own opacity animation, so hiding it by class loses. */}
+              {!showWelcome && (
               <span
                 key={badgeIndex}
                 className={`absolute -top-3 transition-opacity max-lg:animate-chatBadgeLife ${snapSide === "left" ? "left-0" : "right-0"} ${
@@ -294,9 +345,56 @@ export default function QuickChat() {
                   {t(...CHAT_BADGE_PHRASES[badgeIndex])}
                 </span>
               </span>
+              )}
             </span>
           )}
         </button>
+
+        {/* The welcome-back hello: a chat bubble from Smoothie above the
+            launcher. Outside the button (it has buttons of its own); tapping
+            it opens the chat, the cross just dismisses it. */}
+        {showWelcome && (
+          <div
+            role="status"
+            className={`absolute bottom-full mb-3 w-[min(260px,calc(100vw-2rem))] animate-fadeUp ${
+              snapSide === "left" ? "left-0" : "right-0"
+            }`}
+          >
+            <span
+              className={`absolute -bottom-1.5 h-3.5 w-3.5 rotate-45 rounded-[3px] border-b border-r border-slate-200 bg-white ${
+                snapSide === "left" ? "left-[25px] lg:left-[41px]" : "right-[25px] lg:right-[41px]"
+              }`}
+            />
+            <div className="relative rounded-2xl border border-slate-200 bg-white py-3 pl-3.5 pr-8 text-left shadow-cardHover">
+              <button
+                type="button"
+                onClick={() => {
+                  setWelcomeName(null);
+                  setDragPos({ x: 0, y: 0 });
+                  setOpen(true);
+                }}
+                className="block text-left"
+              >
+                <span className="block text-[13px] font-bold leading-snug text-brand-ink">
+                  {welcomeName
+                    ? t(`ยินดีต้อนรับกลับมานะคะ คุณ${welcomeName}`, `Welcome back, ${welcomeName}!`)
+                    : t("ยินดีต้อนรับกลับมานะคะ", "Welcome back!")}
+                </span>
+                <span className="mt-0.5 block text-[12px] leading-snug text-slate-500">
+                  {t("วันนี้ให้น้อง Smoothie ช่วยอะไรดีคะ", "What can Smoothie help you with today?")}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setWelcomeName(null)}
+                aria-label={t("ปิด", "Close")}
+                className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {open && <QuickChatPanel panelBottom={panelBottom} viewingSlug={viewingSlug} onClose={() => setOpen(false)} />}
