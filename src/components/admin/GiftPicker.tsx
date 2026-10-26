@@ -26,29 +26,55 @@ export type GiftChoice = {
 export const giftName = (t: string) =>
   t.replace(/^\s*(TEST\s*\|\s*)?\[Free Gift\]\s*/i, "").trim() || t;
 
+// The shelf itself, fetched once per page rather than once per picker.
+//
+// A tiered promo draws one picker per level, and each of them used to fetch
+// the whole shelf on mount — three levels, three identical requests. It is
+// also the only place the admin side knows what a gift is called, so the form
+// reads it to put a name on the gifts a promo already has: the admin API
+// returns variant ids and nothing else.
+let shelfPromise: Promise<GiftChoice[]> | null = null;
+
+function loadShelf(): Promise<GiftChoice[]> {
+  shelfPromise ??= fetch("/api/admin/free-gifts/stock", { cache: "no-store" })
+    .then((r) => r.json())
+    .then((json) => {
+      if (!json?.ok) throw new Error(json?.error || "โหลดรายการของแถมไม่สำเร็จ");
+      return json.gifts as GiftChoice[];
+    })
+    .catch((err) => {
+      // A failed load must not be remembered as the answer, or every later
+      // picker on the page inherits the failure.
+      shelfPromise = null;
+      throw err;
+    });
+  return shelfPromise;
+}
+
+export function useGiftShelf() {
+  const [gifts, setGifts] = useState<GiftChoice[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    loadShelf()
+      .then((g) => alive && setGifts(g))
+      .catch((err) => alive && setError(err instanceof Error ? err.message : "โหลดรายการของแถมไม่สำเร็จ"));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  return { gifts, error };
+}
+
 export default function GiftPicker({
   onSelect,
 }: {
   onSelect: (gift: GiftChoice) => void;
 }) {
-  const [gifts, setGifts] = useState<GiftChoice[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { gifts, error } = useGiftShelf();
   const [q, setQ] = useState("");
-
-  useEffect(() => {
-    fetch("/api/admin/free-gifts/stock", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((json) => {
-        if (!json?.ok)
-          throw new Error(json?.error || "โหลดรายการของแถมไม่สำเร็จ");
-        setGifts(json.gifts);
-      })
-      .catch((err) =>
-        setError(
-          err instanceof Error ? err.message : "โหลดรายการของแถมไม่สำเร็จ",
-        ),
-      );
-  }, []);
 
   const shown = useMemo(() => {
     const term = q.trim().toLowerCase();

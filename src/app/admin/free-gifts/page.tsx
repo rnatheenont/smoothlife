@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui";
 import ProductPicker from "@/components/admin/ProductPicker";
 import GiftPicker, {
   giftName,
+  useGiftShelf,
   type GiftChoice,
 } from "@/components/admin/GiftPicker";
 import { useAdminAction } from "@/components/admin/header-action";
@@ -131,6 +132,16 @@ function GiftListField({
   onChange: (next: GiftFormRow[]) => void;
   label: string;
 }) {
+  const [picking, setPicking] = useState(false);
+  // The admin API hands back variant ids and nothing else, so a promo that
+  // already has gifts would show a row of 40-character gids. The shelf the
+  // picker reads is the only place their names live on this side.
+  const { gifts: shelf } = useGiftShelf();
+  const nameOf = (g: GiftFormRow) =>
+    giftName(g.title || shelf?.find((s) => s.variantId === g.variantId)?.title || "") || g.variantId;
+  const imageOf = (g: GiftFormRow) =>
+    g.image ?? shelf?.find((s) => s.variantId === g.variantId)?.image ?? null;
+
   const replace = (i: number, patch: Partial<GiftFormRow>) =>
     onChange(gifts.map((g, idx) => (idx === i ? { ...g, ...patch } : g)));
 
@@ -146,13 +157,13 @@ function GiftListField({
       {gifts.map((g, i) => (
         <div key={`${g.variantId}-${i}`} className="flex items-center gap-2 rounded-lg bg-surface-soft p-1.5">
           <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-white">
-            {g.image && <Image src={g.image} alt="" fill sizes="36px" className="object-contain" />}
+            {imageOf(g) && <Image src={imageOf(g)!} alt="" fill sizes="36px" className="object-contain" />}
           </span>
           {/* break-words, because the fallback here is a raw variant id —
               one unbroken 40-character token that pushed the quantity box and
               the remove button off the side of the card on a phone. */}
           <span className="line-clamp-2 min-w-0 flex-1 break-words text-xs leading-tight text-brand-ink">
-            {giftName(g.title) || g.variantId}
+            {nameOf(g)}
           </span>
           {/* Quantity belongs to the gift, not to the condition: two of one
               thing and one of another is an ordinary way to run a campaign. */}
@@ -164,13 +175,13 @@ function GiftListField({
               min={1}
               value={g.qty}
               onChange={(e) => replace(i, { qty: e.target.value })}
-              aria-label={`จำนวนของ ${giftName(g.title) || "ของแถม"}`}
+              aria-label={`จำนวนของ ${nameOf(g)}`}
               className="w-12 rounded-md border border-surface-line bg-white px-1.5 py-1 text-center text-xs text-brand-ink"
             />
           </label>
           <button
             type="button"
-            aria-label={`เอา ${giftName(g.title) || "ของแถม"} ออก`}
+            aria-label={`เอา ${nameOf(g)} ออก`}
             onClick={() => onChange(gifts.filter((_, idx) => idx !== i))}
           >
             <X size={13} className="text-slate-400" />
@@ -178,23 +189,48 @@ function GiftListField({
         </div>
       ))}
 
-      <GiftPicker
-        onSelect={(choice: GiftChoice) => {
-          // The same gift twice is one gift with a bigger number — picking it
-          // again is what somebody does when they mean two.
-          const at = gifts.findIndex((g) => g.variantId === choice.variantId);
-          if (at >= 0) {
-            replace(at, { qty: String((Number(gifts[at].qty) || 1) + 1) });
-            return;
-          }
-          onChange([
-            ...gifts,
-            { variantId: choice.variantId, title: choice.title, image: choice.image, qty: "1" },
-          ]);
-        }}
-      />
-      {gifts.length === 0 && (
-        <p className="text-[11px] text-amber-700">ยังไม่ได้เลือกของแถม — เลือกอย่างน้อย 1 ชิ้น</p>
+      {/* The picker is a 29-row searchable list, and a three-level promo draws
+          one per level. Open, they turned the form into a page of lists with
+          the actual settings lost between them — so it opens only for the
+          level being edited, and closes again once something is chosen. */}
+      {picking || gifts.length === 0 ? (
+        <div className="rounded-lg border border-surface-line p-2">
+          <GiftPicker
+            onSelect={(choice: GiftChoice) => {
+              setPicking(false);
+              // The same gift twice is one gift with a bigger number — picking
+              // it again is what somebody does when they mean two.
+              const at = gifts.findIndex((g) => g.variantId === choice.variantId);
+              if (at >= 0) {
+                replace(at, { qty: String((Number(gifts[at].qty) || 1) + 1) });
+                return;
+              }
+              onChange([
+                ...gifts,
+                { variantId: choice.variantId, title: choice.title, image: choice.image, qty: "1" },
+              ]);
+            }}
+          />
+          {gifts.length === 0 ? (
+            <p className="mt-1 text-[11px] text-amber-700">ยังไม่ได้เลือกของแถม — เลือกอย่างน้อย 1 ชิ้น</p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPicking(false)}
+              className="mt-1 text-[11px] text-slate-400 hover:text-slate-600"
+            >
+              ยกเลิก
+            </button>
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setPicking(true)}
+          className="flex items-center gap-1 text-xs font-semibold text-brand-800"
+        >
+          <Plus size={13} /> เพิ่มของแถมอีกชิ้น
+        </button>
       )}
     </div>
   );
@@ -744,17 +780,24 @@ export default function AdminFreeGiftsPage() {
       )}
 
       {showForm && (
-        <div className="fixed inset-0 z-110 bg-black/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-xl2 bg-white p-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-brand-ink text-lg">
+        <div className="fixed inset-0 z-110 flex items-center justify-center bg-black/40 p-4">
+          {/* Header and footer hold still; only the middle scrolls.
+              The form is long enough that "บันทึก" used to sit a full screen
+              below the fold, so the way to finish was out of sight the whole
+              time you were working. */}
+          <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl2 bg-white">
+            <div className="flex shrink-0 items-center justify-between border-b border-surface-line px-5 py-4">
+              <h2 className="text-lg font-bold text-brand-ink">
                 {editingId ? "แก้ไขโปรโมชั่น" : "สร้างโปรโมชั่นใหม่"}
               </h2>
               <button onClick={() => setShowForm(false)} aria-label="ปิด">
                 <X size={18} />
               </button>
             </div>
-            <form onSubmit={submitForm} className="space-y-5">
+            <form onSubmit={submitForm} className="flex min-h-0 flex-1 flex-col">
+              <div className="grid min-h-0 flex-1 items-start gap-5 overflow-y-auto p-5 lg:grid-cols-2 lg:gap-6">
+              {/* Left column: what the promo is and who it is for. */}
+              <div className="min-w-0 space-y-5">
               {/* 1. ชื่อโปร */}
               <div>
                 <p className="text-xs font-bold text-brand-ink mb-2">
@@ -903,77 +946,95 @@ export default function AdminFreeGiftsPage() {
                       className="mt-2"
                     />
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <label className="block text-[11px] text-slate-400">
-                      ตั้งระดับยอดซื้อ → ของแถมของระดับนั้น (เรียงจากน้อยไปมาก
-                      ระดับหลังจะได้ของแถมของระดับก่อนหน้าด้วย)
-                    </label>
-                    {form.tiers.map((tier, i) => (
-                      <div
-                        key={i}
-                        className="rounded-lg border border-slate-200 p-2.5 space-y-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-brand-ink">
-                            ระดับ {i + 1}
-                          </span>
-                          {form.tiers.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setForm({
-                                  ...form,
-                                  tiers: form.tiers.filter(
-                                    (_, idx) => idx !== i,
-                                  ),
-                                })
-                              }
-                            >
-                              <X size={13} className="text-slate-400" />
-                            </button>
-                          )}
-                        </div>
-                        <AdminField
-                          label={`ยอดขั้นต่ำของระดับที่ ${i + 1} (บาท)`}
-                          type="number"
-                          inputMode="numeric"
-                          value={tier.minSubtotal}
-                          onChange={(v) => {
-                            const next = [...form.tiers];
-                            next[i] = { ...next[i], minSubtotal: v };
-                            setForm({ ...form, tiers: next });
-                          }}
-                          placeholder="ยอดขั้นต่ำของระดับนี้ (บาท)"
-                          isRequired
-                        />
-                        <GiftListField
-                          label={`ของแถมในระดับที่ ${i + 1}`}
-                          gifts={tier.gifts}
-                          onChange={(next) => {
-                            const tiers = [...form.tiers];
-                            tiers[i] = { ...tiers[i], gifts: next };
-                            setForm({ ...form, tiers });
-                          }}
-                        />
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setForm({
-                          ...form,
-                          tiers: [...form.tiers, { ...EMPTY_TIER_ROW }],
-                        })
-                      }
-                      className="flex items-center gap-1 text-xs font-semibold text-brand-800"
-                    >
-                      <Plus size={13} /> เพิ่มระดับ
-                    </button>
-                  </div>
-                )}
+                ) : null}
               </div>
 
+              </div>
+
+              {/* Right column: what the shopper walks away with, and the
+                  sentence they will read. Beside the conditions rather than a
+                  screen below them, so the two can be checked against each
+                  other without scrolling between them. */}
+              <div className="min-w-0 space-y-5">
+              {/* The levels live here rather than under the condition picker:
+                  they are the longest thing in the form and they are what the
+                  shopper gets, which is this column's subject. Beside the
+                  conditions they also stopped being a column of half-width
+                  cards with an empty half-screen next to them. */}
+              {form.kind === "tiered" && (
+                <div>
+                  <p className="text-xs font-bold text-brand-ink mb-2">
+                    3. ระดับและของแถม
+                  </p>
+                    <div className="space-y-3">
+                      <label className="block text-[11px] text-slate-400">
+                        ตั้งระดับยอดซื้อ → ของแถมของระดับนั้น (เรียงจากน้อยไปมาก
+                        ระดับหลังจะได้ของแถมของระดับก่อนหน้าด้วย)
+                      </label>
+                      {form.tiers.map((tier, i) => (
+                        <div
+                          key={i}
+                          className="rounded-lg border border-slate-200 p-2.5 space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-brand-ink">
+                              ระดับ {i + 1}
+                            </span>
+                            {form.tiers.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setForm({
+                                    ...form,
+                                    tiers: form.tiers.filter(
+                                      (_, idx) => idx !== i,
+                                    ),
+                                  })
+                                }
+                              >
+                                <X size={13} className="text-slate-400" />
+                              </button>
+                            )}
+                          </div>
+                          <AdminField
+                            label={`ยอดขั้นต่ำของระดับที่ ${i + 1} (บาท)`}
+                            type="number"
+                            inputMode="numeric"
+                            value={tier.minSubtotal}
+                            onChange={(v) => {
+                              const next = [...form.tiers];
+                              next[i] = { ...next[i], minSubtotal: v };
+                              setForm({ ...form, tiers: next });
+                            }}
+                            placeholder="ยอดขั้นต่ำของระดับนี้ (บาท)"
+                            isRequired
+                          />
+                          <GiftListField
+                            label={`ของแถมในระดับที่ ${i + 1}`}
+                            gifts={tier.gifts}
+                            onChange={(next) => {
+                              const tiers = [...form.tiers];
+                              tiers[i] = { ...tiers[i], gifts: next };
+                              setForm({ ...form, tiers });
+                            }}
+                          />
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            tiers: [...form.tiers, { ...EMPTY_TIER_ROW }],
+                          })
+                        }
+                        className="flex items-center gap-1 text-xs font-semibold text-brand-800"
+                      >
+                        <Plus size={13} /> เพิ่มระดับ
+                      </button>
+                    </div>
+                </div>
+              )}
               {/* 3. ของแถม (spend/bxgy only — tiered sets gift per level above) */}
               {form.kind !== "tiered" && (
                 <div>
@@ -1057,6 +1118,10 @@ export default function AdminFreeGiftsPage() {
                 )}
               </div>
 
+              </div>
+              </div>
+
+              <div className="shrink-0 space-y-2 border-t border-surface-line px-5 py-4">
               {formError && (
                 <p className="text-xs text-rose-500">{formError}</p>
               )}
@@ -1081,6 +1146,7 @@ export default function AdminFreeGiftsPage() {
                 บันทึกแล้วยังไม่มีผลกับลูกค้า ต้องกด
                 &ldquo;เปิดใช้งานจริง&rdquo; ในหน้ารายการอีกครั้ง
               </p>
+              </div>
             </form>
           </div>
         </div>
