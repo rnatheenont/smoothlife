@@ -35,6 +35,7 @@ const LABEL: Record<string, string> = {
   "receipt.reject": "ตีกลับใบเสร็จ",
   "receipt.reopen": "ดึงกลับมาตรวจใหม่",
   "receipt.recalculate": "คำนวณสิทธิ์ใหม่",
+  "receipt.amounts": "แก้ยอดและคำนวณสิทธิ์ใหม่",
   "receipt.delete": "ลบใบเสร็จ",
   "receipt.settings": "แก้เงื่อนไขกิจกรรม",
   "receipt.campaign.create": "สร้างกิจกรรม",

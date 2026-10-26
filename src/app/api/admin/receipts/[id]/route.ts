@@ -126,6 +126,103 @@ async function recalculate(CAMPAIGN: string, id: string, token: string | undefin
 }
 
 /**
+ * The qualifying amounts, as a reviewer corrects them.
+ *
+ * Recalculating reads the order's own line items, which is right whenever
+ * there is an order to read. There is not always: a receipt whose order the
+ * shop cannot find, a payment taken outside this site, a bill where the
+ * lines are there but tagged wrong — all of them land on a reviewer with a
+ * legible photo in front of them and no way to put the number in. Before
+ * this the only thing they could type was the entry count, which is the
+ * answer rather than the input: it records what a person decided, not what
+ * the rules make of what they read, and it goes stale the moment the rules
+ * move.
+ *
+ * So the amounts are what can be typed, and the entries are worked out from
+ * them by the same function the recalculation uses. The two buckets stay
+ * separate because the rules treat them differently — a threshold per ฿690
+ * of DENTISTE', a fixed number of entries per keychain set.
+ */
+async function setAmounts(CAMPAIGN: string, id: string, token: string | undefined, body: Record<string, unknown>) {
+  const read = (v: unknown) => {
+    if (v === undefined || v === null || v === "") return null;
+    const n = Number(v);
+    // Money, to the satang, and never negative. The ceiling is only there to
+    // stop a slipped keyboard from writing a number nobody meant.
+    if (!Number.isFinite(n) || n < 0 || n > 10_000_000) return NaN;
+    return Math.round(n * 100) / 100;
+  };
+  const dentiste = read(body.dentisteAmount);
+  const keychain = read(body.keychainAmount);
+  if (Number.isNaN(dentiste) || Number.isNaN(keychain)) {
+    return NextResponse.json({ ok: false, error: "ยอดเงินไม่ถูกต้อง" }, { status: 400 });
+  }
+  if (dentiste === null && keychain === null) {
+    return NextResponse.json({ ok: false, error: "กรุณาใส่ยอดอย่างน้อยหนึ่งช่อง" }, { status: 400 });
+  }
+
+  const [entry] = await supabaseRest<
+    {
+      id: string;
+      dentiste_net_amount: number | string | null;
+      keychain_amount: number | string | null;
+      computed_entries: number;
+      entries_override: number | null;
+    }[]
+  >(
+    `receipt_campaign_entries?id=eq.${pgValue(id)}&campaign_key=eq.${pgValue(CAMPAIGN)}` +
+      `&select=id,dentiste_net_amount,keychain_amount,computed_entries,entries_override&limit=1`
+  ).catch(() => []);
+  if (!entry) return NextResponse.json({ ok: false, error: "ไม่พบใบเสร็จรายการนี้" }, { status: 404 });
+
+  // A field left out keeps what the receipt already had, so correcting one
+  // bucket does not quietly zero the other.
+  const was = {
+    dentisteAmount: Number(entry.dentiste_net_amount ?? 0),
+    keychainAmount: Number(entry.keychain_amount ?? 0),
+  };
+  const amounts = {
+    dentisteAmount: dentiste ?? was.dentisteAmount,
+    keychainAmount: keychain ?? was.keychainAmount,
+  };
+
+  const { rules } = await loadCampaignContent(CAMPAIGN);
+  const entries = computeEntries(amounts, rules);
+
+  await supabaseRest(`receipt_campaign_entries?id=eq.${pgValue(id)}`, {
+    method: "PATCH",
+    returning: false,
+    body: JSON.stringify({
+      dentiste_net_amount: amounts.dentisteAmount,
+      keychain_amount: amounts.keychainAmount,
+      computed_entries: entries,
+      // The typed amount is the correction now; an entry count typed over an
+      // older calculation was a correction to that one.
+      entries_override: null,
+    }),
+  });
+
+  await supabaseRest("admin_audit_log", {
+    method: "POST",
+    returning: false,
+    body: JSON.stringify({
+      admin_user_id: getAdminSession(token)?.userId ?? null,
+      action: "receipt.amounts",
+      target: id,
+      detail: {
+        campaign: CAMPAIGN,
+        before: { ...was, entries: entry.computed_entries, override: entry.entries_override },
+        after: { ...amounts, entries },
+        rules,
+        by: getAdminSession(token)?.userId ?? null,
+      },
+    }),
+  }).catch((err) => console.error("[admin/receipts] audit write failed", err));
+
+  return NextResponse.json({ ok: true, entries, ...amounts });
+}
+
+/**
  * Puts a decided receipt back in the queue.
  *
  * Approving is a judgement made in a few seconds about somebody's claim on a
@@ -270,9 +367,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   if (action === "recalculate") return recalculate(CAMPAIGN, id, token);
   if (action === "reopen") return reopen(CAMPAIGN, id, token);
   if (action === "order-number") return setOrderNumber(CAMPAIGN, id, token, body?.orderNumber);
+  if (action === "amounts") return setAmounts(CAMPAIGN, id, token, body ?? {});
   if (action !== "approve" && action !== "reject") {
     return NextResponse.json(
-      { ok: false, error: "action ต้องเป็น approve, reject, recalculate, reopen หรือ order-number" },
+      { ok: false, error: "action ต้องเป็น approve, reject, recalculate, reopen, order-number หรือ amounts" },
       { status: 400 }
     );
   }

@@ -296,6 +296,37 @@ export default function Page() {
   }
 
   /**
+   * Correct the qualifying amounts on a claim; the server recomputes the
+   * entries from them with today's rules.
+   *
+   * The button beside it reads the order's own line items, which is the right
+   * answer whenever there is an order to read. This is for when there is not
+   * — a payment taken off this site, an order the shop cannot find, lines
+   * tagged wrong — and the reviewer is holding a legible photo the system
+   * cannot turn into a number.
+   */
+  async function setAmounts(
+    item: QueueItem,
+    amounts: { dentisteAmount: number; keychainAmount: number },
+  ) {
+    setBusy(item.id);
+    try {
+      const res = await fetch(`/api/admin/receipts/${item.id}${campaignQuery}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "amounts", ...amounts }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "บันทึกยอดไม่สำเร็จ");
+      await load();
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "บันทึกยอดไม่สำเร็จ");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /**
    * Correct the order number on a claim, then recompute from it.
    *
    * The customer's own words stay on the record; this writes the reviewer's
@@ -650,6 +681,7 @@ export default function Page() {
                   busy={busy}
                   onDecide={decide}
                   onRecalculate={recalculate}
+                  onSetAmounts={setAmounts}
                   onSetOrderNumber={setOrderNumber}
                   onReopen={reopen}
                   onDelete={removeEntry}
@@ -684,6 +716,7 @@ export default function Page() {
                     decided
                     onDecide={decide}
                     onRecalculate={recalculate}
+                    onSetAmounts={setAmounts}
                     onSetOrderNumber={setOrderNumber}
                     onReopen={reopen}
                     onDelete={removeEntry}

@@ -470,6 +470,7 @@ function DetailPanel({
   onClose,
   onDecide,
   onRecalculate,
+  onSetAmounts,
   onSetOrderNumber,
   onReopen,
   onDelete,
@@ -479,6 +480,7 @@ function DetailPanel({
   onClose: () => void;
   onDecide: (item: QueueItem, action: "approve" | "reject") => void;
   onRecalculate: (item: QueueItem) => void;
+  onSetAmounts: (item: QueueItem, amounts: { dentisteAmount: number; keychainAmount: number }) => void;
   onSetOrderNumber: (item: QueueItem, orderNumber: string) => void;
   onReopen: (item: QueueItem) => void;
   onDelete: (item: QueueItem) => void;
@@ -488,6 +490,18 @@ function DetailPanel({
   // browser confirm() names nothing and is dismissed by reflex.
   const [confirming, setConfirming] = useState(false);
   useEffect(() => setConfirming(false), [item?.id]);
+  // The amounts a reviewer is typing over the calculated ones. It carries the
+  // receipt it belongs to rather than being cleared when another one opens:
+  // the panel is one component reused for every row, and a value tied to the
+  // row it was typed on cannot be left behind on the next one.
+  const [edit, setEdit] = useState<{ id: string; dentiste: string; keychain: string } | null>(null);
+  const editAmounts = edit && item && edit.id === item.id ? edit : null;
+  const setEditAmounts = (
+    next: { dentiste: string; keychain: string } | null | ((a: typeof editAmounts) => typeof editAmounts),
+  ) => {
+    const value = typeof next === "function" ? next(editAmounts) : next;
+    setEdit(value && item ? { id: item.id, ...value } : null);
+  };
   useEffect(() => setHost(document.body), []);
   useEffect(() => {
     if (!item) return;
@@ -651,6 +665,71 @@ function DetailPanel({
                           {formatTHB(item.dentisteAmount + item.keychainAmount)}{" "}
                           · เซ็ต VIP {formatTHB(item.vipAmount ?? 0)} ไม่นับ
                         </span>
+                      )}
+                      {/* Two fields rather than one, because the rules count
+                          them differently — a threshold per ฿690 of
+                          DENTISTE', a fixed number of entries per keychain
+                          set — so one combined number could not be turned
+                          back into entries without guessing which it was. */}
+                      {editAmounts ? (
+                        <form
+                          className="mt-2 flex flex-wrap items-end gap-2"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            onSetAmounts(item, {
+                              dentisteAmount: Number(editAmounts.dentiste || 0),
+                              keychainAmount: Number(editAmounts.keychain || 0),
+                            });
+                            setEditAmounts(null);
+                          }}
+                        >
+                          {([
+                            ["dentiste", "DENTISTE'"],
+                            ["keychain", "Keychain"],
+                          ] as const).map(([key, label]) => (
+                            <label key={key} className="flex flex-col gap-0.5">
+                              <span className="text-[11px] font-normal text-slate-500">{label}</span>
+                              <input
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                inputMode="decimal"
+                                value={editAmounts[key]}
+                                onChange={(e) =>
+                                  setEditAmounts((a) => (a ? { ...a, [key]: e.target.value } : a))
+                                }
+                                className="h-9 w-28 rounded-l border border-surface-line px-2 text-[13px] font-normal text-brand-ink"
+                              />
+                            </label>
+                          ))}
+                          <button
+                            type="submit"
+                            disabled={busy === item.id}
+                            className="h-9 rounded-full bg-brand-ink px-4 text-[12px] font-semibold text-white disabled:opacity-50"
+                          >
+                            บันทึกและคำนวณสิทธิ์
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditAmounts(null)}
+                            className="h-9 rounded-full px-3 text-[12px] font-semibold text-slate-500 hover:text-brand-ink"
+                          >
+                            ยกเลิก
+                          </button>
+                        </form>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditAmounts({
+                              dentiste: String(item.dentisteAmount || ""),
+                              keychain: String(item.keychainAmount || ""),
+                            })
+                          }
+                          className="ms-2 text-[11.5px] font-semibold text-brand-800 underline-offset-2 hover:underline"
+                        >
+                          แก้ยอด
+                        </button>
                       )}
                     </dd>
                     <dt className="text-slate-500">ผู้รับรางวัล</dt>
@@ -956,6 +1035,7 @@ export default function QueueTable({
   decided = false,
   onDecide,
   onRecalculate,
+  onSetAmounts,
   onSetOrderNumber,
   onReopen,
   onDelete,
@@ -966,6 +1046,7 @@ export default function QueueTable({
   decided?: boolean;
   onDecide: (item: QueueItem, action: "approve" | "reject") => void;
   onRecalculate: (item: QueueItem) => void;
+  onSetAmounts: (item: QueueItem, amounts: { dentisteAmount: number; keychainAmount: number }) => void;
   onSetOrderNumber: (item: QueueItem, orderNumber: string) => void;
   onReopen: (item: QueueItem) => void;
   onDelete: (item: QueueItem) => void;
@@ -1296,6 +1377,7 @@ export default function QueueTable({
         onClose={() => setOpenId(null)}
         onDecide={onDecide}
         onRecalculate={onRecalculate}
+        onSetAmounts={onSetAmounts}
         onSetOrderNumber={onSetOrderNumber}
         onReopen={onReopen}
         onDelete={onDelete}
