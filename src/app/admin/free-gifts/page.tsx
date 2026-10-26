@@ -265,6 +265,35 @@ export default function AdminFreeGiftsPage() {
     }
   }
 
+  // Separate from activate() on purpose: this one reaches the shop's live
+  // discount list and applies to www, the Shopify theme. Turning a promo on
+  // here no longer does it, because this site hands out the gift itself.
+  async function createShopifyDiscount(id: string) {
+    if (
+      !confirm(
+        "สร้างส่วนลดอัตโนมัติบนร้าน Shopify จริง\n\n" +
+          "มีผลกับ www.smoothlife.com (ธีม Shopify) ทันที — ส่วน app.smoothlife.com " +
+          "แจกของแถมเองอยู่แล้วโดยไม่ต้องใช้ส่วนลดนี้",
+      )
+    ) {
+      return;
+    }
+    setBusyId(id);
+    try {
+      const res = await fetch(`/api/admin/free-gifts/${id}/shopify-discount`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        alert(data.error || "สร้างส่วนลดไม่สำเร็จ");
+        return;
+      }
+      loadList();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function deactivate(id: string) {
     setBusyId(id);
     try {
@@ -436,6 +465,15 @@ export default function AdminFreeGiftsPage() {
                               {busyId === p.id
                                 ? "กำลังเปิด…"
                                 : "เปิดใช้งานจริง"}
+                            </button>
+                          )}
+                          {!p.shopifyDiscountId && !tierDiscountsLinked && (
+                            <button
+                              onClick={() => createShopifyDiscount(p.id)}
+                              disabled={busyId === p.id}
+                              className="flex items-center gap-1 whitespace-nowrap rounded-full border border-amber-300 px-2.5 py-1 text-[11px] font-semibold text-amber-700 disabled:opacity-50"
+                            >
+                              + ส่วนลดบน Shopify
                             </button>
                           )}
                           <button
