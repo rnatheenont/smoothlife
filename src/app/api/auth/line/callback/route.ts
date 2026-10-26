@@ -10,6 +10,8 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { ensureShopifyLink } from "@/lib/link-shopify-customer";
 import { attributeReferralSignup } from "@/lib/referral-signup";
+import { linkSocialToSession } from "@/lib/link-social-identity";
+import { MERGE_TICKET_COOKIE, mergeTicketCookieOptions } from "@/lib/merge-ticket";
 
 function safeEqual(a: string, b: string) {
   const bufA = Buffer.from(a);
@@ -61,6 +63,30 @@ export async function GET(req: NextRequest) {
     });
     if (!profileRes.ok) throw new Error(`profile fetch ${profileRes.status}`);
     const profile: { userId: string; displayName: string; pictureUrl?: string } = await profileRes.json();
+
+
+    // Already signed in? Then this is somebody adding a way into the account
+    // they are in, not somebody arriving — so they stay in it. See
+    // @/lib/link-social-identity for why that is not what used to happen.
+    const linked = await linkSocialToSession(req, "line", profile.userId);
+    if (linked.kind !== "no_session") {
+      const res = NextResponse.redirect(
+        linked.kind === "merge_required"
+          // A decision is needed, so returnTo waits: the page shows both
+          // accounts and the shopper chooses.
+          ? new URL("/account/verify", req.url)
+          : new URL(
+              `${returnTo}${returnTo.includes("?") ? "&" : "?"}linked=line`,
+              req.url,
+            ),
+      );
+      if (linked.kind === "merge_required") {
+        res.cookies.set(MERGE_TICKET_COOKIE, linked.ticket, mergeTicketCookieOptions);
+      }
+      res.cookies.delete(LINE_STATE_COOKIE);
+      res.cookies.delete(LINE_RETURN_COOKIE);
+      return res;
+    }
 
     const result = await supabaseRest<{ user_id: string; is_new: boolean }[]>("rpc/find_or_create_line_member", {
       method: "POST",

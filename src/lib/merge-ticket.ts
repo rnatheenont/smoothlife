@@ -15,8 +15,15 @@ import { createHmac, timingSafeEqual } from "crypto";
 // nothing without that session's cookie, and it can only ever authorise the
 // one merge it names.
 
-const SECRET = process.env.SESSION_SECRET || "";
 const TTL_MS = 10 * 60 * 1000;
+
+// Read when used rather than when imported. A module-scope read bakes in
+// whatever the environment held at import time, which is a different value
+// under the test runner than under the server, and the difference only
+// shows up as tickets that mysteriously never verify.
+function secret(): string {
+  return process.env.SESSION_SECRET || "";
+}
 
 export type MergeTicket = {
   /** The account the shopper is signed in as. */
@@ -28,8 +35,27 @@ export type MergeTicket = {
   uid: string;
 };
 
+/**
+ * Where a ticket waits when it was earned by a redirect rather than a fetch.
+ *
+ * Signing in with Google or LINE ends in a browser navigation, so there is
+ * no response body for the ticket to ride in — and it is a credential, so
+ * it does not go in the URL either, where it would reach server logs,
+ * browser history and the `Referer` of the next request. A cookie with the
+ * same ten-minute life as the ticket inside it.
+ */
+export const MERGE_TICKET_COOKIE = "sl_merge";
+
+export const mergeTicketCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+  maxAge: TTL_MS / 1000,
+};
+
 function sign(value: string): string {
-  return createHmac("sha256", SECRET).update(value).digest("hex");
+  return createHmac("sha256", secret()).update(value).digest("hex");
 }
 
 export function createMergeTicket(t: MergeTicket): string {
@@ -43,7 +69,7 @@ export function createMergeTicket(t: MergeTicket): string {
  * read out of the ticket — that check is the whole point of it.
  */
 export function readMergeTicket(token: unknown, sessionUserId: string): MergeTicket | null {
-  if (typeof token !== "string" || !SECRET) return null;
+  if (typeof token !== "string" || !secret()) return null;
   const [encoded, sig] = token.split(".");
   if (!encoded || !sig) return null;
   const a = Buffer.from(sig);

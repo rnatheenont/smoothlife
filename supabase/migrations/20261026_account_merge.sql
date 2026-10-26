@@ -258,9 +258,13 @@ as $$
            (select count(*) from public.payment_transactions t
              where t.user_id = u.id and t.status = 'success')          as orders,
            -- From the same view the account page reads, not a second sum
-           -- over the ledger that could come to differ from it.
-           (select coalesce(b.balance, 0) from public.points_balance b
-             where b.user_id = u.id)                                   as points,
+           -- over the ledger that could come to differ from it. The
+           -- coalesce is outside the subquery on purpose: an account with
+           -- no ledger rows at all has no row in the view either, and an
+           -- inner coalesce would still hand back null for it — which the
+           -- page then tries to format as a number.
+           coalesce((select b.balance from public.points_balance b
+                      where b.user_id = u.id), 0)                      as points,
            (select coalesce(array_agg(distinct a.provider order by a.provider), '{}')
               from public.auth_identities a where a.user_id = u.id)    as channels
       from public.users u

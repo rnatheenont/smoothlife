@@ -11,7 +11,7 @@ import AccountLayout from "@/components/account/AccountLayout";
 import { Button } from "@/components/ui";
 import { getFirebaseAuth } from "@/lib/firebase-client";
 import { toE164Thai } from "@/lib/thai-phone";
-import { CHANNELS, type ChannelKey } from "@/lib/account-identities";
+import { CHANNELS, channelLabel, type ChannelKey } from "@/lib/account-identities";
 
 // "ช่องทางเข้าสู่ระบบ" — every way in, and one account behind them.
 //
@@ -73,11 +73,21 @@ function VerifyContent() {
   const [recaptchaKey, setRecaptchaKey] = useState(0);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/account/identities");
+    // Two questions on every load: what does this account answer to, and
+    // did a Google or LINE redirect just leave a decision parked in a
+    // cookie for this page to put on screen.
+    const [res, pendingRes] = await Promise.all([
+      fetch("/api/account/identities"),
+      fetch("/api/account/identities/pending"),
+    ]);
     const data = await res.json();
     if (data.ok) {
       setAccount(data.account);
       setIdentities(data.identities);
+    }
+    const waiting = await pendingRes.json().catch(() => null);
+    if (waiting?.pending) {
+      setMerge({ ticket: waiting.pending.ticket, preview: waiting.pending.preview });
     }
     setLoading(false);
   }, []);
@@ -85,6 +95,18 @@ function VerifyContent() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // ?linked=google comes back on the redirect, so the shopper is told the
+  // button they pressed did something — before this, signing in with a
+  // provider while already signed in silently moved them to another
+  // account, which is the behaviour this page exists to undo.
+  useEffect(() => {
+    const linked = new URLSearchParams(window.location.search).get("linked");
+    if (linked) {
+      setDone(`เชื่อม ${channelLabel(linked)} กับบัญชีนี้แล้ว`);
+      window.history.replaceState(null, "", "/account/verify");
+    }
+  }, []);
 
   function reset() {
     setOpen(null);
@@ -273,10 +295,15 @@ function VerifyContent() {
                     {isOpen ? "ยกเลิก" : "เชื่อมต่อ"}
                   </button>
                 ) : (
-                  // Nothing to type: these prove themselves at the login
-                  // screen, so the page points there instead of pretending
-                  // there is a form.
-                  <span className="shrink-0 text-xs text-slate-400">ผูกได้ที่หน้าเข้าสู่ระบบ</span>
+                  // Nothing to type: the provider answers for them. The
+                  // callback attaches it to this account and comes back
+                  // here, rather than signing them into a different one.
+                  <a
+                    href={`/api/auth/${channel.key}/start?returnTo=${encodeURIComponent("/account/verify")}`}
+                    className="inline-flex h-11 shrink-0 items-center rounded-full px-4 text-xs font-semibold text-brand-800"
+                  >
+                    เชื่อมต่อ
+                  </a>
                 )}
               </div>
 
@@ -340,7 +367,20 @@ function VerifyContent() {
         </p>
       )}
 
-      {merge && <MergePanel merge={merge} busy={merging} onCancel={() => setMerge(null)} onConfirm={confirmMerge} />}
+      {merge && (
+        <MergePanel
+          merge={merge}
+          busy={merging}
+          onCancel={() => {
+            setMerge(null);
+            // A ticket parked by a social redirect would otherwise reopen
+            // this panel on the next load, which reads as the page refusing
+            // to take no for an answer.
+            fetch("/api/account/identities/pending", { method: "DELETE" }).catch(() => {});
+          }}
+          onConfirm={confirmMerge}
+        />
+      )}
     </div>
   );
 }

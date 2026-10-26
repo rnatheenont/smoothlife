@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions, verifySessionToken } from "@/lib/session";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
-import { readMergeTicket } from "@/lib/merge-ticket";
+import { MERGE_TICKET_COOKIE, readMergeTicket } from "@/lib/merge-ticket";
 
 // Fold the other account into this one, on a ticket issued minutes ago by
 // the link route when the shopper proved they hold its channel.
@@ -74,5 +74,8 @@ export async function POST(req: NextRequest) {
     moved: result.moved ?? {},
   });
   res.cookies.set(SESSION_COOKIE, createSessionToken(survivor), sessionCookieOptions);
+  // If this ticket came from a social redirect it is still parked in a
+  // cookie; spent is spent.
+  res.cookies.delete(MERGE_TICKET_COOKIE);
   return res;
 }
