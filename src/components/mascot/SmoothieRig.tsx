@@ -14,6 +14,8 @@ export type SmoothieRigHandle = {
   play: (action: string) => void;
   /** True while a gesture or mood is running (the idle sway does not count). */
   readonly playing: boolean;
+  /** The gesture or mood running right now, if any. */
+  readonly current: string | null;
 };
 
 type Props = {
@@ -71,6 +73,7 @@ export default function SmoothieRig({
   useImperativeHandle(ref, () => ({
     play: (a: string) => engineRef.current?.play(a),
     get playing() { return !!engineRef.current?.playing; },
+    get current() { return engineRef.current?.playing ?? null; },
   }), []);
 
   useEffect(() => {

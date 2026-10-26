@@ -105,7 +105,9 @@ export default function QuickChat() {
     // since it is decided once. After an unmount the setState is a no-op.
     setTimeout(() => {
       setWelcome(next);
-      rigRef.current?.play(next.kind === "member" ? "happy" : "wave");
+      // A wave with every hello. If the launcher's own greeting wave is
+      // still going, that one is it — another would queue a second wave.
+      if (rigRef.current?.current !== "wave") rigRef.current?.play("wave");
     }, WELCOME_DELAY_MS);
   }, [authLoading, user]);
   useEffect(() => {
