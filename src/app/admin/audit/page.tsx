@@ -42,6 +42,8 @@ const LABEL: Record<string, string> = {
   "receipt.campaign.delete": "ลบกิจกรรม",
   "receipt.revoke.sweep": "ยกเลิกสิทธิ์ (คืนเงิน)",
   "account.merge": "รวมบัญชีลูกค้า",
+  "account.profile_edit": "แก้ข้อมูลลูกค้า",
+  "account.address_edit": "แก้ที่อยู่ลูกค้า",
   "account.relink-shopify": "ผูกบัญชี Shopify ใหม่",
   "account.delete-test-accounts": "ลบบัญชีทดสอบ",
   "account.rename": "แก้ชื่อลูกค้า",

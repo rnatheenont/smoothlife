@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { supabaseRest, supabaseConfigured, pgValue } from "@/lib/supabase-server";
+import {
+  verifyAdminToken,
+  getAdminSession,
+  ADMIN_COOKIE,
+} from "@/lib/admin-auth";
+import {
+  supabaseRest,
+  supabaseConfigured,
+  pgValue,
+} from "@/lib/supabase-server";
 
 // Writing down what a customer told staff: their name, their phone, where to
 // send it.
@@ -25,6 +33,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const UUID = /^[0-9a-f-]{36}$/i;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+/** The same three the customer's own profile page offers, plus blank. */
+const GENDERS = ["male", "female", "other"];
 
 type AddressInput = {
   recipient_name: string;
@@ -62,28 +73,56 @@ function str(raw: unknown, max: number): string {
 
 export async function PATCH(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
-    return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" },
+      { status: 401 },
+    );
   }
   if (!supabaseConfigured())
-    return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
+    return NextResponse.json(
+      { ok: false, error: "ระบบยังไม่พร้อมใช้งาน" },
+      { status: 503 },
+    );
 
   const body = await req.json().catch(() => ({}));
   const userId = typeof body?.userId === "string" ? body.userId : "";
   if (!UUID.test(userId))
-    return NextResponse.json({ ok: false, error: "ระบุบัญชีไม่ถูกต้อง" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "ระบุบัญชีไม่ถูกต้อง" },
+      { status: 400 },
+    );
 
-  const [before] = await supabaseRest<{ id: string; display_name: string | null; phone: string | null }[]>(
-    `users?id=eq.${pgValue(userId)}&select=id,display_name,phone&limit=1`,
+  const [before] = await supabaseRest<
+    {
+      id: string;
+      display_name: string | null;
+      phone: string | null;
+      gender: string | null;
+      birthdate: string | null;
+    }[]
+  >(
+    `users?id=eq.${pgValue(userId)}&select=id,display_name,phone,gender,birthdate&limit=1`,
   );
-  if (!before) return NextResponse.json({ ok: false, error: "ไม่พบบัญชีนี้" }, { status: 404 });
+  if (!before)
+    return NextResponse.json(
+      { ok: false, error: "ไม่พบบัญชีนี้" },
+      { status: 404 },
+    );
 
   const patch: Record<string, string | null> = {};
 
   if ("name" in body) {
     const name = str(body.name, 200);
-    if (!name) return NextResponse.json({ ok: false, error: "กรุณากรอกชื่อ" }, { status: 400 });
+    if (!name)
+      return NextResponse.json(
+        { ok: false, error: "กรุณากรอกชื่อ" },
+        { status: 400 },
+      );
     if (name.length > 120)
-      return NextResponse.json({ ok: false, error: "ชื่อยาวเกินไป (ไม่เกิน 120 ตัวอักษร)" }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "ชื่อยาวเกินไป (ไม่เกิน 120 ตัวอักษร)" },
+        { status: 400 },
+      );
     patch.display_name = name;
   }
 
@@ -92,6 +131,46 @@ export async function PATCH(req: NextRequest) {
     // because somebody will ring it.
     const phone = str(body.phone, 40);
     patch.phone = phone || null;
+  }
+
+  // The two fields the customer fills in on their own profile page and
+  // almost nobody does. They are here for the same reason the name is: a
+  // customer says it in a chat, and otherwise there is nowhere to put it.
+  if ("gender" in body) {
+    const gender = str(body.gender, 20);
+    if (gender && !GENDERS.includes(gender))
+      return NextResponse.json(
+        { ok: false, error: "เพศไม่ถูกต้อง" },
+        { status: 400 },
+      );
+    patch.gender = gender || null;
+  }
+
+  if ("birthdate" in body) {
+    const birthdate = str(body.birthdate, 10);
+    // Rejected rather than coerced: a date Postgres would refuse comes back
+    // as a 500 with no explanation, and a date it accepts but nobody meant
+    // (0025-01-01, from a slipped keystroke) silently becomes the customer's
+    // birthday on every campaign that reads it.
+    if (birthdate && !ISO_DATE.test(birthdate))
+      return NextResponse.json(
+        { ok: false, error: "วันเกิดต้องเป็นรูปแบบ ปี-เดือน-วัน" },
+        { status: 400 },
+      );
+    if (birthdate) {
+      const year = Number(birthdate.slice(0, 4));
+      const parsed = new Date(`${birthdate}T00:00:00Z`);
+      if (
+        Number.isNaN(parsed.getTime()) ||
+        year < 1900 ||
+        parsed.getTime() > Date.now()
+      )
+        return NextResponse.json(
+          { ok: false, error: "วันเกิดไม่ถูกต้อง" },
+          { status: 400 },
+        );
+    }
+    patch.birthdate = birthdate || null;
   }
 
   if (Object.keys(patch).length > 0) {
@@ -109,8 +188,16 @@ export async function PATCH(req: NextRequest) {
   let address: AddressRow | null = null;
   if (body?.address && typeof body.address === "object") {
     const input: AddressInput = {
-      recipient_name: str(body.address.recipient_name, 200) || str(body.name, 200) || before.display_name || "",
-      phone: str(body.address.phone, 40) || str(body.phone, 40) || before.phone || "",
+      recipient_name:
+        str(body.address.recipient_name, 200) ||
+        str(body.name, 200) ||
+        before.display_name ||
+        "",
+      phone:
+        str(body.address.phone, 40) ||
+        str(body.phone, 40) ||
+        before.phone ||
+        "",
       address_line: str(body.address.address_line, 500),
       subdistrict: str(body.address.subdistrict, 120),
       district: str(body.address.district, 120),
@@ -120,7 +207,9 @@ export async function PATCH(req: NextRequest) {
       country: str(body.address.country, 2).toUpperCase() || "TH",
     };
 
-    const missing = ADDRESS_PARTS.filter(([key]) => !input[key]).map(([, label]) => label);
+    const missing = ADDRESS_PARTS.filter(([key]) => !input[key]).map(
+      ([, label]) => label,
+    );
     if (missing.length > 0) {
       return NextResponse.json(
         { ok: false, error: `ที่อยู่ยังไม่ครบ: ${missing.join(", ")}` },
@@ -137,15 +226,23 @@ export async function PATCH(req: NextRequest) {
         `addresses?id=eq.${pgValue(existing[0].id)}&select=${ADDRESS_COLUMNS}`,
         {
           method: "PATCH",
-          body: JSON.stringify({ ...input, updated_at: new Date().toISOString() }),
+          body: JSON.stringify({
+            ...input,
+            updated_at: new Date().toISOString(),
+          }),
         },
       );
     } else {
-      [address] = await supabaseRest<AddressRow[]>(`addresses?select=${ADDRESS_COLUMNS}`, {
-        method: "POST",
-        headers: { Prefer: "return=representation" },
-        body: JSON.stringify([{ ...input, user_id: userId, is_default: true }]),
-      });
+      [address] = await supabaseRest<AddressRow[]>(
+        `addresses?select=${ADDRESS_COLUMNS}`,
+        {
+          method: "POST",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify([
+            { ...input, user_id: userId, is_default: true },
+          ]),
+        },
+      );
     }
   }
 
@@ -162,19 +259,33 @@ export async function PATCH(req: NextRequest) {
         ...("display_name" in patch
           ? { name: { from: before.display_name, to: patch.display_name } }
           : {}),
-        ...("phone" in patch ? { phone: { from: before.phone, to: patch.phone } } : {}),
+        ...("phone" in patch
+          ? { phone: { from: before.phone, to: patch.phone } }
+          : {}),
+        ...("gender" in patch
+          ? { gender: { from: before.gender, to: patch.gender } }
+          : {}),
+        ...("birthdate" in patch
+          ? { birthdate: { from: before.birthdate, to: patch.birthdate } }
+          : {}),
         ...(address ? { address: { id: address.id } } : {}),
       },
-      admin_user_id: getAdminSession(req.cookies.get(ADMIN_COOKIE)?.value)?.userId ?? null,
+      admin_user_id:
+        getAdminSession(req.cookies.get(ADMIN_COOKIE)?.value)?.userId ?? null,
     }),
-  }).catch((err) => console.error("[admin/customers/profile] audit write failed", err));
+  }).catch((err) =>
+    console.error("[admin/customers/profile] audit write failed", err),
+  );
 
   return NextResponse.json({
     ok: true,
     user: {
       id: userId,
-      display_name: "display_name" in patch ? patch.display_name : before.display_name,
+      display_name:
+        "display_name" in patch ? patch.display_name : before.display_name,
       phone: "phone" in patch ? patch.phone : before.phone,
+      gender: "gender" in patch ? patch.gender : before.gender,
+      birthdate: "birthdate" in patch ? patch.birthdate : before.birthdate,
     },
     address,
   });

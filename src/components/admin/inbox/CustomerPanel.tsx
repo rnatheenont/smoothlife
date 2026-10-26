@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   Sparkles,
@@ -588,12 +589,12 @@ export default function CustomerPanel({
                   </p>
                 </div>
               ))}
-              <a
+              <Link
                 href="/admin/customers"
                 className="inline-flex items-center gap-1 self-start text-[11px] text-brand-800 underline"
               >
                 ดูประวัติทั้งหมด <ExternalLink size={11} />
-              </a>
+              </Link>
             </>
           ) : (
             <p className="text-slate-400">

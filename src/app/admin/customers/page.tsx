@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import clsx from "clsx";
 import {
   Users,
@@ -15,6 +16,7 @@ import {
   Merge,
   Pencil,
   Stethoscope,
+  ArrowUpRight,
 } from "lucide-react";
 import { Badge, Card, Modal } from "@/components/ui";
 import SkinScanSummary, {
@@ -57,7 +59,6 @@ function addressLine(a: AccountAddress | null | undefined): string | null {
     .filter(Boolean)
     .join(" ");
 }
-
 
 type Identity = { provider: string; uid: string; verified: boolean };
 type Account = {
@@ -174,7 +175,8 @@ export default function AdminCustomersPage() {
   const [editing, setEditing] = useState<Account | null>(null);
   const [nameValue, setNameValue] = useState("");
   const [phoneValue, setPhoneValue] = useState("");
-  const [addressValue, setAddressValue] = useState<AddressFormValue>(emptyAddressForm);
+  const [addressValue, setAddressValue] =
+    useState<AddressFormValue>(emptyAddressForm);
   // Off by default: most edits here are a name, and an address form opened
   // every time is six empty boxes between the name and the save button.
   const [editAddress, setEditAddress] = useState(false);
@@ -321,7 +323,9 @@ export default function AdminCustomersPage() {
     setEditing(a);
     // Blank rather than the placeholder: "สมาชิกใหม่" is the absence of a
     // name, and nobody wants to delete it before typing.
-    setNameValue(a.display_name === PLACEHOLDER_NAME ? "" : a.display_name || "");
+    setNameValue(
+      a.display_name === PLACEHOLDER_NAME ? "" : a.display_name || "",
+    );
     setPhoneValue(a.phone || "");
     setAddressValue(
       a.address
@@ -341,7 +345,8 @@ export default function AdminCustomersPage() {
             ...emptyAddressForm,
             // The two things already known about this customer, so staff are
             // not retyping what is on the row they just clicked.
-            recipient_name: a.display_name === PLACEHOLDER_NAME ? "" : a.display_name || "",
+            recipient_name:
+              a.display_name === PLACEHOLDER_NAME ? "" : a.display_name || "",
             phone: a.phone || "",
             is_default: true,
           },
@@ -641,7 +646,7 @@ export default function AdminCustomersPage() {
                   <tr>
                     <th>บัญชี</th>
                     <th className="w-44">การผูก</th>
-                    <th className="w-44 text-right">เลือก</th>
+                    <th className="w-56 text-right">เลือก</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -659,9 +664,19 @@ export default function AdminCustomersPage() {
                     >
                       <td className={adminTable.cell}>
                         <span className="flex items-center gap-1">
-                          <span className="min-w-0 truncate font-semibold text-brand-ink">
+                          {/* stopPropagation: the row selects, the name
+                              opens the customer. Two different jobs on one
+                              row, and the one that navigates has to be a
+                              real link so it can be opened in a new tab —
+                              half of support is sending somebody else the
+                              customer you are looking at. */}
+                          <Link
+                            href={`/admin/customers/${a.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="min-w-0 truncate font-semibold text-brand-ink hover:underline"
+                          >
                             {a.display_name || "(ไม่มีชื่อ)"}
-                          </span>
+                          </Link>
                           {/* stopPropagation: the row itself selects the
                               account, and editing the name is not that. */}
                           <button
@@ -680,7 +695,9 @@ export default function AdminCustomersPage() {
                         <span className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
                           {a.phone && <span>{a.phone}</span>}
                           {addressLine(a.address) && (
-                            <span className="w-full truncate">{addressLine(a.address)}</span>
+                            <span className="w-full truncate">
+                              {addressLine(a.address)}
+                            </span>
                           )}
                           {a.identities.map((i) => (
                             <span key={i.provider + i.uid}>
@@ -717,6 +734,13 @@ export default function AdminCustomersPage() {
                       </td>
                       <td className={adminTable.cell}>
                         <span className="flex flex-wrap items-center justify-end gap-1.5">
+                          <Link
+                            href={`/admin/customers/${a.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-white"
+                          >
+                            ดูประวัติ <ArrowUpRight size={11} />
+                          </Link>
                           {selected === a.id ? (
                             <span className="text-[11px] font-semibold text-brand-800">
                               เลือกอยู่
@@ -769,113 +793,136 @@ export default function AdminCustomersPage() {
             </div>
 
             <div className="space-y-2 md:hidden">
+              {/* The card and the link to the customer are siblings, not
+                  one inside the other: the card is a button that selects,
+                  and a link nested in a button is neither a valid link nor a
+                  valid button — the pencil above had to become a span for
+                  exactly this reason, and a span is not something you can
+                  open in a new tab. */}
               {accounts.map((a) => (
-                <button
+                <div
                   key={a.id}
-                  onClick={() => setSelected(a.id)}
                   className={clsx(
-                    "w-full text-left rounded-xl2 border px-3 py-2.5 transition-colors",
+                    "overflow-hidden rounded-xl2 border transition-colors",
                     selected === a.id
                       ? "border-brand-emerald bg-brand-gradient-soft"
-                      : "border-slate-200 hover:bg-slate-50",
+                      : "border-slate-200",
                   )}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="flex min-w-0 items-center gap-1">
-                      <span className="truncate text-sm font-semibold text-brand-ink">
-                        {a.display_name || "(ไม่มีชื่อ)"}
-                      </span>
-                      {/* A span, not a button: the whole card is a button
+                  <button
+                    onClick={() => setSelected(a.id)}
+                    className="w-full px-3 py-2.5 text-left"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex min-w-0 items-center gap-1">
+                        <span className="truncate text-sm font-semibold text-brand-ink">
+                          {a.display_name || "(ไม่มีชื่อ)"}
+                        </span>
+                        {/* A span, not a button: the whole card is a button
                           already and one cannot be nested in the other. */}
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEdit(a);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openEdit(a);
+                            }
+                          }}
+                          aria-label={`แก้ข้อมูลของ ${a.display_name || "บัญชีนี้"}`}
+                          title="แก้ชื่อ ที่อยู่ เบอร์โทร"
+                          className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-white hover:text-brand-ink"
+                        >
+                          <Pencil size={13} aria-hidden="true" />
+                        </span>
+                      </span>
+                      {a.shopify_customer_id ? (
+                        <Badge tone="success">
+                          ผูกแล้ว #{shortId(a.shopify_customer_id)}
+                        </Badge>
+                      ) : (
+                        <Badge tone="warning">ยังไม่ผูก</Badge>
+                      )}
+                    </div>
+                    {(a.storeLinks || []).length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {(a.storeLinks || []).map((l) => (
+                          <Badge key={l.store} tone="info">
+                            {STORE_NAME[l.store] || l.store} #
+                            {shortId(l.shopifyCustomerId)}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
+                      {a.phone && <span>{a.phone}</span>}
+                      {addressLine(a.address) && (
+                        <span className="w-full truncate">
+                          {addressLine(a.address)}
+                        </span>
+                      )}
+                      {a.identities.map((i) => (
+                        <span key={i.provider + i.uid}>
+                          {PROVIDER_LABEL[i.provider] || i.provider}:{" "}
+                          {i.uid.length > 30 ? `${i.uid.slice(0, 12)}…` : i.uid}
+                          {i.provider === "email" &&
+                            !i.verified &&
+                            " (ยังไม่ยืนยัน)"}
+                        </span>
+                      ))}
+                      <span>สมัคร {fmtDate(a.created_at)}</span>
+                    </div>
+                    {/* Two accounts for one person is our doing, not theirs —
+                      the second one exists because the first showed no orders.
+                      Joining them is the fix; the note is required because the
+                      losing account is gone afterwards. */}
+                    {selected && selected !== a.id && (
                       <span
                         role="button"
                         tabIndex={0}
                         onClick={(e) => {
                           e.stopPropagation();
-                          openEdit(a);
+                          void merge(a.id);
                         }}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
+                          if (e.key === "Enter") {
                             e.stopPropagation();
-                            openEdit(a);
+                            void merge(a.id);
                           }
                         }}
-                        aria-label={`แก้ข้อมูลของ ${a.display_name || "บัญชีนี้"}`}
-                        title="แก้ชื่อ ที่อยู่ เบอร์โทร"
-                        className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-white hover:text-brand-ink"
+                        className={clsx(
+                          "mt-2 inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold",
+                          note.trim().length < 3 || busy !== ""
+                            ? "text-slate-300 pointer-events-none"
+                            : "text-slate-600 hover:bg-white",
+                        )}
                       >
-                        <Pencil size={13} aria-hidden="true" />
+                        {busy === a.id ? (
+                          <Spinner
+                            size="sm"
+                            color="current"
+                            className="size-3"
+                          />
+                        ) : (
+                          <Merge size={11} />
+                        )}
+                        รวมบัญชีนี้เข้ากับบัญชีที่เลือก
                       </span>
-                    </span>
-                    {a.shopify_customer_id ? (
-                      <Badge tone="success">
-                        ผูกแล้ว #{shortId(a.shopify_customer_id)}
-                      </Badge>
-                    ) : (
-                      <Badge tone="warning">ยังไม่ผูก</Badge>
                     )}
-                  </div>
-                  {(a.storeLinks || []).length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {(a.storeLinks || []).map((l) => (
-                        <Badge key={l.store} tone="info">
-                          {STORE_NAME[l.store] || l.store} #
-                          {shortId(l.shopifyCustomerId)}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
-                    {a.phone && <span>{a.phone}</span>}
-                    {addressLine(a.address) && (
-                      <span className="w-full truncate">{addressLine(a.address)}</span>
-                    )}
-                    {a.identities.map((i) => (
-                      <span key={i.provider + i.uid}>
-                        {PROVIDER_LABEL[i.provider] || i.provider}:{" "}
-                        {i.uid.length > 30 ? `${i.uid.slice(0, 12)}…` : i.uid}
-                        {i.provider === "email" &&
-                          !i.verified &&
-                          " (ยังไม่ยืนยัน)"}
-                      </span>
-                    ))}
-                    <span>สมัคร {fmtDate(a.created_at)}</span>
-                  </div>
-                  {/* Two accounts for one person is our doing, not theirs —
-                      the second one exists because the first showed no orders.
-                      Joining them is the fix; the note is required because the
-                      losing account is gone afterwards. */}
-                  {selected && selected !== a.id && (
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void merge(a.id);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.stopPropagation();
-                          void merge(a.id);
-                        }
-                      }}
-                      className={clsx(
-                        "mt-2 inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold",
-                        note.trim().length < 3 || busy !== ""
-                          ? "text-slate-300 pointer-events-none"
-                          : "text-slate-600 hover:bg-white",
-                      )}
-                    >
-                      {busy === a.id ? (
-                        <Spinner size="sm" color="current" className="size-3" />
-                      ) : (
-                        <Merge size={11} />
-                      )}
-                      รวมบัญชีนี้เข้ากับบัญชีที่เลือก
-                    </span>
-                  )}
-                </button>
+                  </button>
+                  <Link
+                    href={`/admin/customers/${a.id}`}
+                    className="flex items-center justify-between gap-2 border-t border-slate-200/70 px-3 py-2.5 text-[12px] font-semibold text-brand-800"
+                  >
+                    ดูประวัติทั้งหมดของลูกค้ารายนี้
+                    <ArrowUpRight size={13} aria-hidden />
+                  </Link>
+                </div>
               ))}
             </div>
           </Card>
@@ -1273,8 +1320,8 @@ export default function AdminCustomersPage() {
             />
             <p className="text-xs text-slate-500">
               ลูกค้าเห็นข้อมูลนี้ในหน้าบัญชีของตัวเอง
-              และที่กรอกไว้จะไม่ถูกทับด้วยข้อมูลจาก Shopify ภายหลัง
-              · การแก้ตรงนี้ไม่ส่งไปแก้ใบลูกค้าใน Shopify
+              และที่กรอกไว้จะไม่ถูกทับด้วยข้อมูลจาก Shopify ภายหลัง ·
+              การแก้ตรงนี้ไม่ส่งไปแก้ใบลูกค้าใน Shopify
             </p>
 
             {/* The address form stays shut until somebody wants it: most
