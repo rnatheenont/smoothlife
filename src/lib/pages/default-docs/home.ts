@@ -29,7 +29,6 @@ const ORDER = [
   "smoothie_ask",
   "hero_banners",
   "icon_shortcuts",
-  "flash_sale_bar",
   "deal_of_day",
   "free_gift_promo",
   "concern_coverflow",
@@ -41,14 +40,14 @@ const ORDER = [
 /**
  * Sections a brand-new home page starts with hidden.
  *
- * These three used to be switched on and off by a row in free_gift_widgets,
+ * These two used to be switched on and off by a row in free_gift_widgets,
  * and every one of those rows ships off (see DEFAULT_SETTINGS in
  * use-widget-settings). Now that the section's own eye icon is the switch,
- * starting them visible would turn three promos on for anyone who seeds a
+ * starting them visible would turn two promos on for anyone who seeds a
  * home page — a flash sale with no deadline and a deal card nobody wrote.
  * They are on the page, in the right order, waiting to be turned on.
  */
-const HIDDEN_AT_FIRST = new Set(["flash_sale_bar", "deal_of_day", "free_gift_promo"]);
+const HIDDEN_AT_FIRST = new Set(["deal_of_day", "free_gift_promo"]);
 
 export function defaultHomeDoc(): PageDoc {
   return {
