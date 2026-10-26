@@ -26,6 +26,7 @@ import { useAdminAction } from "@/components/admin/header-action";
 import {
   PageHeader,
   SectionTitle,
+  adminCards,
   adminTable,
 } from "@/components/admin/layout-kit";
 import { Button, Spinner } from "@heroui/react";
@@ -618,9 +619,13 @@ export default function AdminCustomersPage() {
         )}
       </Card>
 
+      {/* min-w-0 on both halves: a grid item defaults to min-width:auto, so
+          a table wider than its track widens the track instead of scrolling —
+          which is how one overgrown column ends up squeezing the card beside
+          it and pushing its buttons off the edge. */}
       {accounts && (
         <div className="grid gap-5 lg:grid-cols-2">
-          <Card className="p-4">
+          <Card className="min-w-0 p-4">
             <SectionTitle className="mb-1">
               บัญชีในเว็บ ({accounts.length})
             </SectionTitle>
@@ -640,13 +645,13 @@ export default function AdminCustomersPage() {
                 also drops a piece of invalid HTML — the merge control was a
                 button inside a button, which is why it was a span with
                 role="button". Cards below md. */}
-            <div className="hidden md:block">
+            <div className={clsx(adminCards.forTable, adminTable.scroll)}>
               <table className={adminTable.table}>
                 <thead className={adminTable.thead}>
                   <tr>
                     <th>บัญชี</th>
                     <th className="w-44">การผูก</th>
-                    <th className="w-56 text-right">เลือก</th>
+                    <th className="w-44 text-right">เลือก</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -673,9 +678,17 @@ export default function AdminCustomersPage() {
                           <Link
                             href={`/admin/customers/${a.id}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="min-w-0 truncate font-semibold text-brand-ink hover:underline"
+                            title="เปิดหน้าประวัติลูกค้า"
+                            className="flex min-w-0 items-center gap-0.5 font-semibold text-brand-ink hover:underline"
                           >
-                            {a.display_name || "(ไม่มีชื่อ)"}
+                            <span className="truncate">
+                              {a.display_name || "(ไม่มีชื่อ)"}
+                            </span>
+                            <ArrowUpRight
+                              size={12}
+                              className="shrink-0 text-slate-400"
+                              aria-hidden
+                            />
                           </Link>
                           {/* stopPropagation: the row itself selects the
                               account, and editing the name is not that. */}
@@ -734,13 +747,6 @@ export default function AdminCustomersPage() {
                       </td>
                       <td className={adminTable.cell}>
                         <span className="flex flex-wrap items-center justify-end gap-1.5">
-                          <Link
-                            href={`/admin/customers/${a.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-white"
-                          >
-                            ดูประวัติ <ArrowUpRight size={11} />
-                          </Link>
                           {selected === a.id ? (
                             <span className="text-[11px] font-semibold text-brand-800">
                               เลือกอยู่
@@ -927,7 +933,7 @@ export default function AdminCustomersPage() {
             </div>
           </Card>
 
-          <Card className="p-4">
+          <Card className="min-w-0 p-4">
             <SectionTitle className="mb-1">
               ใบลูกค้าใน Shopify ({shopify.length})
             </SectionTitle>
@@ -970,7 +976,7 @@ export default function AdminCustomersPage() {
             {/* Same shape as the accounts beside it: the two lists are read
                 against each other, so they should not be two different
                 things to read. */}
-            <div className="hidden md:block">
+            <div className={clsx(adminCards.forTable, adminTable.scroll)}>
               <table className={adminTable.table}>
                 <thead className={adminTable.thead}>
                   <tr>
