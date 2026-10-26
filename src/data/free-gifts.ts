@@ -152,14 +152,24 @@ export function giftsOf(x: {
   giftVariantId?: string;
   giftProductSlug?: string;
   giftQty?: number;
+  giftTitle?: string;
+  giftImage?: string | null;
+  giftStock?: number | null;
 }): FreeGiftItem[] {
   if (x.gifts?.length) return x.gifts;
   if (!x.giftVariantId && !x.giftProductSlug) return [];
+  // The name, the picture and what is left come along. They live beside the
+  // single gift rather than on it, and leaving them behind turned every promo
+  // written the old way into an unnamed, pictureless "ของแถม" in the cart the
+  // moment the cart started reading gifts through this function.
   return [
     {
       variantId: x.giftVariantId,
       productSlug: x.giftProductSlug || undefined,
       qty: x.giftQty ?? 1,
+      title: x.giftTitle,
+      image: x.giftImage,
+      stock: x.giftStock,
     },
   ];
 }
