@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
+import { storeAdminHandle } from "@/lib/shopify-admin";
 
 // Lists recent one-time custom-checkout purchases (src/app/api/checkout/init)
 // so an admin can find a transaction to refund. Distinct from
@@ -12,7 +13,14 @@ export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
-  if (!supabaseConfigured()) return NextResponse.json({ ok: true, transactions: [] });
+  // The shop's handle travels with the list so the page can link an order
+  // into Shopify's admin. It is read here rather than in the page because the
+  // module that knows it also holds the API credentials, and importing that
+  // from a client component ships the credentials to the browser.
+  const adminHandle = storeAdminHandle("smoothlife");
+
+  if (!supabaseConfigured())
+    return NextResponse.json({ ok: true, transactions: [], adminHandle });
 
   const rows = await supabaseRest<
     {
@@ -33,5 +41,5 @@ export async function GET(req: NextRequest) {
     "payment_transactions?status=in.(success,refunded)&select=id,invoice_no,amount,currency_code,status,shopify_order_id,contact_email,contact_phone,tran_ref,refunded_at,refund_note,created_at,confirmed_at&order=created_at.desc&limit=100"
   );
 
-  return NextResponse.json({ ok: true, transactions: rows });
+  return NextResponse.json({ ok: true, transactions: rows, adminHandle });
 }

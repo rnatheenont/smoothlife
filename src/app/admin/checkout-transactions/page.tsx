@@ -232,8 +232,63 @@ function orderNumber(id: string) {
   return id.startsWith("gid://") ? (id.split("/").pop() ?? id) : id;
 }
 
+/** When the money moved, not when the row was written: a checkout row is
+ *  created the moment someone is sent to the payment page, which on an
+ *  abandoned-then-retried payment is a different time from the one the
+ *  customer's statement will show. `created_at` is the fallback because a
+ *  row written before confirmation was tracked has no other date. */
+function paidAt(tx: Transaction) {
+  return tx.confirmed_at ?? tx.created_at;
+}
+
+/** Date over time, on two lines, because the column is read as a date and
+ *  only checked for the time when two payments land on the same day. */
+function thaiDate(iso: string) {
+  return new Date(iso).toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: "2-digit",
+  });
+}
+
+function thaiTime(iso: string) {
+  return new Date(iso).toLocaleTimeString("th-TH", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** The order number, as a way into Shopify rather than something to copy by
+ *  hand. Without the shop's handle — which the list endpoint sends — there is
+ *  nowhere to point, so it stays the plain number it was. */
+function ShopifyOrderLink({
+  orderId,
+  adminHandle,
+}: {
+  orderId: string;
+  adminHandle: string | null;
+}) {
+  const number = orderNumber(orderId);
+  if (!adminHandle) {
+    return <span className="font-mono text-[12px] text-slate-700">{number}</span>;
+  }
+  return (
+    <a
+      href={`https://admin.shopify.com/store/${adminHandle}/orders/${number}`}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1 font-mono text-[12px] font-semibold text-brand-800 underline decoration-brand-800/30 underline-offset-2 hover:decoration-brand-800"
+    >
+      {number}
+      <ExternalLink size={11} aria-hidden />
+      <span className="sr-only">เปิดใน Shopify</span>
+    </a>
+  );
+}
+
 export default function AdminCheckoutTransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [adminHandle, setAdminHandle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -241,7 +296,10 @@ export default function AdminCheckoutTransactionsPage() {
     try {
       const res = await fetch("/api/admin/checkout-transactions");
       const data = await res.json();
-      if (data.ok) setTransactions(data.transactions);
+      if (data.ok) {
+        setTransactions(data.transactions);
+        setAdminHandle(data.adminHandle ?? null);
+      }
     } finally {
       setLoading(false);
     }
@@ -294,9 +352,12 @@ export default function AdminCheckoutTransactionsPage() {
               <thead className={adminTable.thead}>
                 <tr>
                   <th className="w-44">Invoice</th>
+                  <th className="w-24">วันที่</th>
                   <th>ลูกค้า</th>
                   <th className="w-28 text-right">ยอด</th>
-                  <th className="w-56">Shopify Order</th>
+                  {/* Narrower than it was: the cell used to hold a number to
+                      read off and copy, and now holds a link to follow. */}
+                  <th className="w-40">Shopify Order</th>
                   <th className="w-44">สถานะ</th>
                   <th className="w-64 text-right">คืนเงิน</th>
                 </tr>
@@ -314,6 +375,19 @@ export default function AdminCheckoutTransactionsPage() {
                         )}
                     </td>
                     <td className={adminTable.cell}>
+                      <span className="whitespace-nowrap tabular-nums">
+                        {thaiDate(paidAt(tx))}
+                      </span>
+                      <span className="mt-0.5 block text-[11px] tabular-nums text-slate-400">
+                        {thaiTime(paidAt(tx))}
+                      </span>
+                      {tx.refunded_at && (
+                        <span className="mt-1 block whitespace-nowrap text-[11px] text-slate-400">
+                          คืน {thaiDate(tx.refunded_at)}
+                        </span>
+                      )}
+                    </td>
+                    <td className={adminTable.cell}>
                       {tx.contact_email || "-"}
                       <br />
                       <span className="text-[12px] text-slate-400">
@@ -325,9 +399,10 @@ export default function AdminCheckoutTransactionsPage() {
                     </td>
                     <td className={adminTable.cell}>
                       {tx.shopify_order_id ? (
-                        <span className="font-mono text-[12px] text-slate-700">
-                          {orderNumber(tx.shopify_order_id)}
-                        </span>
+                        <ShopifyOrderLink
+                          orderId={tx.shopify_order_id}
+                          adminHandle={adminHandle}
+                        />
                       ) : (
                         <span className="text-[12px] font-medium text-amber-600">
                           ยังไม่มีออเดอร์ (ตรวจด้วยตนเอง)
@@ -370,6 +445,12 @@ export default function AdminCheckoutTransactionsPage() {
                     <p className="font-mono text-[12px] font-semibold text-brand-ink">
                       {tx.invoice_no}
                     </p>
+                    <p className="mt-0.5 text-[11px] tabular-nums text-slate-400">
+                      {thaiDate(paidAt(tx))} {thaiTime(paidAt(tx))}
+                      {tx.refunded_at
+                        ? ` · คืน ${thaiDate(tx.refunded_at)}`
+                        : ""}
+                    </p>
                     <p className="mt-0.5 text-[11px] text-slate-500">
                       {tx.contact_email || "-"}
                       {tx.contact_phone ? ` · ${tx.contact_phone}` : ""}
@@ -391,8 +472,12 @@ export default function AdminCheckoutTransactionsPage() {
                 </div>
                 <p className="mt-1.5 text-[11px] text-slate-500">
                   {tx.shopify_order_id ? (
-                    <span className="font-mono">
-                      Shopify: {orderNumber(tx.shopify_order_id)}
+                    <span>
+                      Shopify:{" "}
+                      <ShopifyOrderLink
+                        orderId={tx.shopify_order_id}
+                        adminHandle={adminHandle}
+                      />
                     </span>
                   ) : (
                     <span className="font-medium text-amber-600">
