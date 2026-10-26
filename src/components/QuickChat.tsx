@@ -40,11 +40,13 @@ const CHAT_BADGE_PHRASES: [string, string][] = [
 ];
 const CHAT_BADGE_INTERVAL_MS = 11000;
 
-// A signed-in customer coming back gets one hello from Smoothie per visit
-// (per browser tab session), a moment after the page settles. Only when the
-// sign-in was already there on arrival — someone who has just logged in has
-// just been greeted by the login itself.
+// One hello from Smoothie per visit (per browser tab session), a moment after
+// the page settles: by name for a customer whose sign-in was already there on
+// arrival, a plain hello for someone who is not signed in — "welcome" on a
+// first ever visit, "nice to see you again" after that. Someone who logs in
+// mid-visit is not greeted again; the login itself was the hello.
 const WELCOME_KEY = "sl_welcome_back_shown";
+const VISITED_KEY = "sl_visited";
 const WELCOME_DELAY_MS = 1500;
 const WELCOME_SHOW_MS = 9000;
 
@@ -80,35 +82,38 @@ export default function QuickChat() {
   const unread = useChatUnread(open);
 
   const rigRef = useRef<SmoothieRigHandle>(null);
-  // null = no bubble; "" = greet without a name.
-  const [welcomeName, setWelcomeName] = useState<string | null>(null);
+  // null = no bubble. A member's name may be "" (greet without a name).
+  type Welcome = { kind: "member"; name: string } | { kind: "guest"; firstVisit: boolean };
+  const [welcome, setWelcome] = useState<Welcome | null>(null);
   const welcomeChecked = useRef(false);
   useEffect(() => {
-    // Decided once, on the first answer from auth: signed in already → hello.
+    // Decided once, on the first answer from auth.
     if (authLoading || welcomeChecked.current) return;
     welcomeChecked.current = true;
-    if (!user) return;
+    let firstVisit = false;
     try {
       if (sessionStorage.getItem(WELCOME_KEY)) return;
       sessionStorage.setItem(WELCOME_KEY, "1");
+      firstVisit = !localStorage.getItem(VISITED_KEY);
+      localStorage.setItem(VISITED_KEY, "1");
     } catch {
       // Storage blocked (private mode): greeting once per page load is fine.
     }
-    const name = greetingName(user.name);
+    const next: Welcome = user ? { kind: "member", name: greetingName(user.name) } : { kind: "guest", firstVisit };
     // Deliberately not cleared by a cleanup: a re-render of the user object
     // (or Strict Mode's mount-unmount-mount) would cancel the hello for good,
     // since it is decided once. After an unmount the setState is a no-op.
     setTimeout(() => {
-      setWelcomeName(name);
-      rigRef.current?.play("happy");
+      setWelcome(next);
+      rigRef.current?.play(next.kind === "member" ? "happy" : "wave");
     }, WELCOME_DELAY_MS);
   }, [authLoading, user]);
   useEffect(() => {
-    if (welcomeName === null) return;
-    const id = setTimeout(() => setWelcomeName(null), WELCOME_SHOW_MS);
+    if (welcome === null) return;
+    const id = setTimeout(() => setWelcome(null), WELCOME_SHOW_MS);
     return () => clearTimeout(id);
-  }, [welcomeName]);
-  const showWelcome = welcomeName !== null && !open;
+  }, [welcome]);
+  const showWelcome = welcome !== null && !open;
 
   // The tab bar is always there; the buy bar appears only once a product
   // page scrolls past its own button, so the launcher still has to follow
@@ -216,7 +221,7 @@ export default function QuickChat() {
     // close ("X") button could end up stranded wherever it was last dragged,
     // far from the chat panel it's meant to sit next to.
     if (!open) setDragPos({ x: 0, y: 0 });
-    setWelcomeName(null); // opening the chat answers the hello
+    setWelcome(null); // opening the chat answers the hello
     setOpen(!open);
   }
 
@@ -350,7 +355,7 @@ export default function QuickChat() {
           )}
         </button>
 
-        {/* The welcome-back hello: a chat bubble from Smoothie above the
+        {/* The hello: a chat bubble from Smoothie above the
             launcher. Outside the button (it has buttons of its own); tapping
             it opens the chat, the cross just dismisses it. */}
         {showWelcome && (
@@ -369,24 +374,30 @@ export default function QuickChat() {
               <button
                 type="button"
                 onClick={() => {
-                  setWelcomeName(null);
+                  setWelcome(null);
                   setDragPos({ x: 0, y: 0 });
                   setOpen(true);
                 }}
                 className="block text-left"
               >
                 <span className="block text-[13px] font-bold leading-snug text-brand-ink">
-                  {welcomeName
-                    ? t(`ยินดีต้อนรับกลับมานะคะ คุณ${welcomeName}`, `Welcome back, ${welcomeName}!`)
-                    : t("ยินดีต้อนรับกลับมานะคะ", "Welcome back!")}
+                  {welcome?.kind === "member"
+                    ? welcome.name
+                      ? t(`ยินดีต้อนรับกลับมานะคะ คุณ${welcome.name}`, `Welcome back, ${welcome.name}!`)
+                      : t("ยินดีต้อนรับกลับมานะคะ", "Welcome back!")
+                    : welcome?.firstVisit
+                      ? t("สวัสดีค่ะ ยินดีต้อนรับสู่ Smoothlife.com", "Hi! Welcome to Smoothlife.com")
+                      : t("สวัสดีค่ะ ดีใจที่แวะมาอีกนะคะ", "Hi! Nice to see you again")}
                 </span>
                 <span className="mt-0.5 block text-[12px] leading-snug text-slate-500">
-                  {t("วันนี้ให้น้อง Smoothie ช่วยอะไรดีคะ", "What can Smoothie help you with today?")}
+                  {welcome?.kind === "member"
+                    ? t("วันนี้ให้น้อง Smoothie ช่วยอะไรดีคะ", "What can Smoothie help you with today?")
+                    : t("มีอะไรให้น้อง Smoothie ช่วยแนะนำไหมคะ", "Can Smoothie help you find something?")}
                 </span>
               </button>
               <button
                 type="button"
-                onClick={() => setWelcomeName(null)}
+                onClick={() => setWelcome(null)}
                 aria-label={t("ปิด", "Close")}
                 className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
               >
