@@ -1543,17 +1543,22 @@ export default function AdminFreeGiftsPage() {
                     </div>
                 </div>
               )}
-              {/* 3. ของแถม (spend/bxgy only — tiered sets gift per level above) */}
-              {form.kind !== "tiered" && form.rewardType === "gift" && (
+              {/* 3. The reward itself. A campaign that discounts the order
+                  still has to say by how much — gating the whole section on
+                  "gift" left the ลดท้ายบิล campaigns with nowhere to type a
+                  percentage and a Save button that could never enable. */}
+              {form.kind !== "tiered" && (
                 <div>
                   <p className="text-xs font-bold text-brand-ink mb-2">
-                    3. สินค้าที่จะแถมฟรี
+                    {form.rewardType === "order_discount" ? "3. ส่วนลดท้ายบิล" : "3. สินค้าที่จะแถมฟรี"}
                   </p>
                   {/* The shop's free-gift shelf, not the catalogue: every gift
                       is UNLISTED in Shopify on purpose and none of them appears
                       in the catalogue the other picker reads. */}
                   <DiscountTypeField
-                    label="ประเภทของรางวัล"
+                    label={
+                      form.rewardType === "order_discount" ? "ลดเท่าไหร่" : "ประเภทของรางวัล"
+                    }
                     type={form.discountType}
                     value={form.discountValue}
                     onChange={(discountType, discountValue) =>
@@ -1564,12 +1569,16 @@ export default function AdminFreeGiftsPage() {
                       })
                     }
                   />
-                  <div className="h-2" />
-                  <GiftListField
-                    label="ของแถมที่ลูกค้าจะได้รับ"
-                    gifts={form.gifts}
-                    onChange={(gifts) => setForm({ ...form, gifts })}
-                  />
+                  {form.rewardType === "gift" && (
+                    <>
+                      <div className="h-2" />
+                      <GiftListField
+                        label="ของแถมที่ลูกค้าจะได้รับ"
+                        gifts={form.gifts}
+                        onChange={(gifts) => setForm({ ...form, gifts })}
+                      />
+                    </>
+                  )}
                 </div>
               )}
 
