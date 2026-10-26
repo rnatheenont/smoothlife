@@ -283,12 +283,12 @@ export default function QuickChat() {
                     is computed (see updateTailPosition) to line up with
                     the mascot's actual center, not a guessed constant. */}
                 <span
-                  className="absolute -bottom-1 z-0 h-3 w-3 rotate-45 rounded-[2px] bg-brand-gradient"
+                  className="absolute -bottom-1 z-0 h-3 w-3 rotate-45 rounded-[2px] bg-brand-800"
                   style={{ left: tailLeft }}
                 />
                 <span
                   ref={badgeBubbleRef}
-                  className="relative z-10 block whitespace-nowrap rounded-2xl bg-brand-gradient px-2.5 py-1.5 text-[11px] font-bold leading-none text-white shadow-md"
+                  className="relative z-10 block whitespace-nowrap rounded-2xl bg-brand-800 px-2.5 py-1.5 text-[11px] font-bold leading-none text-white shadow-md"
                 >
                   {t(...CHAT_BADGE_PHRASES[badgeIndex])}
                 </span>
