@@ -151,3 +151,21 @@ export function contentForTranscript(content: string): string {
   const idx = markerIndex(content);
   return idx === -1 ? content : content.slice(0, idx).trimEnd();
 }
+
+/**
+ * Hides a marker that is still arriving at the end of a streaming reply.
+ *
+ * Product cards are written as "[[slug]]" and the renderer only recognises
+ * the finished thing, so while a reply streams there is a moment where the
+ * bubble literally reads "...ลองตัวนี้ได้ค่ะ [[cerave" — caught on
+ * production at 5.4 seconds into a real answer. Older than the heading and
+ * nothing to do with it; the same character-by-character reveal exposes both.
+ *
+ * Only a run at the very end with no closing bracket in it, so a finished
+ * "[[slug]]" and ordinary bracketed text such as "[ลด 20%]" are untouched.
+ * Only while streaming: a malformed marker in a finished reply is a real
+ * mistake and showing it is how anyone finds out.
+ */
+export function trimPartialMarker(text: string): string {
+  return text.replace(/\[{1,2}[^\]\n]*$/, "");
+}

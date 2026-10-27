@@ -22,7 +22,7 @@ import { useLang } from "@/lib/lang-context";
 import type { useChatSession } from "@/lib/use-chat-session";
 import { PHOTO_MARKER } from "@/lib/chat-image-store";
 import { renderMessageContent } from "@/components/chat/ChatMessageContent";
-import { splitTopic } from "@/lib/chat-markers";
+import { splitTopic, trimPartialMarker } from "@/lib/chat-markers";
 import { Avatar, Button } from "@/components/ui";
 
 // The conversation itself — everything from the escalation banner down to the
@@ -90,7 +90,12 @@ const SIZES = {
  */
 function AssistantBubble({ content, streaming }: { content: string; streaming: boolean }) {
   const { t } = useLang();
-  const { topic, body, pending } = splitTopic(content);
+  const split = splitTopic(content);
+  const { topic, pending } = split;
+  // While the reply is still arriving, a product card that is half-written
+  // ("[[cerave") is held back until its closing brackets land, rather than
+  // shown as the brackets themselves for a frame or two.
+  const body = streaming ? trimPartialMarker(split.body) : split.body;
   // The heading is written before the catalogue search, so there is a real
   // couple of seconds where the bubble holds a heading and nothing else. Left
   // bare it reads as a reply that stopped halfway; this says what the pause

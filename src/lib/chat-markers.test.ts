@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { splitTopic, splitMarker, contentForTranscript } from "./chat-markers.ts";
+import { splitTopic, splitMarker, contentForTranscript, trimPartialMarker } from "./chat-markers.ts";
 
 // The heading a reply opens with. It is the only marker that leads rather
 // than trails, and it is read while the reply is still arriving, so the
@@ -88,4 +88,16 @@ test("a half-written repeat does not swallow the answer", () => {
 test("the closing bracket never shows up inside the heading", () => {
   assert.equal(splitTopic("[[TOPIC: กันแดด]").topic, "กันแดด");
   assert.equal(splitTopic("[[TOPIC: กันแดด]").pending, true);
+});
+
+test("a product card still arriving is not shown as brackets", () => {
+  assert.equal(trimPartialMarker("ลองตัวนี้ได้ค่ะ\n[[cerave"), "ลองตัวนี้ได้ค่ะ\n");
+  assert.equal(trimPartialMarker("ลองตัวนี้ได้ค่ะ\n["), "ลองตัวนี้ได้ค่ะ\n");
+});
+
+test("a finished card and ordinary brackets are left alone", () => {
+  const done = "ลองตัวนี้ได้ค่ะ\n[[cerave-foam]]";
+  assert.equal(trimPartialMarker(done), done);
+  const prose = "ราคา [ลด 20%] ค่ะ";
+  assert.equal(trimPartialMarker(prose), prose);
 });
