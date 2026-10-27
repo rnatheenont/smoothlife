@@ -89,6 +89,8 @@ type FormState = {
   /** This campaign's own widget look. Empty object = follow the shop-wide
    *  default, which is what every campaign does until somebody changes one. */
   widgetStyle: Record<string, unknown>;
+  /** Whether reaching a higher rung replaces the lower ones or adds to them. */
+  tierMode: "cumulative" | "highest";
 };
 
 const EMPTY_TIER_ROW: TierFormRow = {
@@ -125,6 +127,7 @@ const EMPTY_FORM: FormState = {
   firstOrderOnly: false,
   minQty: "",
   widgetStyle: {},
+  tierMode: "highest",
 };
 
 /** What the API is told about one chosen gift. The name and picture are for
@@ -682,6 +685,7 @@ export default function AdminFreeGiftsPage() {
         firstOrderOnly: form.firstOrderOnly,
         minQty: form.minQty ? Number(form.minQty) : null,
         widgetStyle: Object.keys(form.widgetStyle).length > 0 ? form.widgetStyle : null,
+        tierMode: form.tierMode,
       };
       const url = editingId
         ? `/api/admin/free-gifts/${editingId}`
@@ -740,6 +744,7 @@ export default function AdminFreeGiftsPage() {
       firstOrderOnly: p.firstOrderOnly === true,
       minQty: p.minQty != null ? String(p.minQty) : "",
       widgetStyle: p.widgetStyle ?? {},
+      tierMode: p.tierMode === "cumulative" ? "cumulative" : "highest",
     });
     setFormError("");
     setShowAdvanced(false);
@@ -1634,9 +1639,58 @@ export default function AdminFreeGiftsPage() {
                   </p>
                     <div className="space-y-3">
                       <label className="block text-[11px] text-slate-400">
-                        ตั้งระดับยอดซื้อ → ของแถมของระดับนั้น (เรียงจากน้อยไปมาก
-                        ระดับหลังจะได้ของแถมของระดับก่อนหน้าด้วย)
+                        ตั้งระดับยอดซื้อ → ของแถมของระดับนั้น (เรียงจากน้อยไปมาก)
                       </label>
+
+                      {/* The one thing a ladder has to say and this form never
+                          did: whether a higher rung replaces the lower ones or
+                          stacks on them. A campaign with 2 gifts at ฿699 and 4
+                          at ฿1,599 hands over four or six depending on the
+                          answer, and it was being decided by a column default
+                          nobody could see — the label above even stated the
+                          stacking one as a fact. */}
+                      <div className="rounded-lg bg-surface-soft p-2">
+                        <p className="mb-1.5 text-[11px] font-semibold text-brand-ink">
+                          ลูกค้าที่ผ่านหลายระดับจะได้อะไร
+                        </p>
+                        <div className="space-y-1.5">
+                          {(
+                            [
+                              [
+                                "highest",
+                                "ได้เฉพาะระดับสูงสุดที่ถึง",
+                                "ครบ ฿1,599 ได้ของระดับ 2 อย่างเดียว (แบบเดียวกับแอป AOV)",
+                              ],
+                              [
+                                "cumulative",
+                                "ได้ของทุกระดับที่ผ่าน",
+                                "ครบ ฿1,599 ได้ของระดับ 1 + ระดับ 2 รวมกัน",
+                              ],
+                            ] as const
+                          ).map(([value, label, hint]) => (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => setForm({ ...form, tierMode: value })}
+                              className="flex w-full items-start gap-2 text-left"
+                            >
+                              <span
+                                className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border-2 ${
+                                  form.tierMode === value ? "border-brand-teal" : "border-slate-300"
+                                }`}
+                              >
+                                {form.tierMode === value && (
+                                  <span className="size-2 rounded-full bg-brand-gradient" />
+                                )}
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block text-[11px] font-semibold text-brand-ink">{label}</span>
+                                <span className="block text-[10px] leading-snug text-slate-400">{hint}</span>
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                       {form.tiers.map((tier, i) => (
                         <div
                           key={i}
@@ -1772,6 +1826,13 @@ export default function AdminFreeGiftsPage() {
                       {describeCondition(form)}
                       {form.kind !== "tiered" && ` → รับฟรี ${describeGifts(form.gifts, shelfNameFor)}`}
                     </p>
+                    {form.kind === "tiered" && (
+                      <p className="mt-1 text-[10px] font-semibold text-brand-800">
+                        {form.tierMode === "highest"
+                          ? "ผ่านหลายระดับ → ได้เฉพาะระดับสูงสุด"
+                          : "ผ่านหลายระดับ → ได้ของทุกระดับรวมกัน"}
+                      </p>
+                    )}
                     {form.kind === "tiered" && (
                       <ul className="mt-1 space-y-0.5">
                         {form.tiers.map((t, i) => (

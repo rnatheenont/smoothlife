@@ -20,6 +20,9 @@ export type GiftChoice = {
   title: string;
   image: string | null;
   stock: number;
+  /** The warehouse's name for it. Whoever is setting a campaign up is often
+   *  holding a stock sheet, where the product has a code and not a name. */
+  sku?: string | null;
 };
 
 /** "[Free Gift] Smooth E …" is a naming habit; the prefix is noise in a picker of gifts. */
@@ -84,8 +87,15 @@ export default function GiftPicker({
     const sorted = [...all].sort(
       (a, b) => (b.stock > 0 ? 1 : 0) - (a.stock > 0 ? 1 : 0),
     );
+    // Name or SKU. A gift's display name is written for shoppers and a stock
+    // sheet never carries it, so searching by name alone meant reading the
+    // list for a code that was right there on the row.
     return term
-      ? sorted.filter((g) => g.title.toLowerCase().includes(term))
+      ? sorted.filter(
+          (g) =>
+            g.title.toLowerCase().includes(term) ||
+            (g.sku ?? "").toLowerCase().includes(term),
+        )
       : sorted;
   }, [gifts, q]);
 
@@ -110,7 +120,7 @@ export default function GiftPicker({
           className="w-full"
           value={q}
           onChange={setQ}
-          placeholder={`ค้นหาของแถม (${gifts.length} รายการ)`}
+          placeholder={`ค้นหาด้วยชื่อหรือ SKU (${gifts.length} รายการ)`}
         />
       </div>
       <ul className="max-h-64 overflow-y-auto">
@@ -138,8 +148,14 @@ export default function GiftPicker({
                     />
                   )}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-xs text-brand-ink">
-                  {giftName(g.title)}
+                <span className="min-w-0 flex-1 text-xs text-brand-ink">
+                  <span className="block truncate">{giftName(g.title)}</span>
+                  {/* Shown, not only searchable: the code is what gets read
+                      back to the warehouse, and a picker that matches on it
+                      silently leaves the operator unsure they picked right. */}
+                  {g.sku && (
+                    <span className="block truncate font-mono text-[10px] text-slate-400">{g.sku}</span>
+                  )}
                 </span>
                 <span
                   className={`shrink-0 text-[11px] font-bold tabular-nums ${

@@ -19,6 +19,7 @@ export type CampaignSettings = {
   first_order_only: boolean;
   min_qty: number | null;
   widget_style: Record<string, unknown> | null;
+  tier_mode: "cumulative" | "highest";
 };
 
 const strings = (v: unknown): string[] =>
@@ -53,5 +54,10 @@ export function campaignSettings(body: Record<string, unknown>): CampaignSetting
       body.widgetStyle && typeof body.widgetStyle === "object" && !Array.isArray(body.widgetStyle)
         ? (body.widgetStyle as Record<string, unknown>)
         : null,
+    // Which rungs pay. The app on Shopify pays only the highest reached and
+    // so does this by default — a ladder where every rung also hands over
+    // everything below it gives away far more than the operator read on the
+    // screen, and nothing in the form used to say which it was.
+    tier_mode: body.tierMode === "cumulative" ? "cumulative" : "highest",
   };
 }

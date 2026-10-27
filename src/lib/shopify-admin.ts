@@ -2769,6 +2769,9 @@ export type GiftStockItem = {
   /** What the gift is worth if it were sold — several are priced normally and zeroed by the app. */
   price: number;
   stock: number;
+  /** The warehouse's name for it. Staff setting a campaign up are usually
+   *  holding a SKU from a stock sheet, not the product's display name. */
+  sku: string | null;
 };
 
 const giftStockCache = { at: 0, items: [] as GiftStockItem[] };
@@ -2800,7 +2803,7 @@ export async function freeGiftProducts(): Promise<GiftStockItem[]> {
             title: string;
             status: string;
             featuredImage: { url: string } | null;
-            variants: { nodes: { id: string; price: string; inventoryQuantity: number | null }[] };
+            variants: { nodes: { id: string; price: string; sku: string | null; inventoryQuantity: number | null }[] };
           }[];
           pageInfo: { hasNextPage: boolean; endCursor: string | null };
         };
@@ -2811,7 +2814,7 @@ export async function freeGiftProducts(): Promise<GiftStockItem[]> {
                title
                status
                featuredImage { url }
-               variants(first: 1) { nodes { id price inventoryQuantity } }
+               variants(first: 1) { nodes { id price sku inventoryQuantity } }
              }
              pageInfo { hasNextPage endCursor }
            }
@@ -2828,6 +2831,7 @@ export async function freeGiftProducts(): Promise<GiftStockItem[]> {
           image: node.featuredImage?.url ?? null,
           price: Number(variant.price) || 0,
           stock: Number(variant.inventoryQuantity ?? 0),
+          sku: variant.sku ?? null,
         });
       }
       if (!data.products?.pageInfo?.hasNextPage) break;
