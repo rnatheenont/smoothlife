@@ -119,14 +119,51 @@ export default function ShopFilters({
     router.push(`/shop?${params.toString()}`);
   }
 
+  // How many filters are on. Brand, concern and promo are comma lists, so
+  // three brands is three filters, not one — the number has to match what a
+  // shopper can see ticked or it is worse than no number.
+  const activeFilterCount =
+    activeBrands.length +
+    activeConcerns.length +
+    activePromos.length +
+    (current.category ? 1 : 0) +
+    (current.rating ? 1 : 0) +
+    (current.minPrice || current.maxPrice ? 1 : 0);
+
+  function clearAllFilters() {
+    setMinPrice("");
+    setMaxPrice("");
+    router.push(pathname);
+  }
+
   const content = (
     <div className="flex flex-col gap-6">
+      {/* Said at the top, where the filters start, rather than at the bottom
+          of a column long enough to scroll past. Somebody looking at a short
+          list of products wants to know what narrowed it and how to undo
+          that, and both answers were below the fold. */}
+      {activeFilterCount > 0 && (
+        <div className="flex items-center justify-between gap-2 rounded-lg bg-brand-gradient-soft px-3 py-2">
+          <span className="text-xs font-semibold text-brand-800">
+            ใช้ตัวกรองอยู่ {activeFilterCount} รายการ
+          </span>
+          <button
+            onClick={clearAllFilters}
+            className="shrink-0 text-xs font-bold text-brand-800 underline underline-offset-2 hover:text-brand-1000"
+          >
+            ล้างทั้งหมด
+          </button>
+        </div>
+      )}
       {/* No category list here. The circle row at the top of the page is the
           category control on every screen size, and a second list in the
           sidebar meant two controls for one choice sitting 200px apart, each
           having to mirror the other's state. */}
       <div>
         <h4 className="text-sm font-bold text-brand-ink mb-3">แบรนด์</h4>
+        <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+          แบรนด์ในเครือ
+        </p>
         <label className="mb-2 flex items-center gap-2 rounded-lg border border-surface-line px-2.5 py-1.5">
           <Search size={14} className="shrink-0 text-slate-400" aria-hidden="true" />
           <input
@@ -139,18 +176,32 @@ export default function ShopFilters({
         <div className="flex flex-col gap-0.5">
           {houseBrands.map((b) => {
             const selected = activeBrands.includes(b.slug);
+            // Nothing behind it to show. Still listed, because a brand that
+            // vanishes when another filter is on is a brand the shopper
+            // thinks the shop stopped carrying — but not pressable, because
+            // pressing it could only ever produce an empty page. A selected
+            // one stays pressable whatever the count, or there would be no
+            // way back out of it.
+            const empty = Boolean(counts) && !selected && (counts!.brand[b.slug] ?? 0) === 0;
             return (
               <button
                 key={b.slug}
                 onClick={() => toggleIn("brand", b.slug)}
+                disabled={empty}
                 className={clsx(
                   "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-bold transition-colors",
+                  empty && "cursor-not-allowed opacity-40",
                   selected ? "bg-brand-gradient-soft text-brand-800" : "text-brand-ink hover:bg-surface-soft"
                 )}
               >
                 <span
                   className={clsx(
-                    "grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 transition-colors",
+                    // A square, like every other brand below. It was a circle,
+                    // which is the shape the whole web uses for "pick exactly
+                    // one" — and these three multi-select exactly like the
+                    // rest, through the same toggleIn. The shape was telling
+                    // shoppers the opposite of what the control did.
+                    "grid h-4 w-4 shrink-0 place-items-center rounded-sm border-2 transition-colors",
                     selected ? "border-brand-emerald bg-brand-emerald" : "border-slate-300"
                   )}
                 >
@@ -161,18 +212,26 @@ export default function ShopFilters({
               </button>
             );
           })}
-          <div className="my-1.5 border-t border-slate-100" />
+          {/* A rule with nothing written on it made the split look like a
+              rule about *how* the two groups behave. It is only about whose
+              brands they are, so it says so. */}
+          <p className="mt-3 mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            แบรนด์อื่น
+          </p>
           <div className="flex flex-col gap-0.5">
             {visibleOtherBrands
               .filter((b) => !brandQuery || b.name.toLowerCase().includes(brandQuery.toLowerCase()))
               .map((b) => {
               const selected = activeBrands.includes(b.slug);
+              const empty = Boolean(counts) && !selected && (counts!.brand[b.slug] ?? 0) === 0;
               return (
                 <button
                   key={b.slug}
                   onClick={() => toggleIn("brand", b.slug)}
+                  disabled={empty}
                   className={clsx(
                     "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm shrink-0 transition-colors",
+                    empty && "cursor-not-allowed opacity-40",
                     selected ? "bg-brand-gradient-soft font-semibold text-brand-800" : "text-slate-600 hover:bg-surface-soft"
                   )}
                 >
@@ -241,12 +300,18 @@ export default function ShopFilters({
         <div className="flex flex-col gap-0.5">
           {PROMO_FILTERS.map((f) => {
             const on = activePromos.includes(f.key);
+            // Same rule as the brands above: an option that can only produce
+            // an empty page is shown, so the shopper can see the shop has
+            // the idea of it, but not pressed.
+            const empty = Boolean(counts) && !on && (counts!.promo[f.key] ?? 0) === 0;
             return (
               <button
                 key={f.key}
                 onClick={() => togglePromo(f.key)}
+                disabled={empty}
                 className={clsx(
                   "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
+                  empty && "cursor-not-allowed opacity-40",
                   on ? "bg-brand-gradient-soft font-semibold text-brand-800" : "text-slate-600 hover:bg-surface-soft"
                 )}
               >
@@ -302,12 +367,15 @@ export default function ShopFilters({
         <div className="flex flex-col gap-0.5">
           {concerns.map((c) => {
             const on = activeConcerns.includes(c.slug);
+            const empty = Boolean(counts) && !on && (counts!.concern[c.slug] ?? 0) === 0;
             return (
               <button
                 key={c.slug}
                 onClick={() => toggleIn("concern", c.slug)}
+                disabled={empty}
                 className={clsx(
                   "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
+                  empty && "cursor-not-allowed opacity-40",
                   on ? "bg-brand-gradient-soft font-semibold text-brand-800" : "text-slate-600 hover:bg-surface-soft"
                 )}
               >
@@ -326,18 +394,8 @@ export default function ShopFilters({
           })}
         </div>
       </div>
-      {(current.category || current.brand || current.concern || current.promo || current.rating || current.minPrice || current.maxPrice) && (
-        <button
-          onClick={() => {
-            setMinPrice("");
-            setMaxPrice("");
-            router.push(pathname);
-          }}
-          className="rounded-full bg-brand-800 py-2.5 text-sm font-semibold text-white"
-        >
-          ล้างตัวกรอง
-        </button>
-      )}
+      {/* The clear control lives at the top of this column now — see the
+          summary row up there. One control, one place. */}
     </div>
   );
 
