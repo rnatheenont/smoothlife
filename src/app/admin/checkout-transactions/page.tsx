@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Copy,
   Check,
+  Search,
 } from "lucide-react";
 import { formatTHB } from "@/lib/format";
 import { Badge, Modal } from "@/components/ui";
@@ -379,6 +380,39 @@ export default function AdminCheckoutTransactionsPage() {
     disabled: loading,
   });
 
+  /**
+   * What the page is showing out of what it loaded.
+   *
+   * Twenty-six rows fit on a screen; two hundred do not, and the question an
+   * admin arrives with is almost always about one payment they can name —
+   * an invoice from an email, an order number from a chat, a customer's
+   * address. Reading down the list for it is the thing this replaces.
+   */
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "success" | "refunded" | "portal" | "shopify">("all");
+
+  const term = query.trim().toLowerCase();
+  const shown = transactions.filter((tx) => {
+    if (filter === "success" && tx.status !== "success") return false;
+    if (filter === "refunded" && tx.status !== "refunded") return false;
+    // The two refund routes are the split the page is actually organised
+    // around: one is a button here, the other is a trip to 2C2P's portal.
+    if (filter === "portal" && refundRouteFor(tx.tran_ref) !== "portal") return false;
+    if (filter === "shopify" && refundRouteFor(tx.tran_ref) !== "shopify") return false;
+    if (!term) return true;
+    // Everything an admin might be holding when they open this page.
+    return [tx.invoice_no, tx.order_name, tx.tran_ref, tx.contact_email, tx.contact_phone, String(tx.amount)]
+      .some((v) => (v ?? "").toLowerCase().includes(term));
+  });
+
+  const FILTERS = [
+    ["all", "ทั้งหมด", transactions.length],
+    ["success", "สำเร็จ", transactions.filter((t) => t.status === "success").length],
+    ["refunded", "คืนเงินแล้ว", transactions.filter((t) => t.status === "refunded").length],
+    ["portal", "ต้องคืนใน 2C2P", transactions.filter((t) => refundRouteFor(t.tran_ref) === "portal").length],
+    ["shopify", "คืนได้ใน Shopify", transactions.filter((t) => refundRouteFor(t.tran_ref) === "shopify").length],
+  ] as const;
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
@@ -388,17 +422,58 @@ export default function AdminCheckoutTransactionsPage() {
         actions={
           transactions.length > 0 && (
             <span className="rounded-full bg-brand-50 px-3 py-1 text-[11px] font-semibold text-brand-800">
-              {transactions.length} รายการ
+              {shown.length === transactions.length
+                ? `${transactions.length} รายการ`
+                : `${shown.length} จาก ${transactions.length} รายการ`}
             </span>
           )
         }
       />
+
+      {!loading && transactions.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-xl2 bg-white p-3 shadow-card sm:flex-row sm:items-center">
+          <label className="relative min-w-0 flex-1">
+            <Search
+              size={14}
+              aria-hidden
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ค้นหา invoice, เลขออเดอร์, อีเมล, เบอร์, ยอด…"
+              aria-label="ค้นหารายการชำระเงิน"
+              className="w-full rounded-full border border-surface-line bg-white py-2 pl-9 pr-3 text-xs text-brand-ink"
+            />
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {FILTERS.map(([key, label, count]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilter(key)}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
+                  filter === key ? "bg-brand-gradient text-white" : "bg-surface-soft text-slate-500"
+                }`}
+              >
+                {label} <span className="opacity-70">{count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด…</p>
       ) : transactions.length === 0 ? (
         <p className="rounded-xl2 border border-slate-100 bg-white py-10 text-center text-sm text-slate-400">
           ยังไม่มีรายการ
+        </p>
+      ) : shown.length === 0 ? (
+        // A search that matches nothing is not the same as an empty page, and
+        // saying "ยังไม่มีรายการ" here would read as the data having gone.
+        <p className="rounded-xl2 border border-slate-100 bg-white py-10 text-center text-sm text-slate-400">
+          ไม่พบรายการที่ตรงกับที่ค้นหา
         </p>
       ) : (
         <Panel>
@@ -433,7 +508,7 @@ export default function AdminCheckoutTransactionsPage() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((tx) => (
+                {shown.map((tx) => (
                   <tr key={tx.id} className={adminTable.row}>
                     <td className={adminTable.mono}>
                       {tx.invoice_no}
@@ -509,7 +584,7 @@ export default function AdminCheckoutTransactionsPage() {
           </div>
 
           <ul className="divide-y divide-slate-100 xl:hidden">
-            {transactions.map((tx) => (
+            {shown.map((tx) => (
               <li key={tx.id} className="p-3">
                 <div className="flex items-start justify-between gap-2">
                   {/* flex-1, or the text block stays as narrow as its longest
