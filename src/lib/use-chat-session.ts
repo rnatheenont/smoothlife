@@ -52,9 +52,14 @@ function hydrateHistory(
       image: m.image ?? m.attachmentUrl ?? undefined,
     };
     if (m.role !== "assistant") return withSender;
-    const { text, kind, options } = splitMarker(m.content);
+    const { text, topic, kind, options } = splitMarker(m.content);
     if (kind === "ask" && i === raw.length - 1) ask = options;
-    return { ...withSender, content: text || m.content };
+    // The heading is put back in front of the text rather than stripped,
+    // because the streaming path hands the bubble the raw marker too. One
+    // shape reaches the renderer from both directions, so a reply looks the
+    // same while it arrives and tomorrow when it is read again.
+    const display = topic ? `[[TOPIC: ${topic}]]\n${text}` : text;
+    return { ...withSender, content: display || m.content };
   });
   return { messages: attachStoredImages(messages), ask };
 }
@@ -527,8 +532,24 @@ export function useChatSession({ active, viewingSlug }: ChatSessionOptions) {
       let full = "";
       let shown = 0;
       let netDone = false;
+      // The reply is revealed a few characters at a time so it reads as
+      // someone typing rather than as a wall of text appearing.
+      //
+      // It used to be a flat 3 characters every 16ms — 187 a second, with no
+      // way to catch up. The model streams faster than that, so on a long
+      // answer the animation fell further and further behind the data: a
+      // 1,200-character reply finished arriving in about two seconds and
+      // then took another four to finish *appearing*. That is not a slow
+      // assistant, it is a slow curtain, and it was most of why the chat
+      // felt slow.
+      //
+      // So the floor stays and a catch-up is added: whatever is already here
+      // but unseen drains over about CATCH_UP_TICKS ticks. Short replies are
+      // unaffected (the backlog never exceeds the floor), long ones type
+      // quickly instead of lagging, and nothing ever lands as one block.
       const CHARS_PER_TICK = 3;
       const TICK_MS = 16;
+      const CATCH_UP_TICKS = 8;
       // The model may tack on a trailing "[[SUGGEST: ...]]" or "[[ASK: ...]]"
       // marker (see route.ts) that must never flash on screen as raw bracket
       // text — the two are mutually exclusive per reply (SUGGEST for
@@ -561,7 +582,8 @@ export function useChatSession({ active, viewingSlug }: ChatSessionOptions) {
         while (shown < visibleTarget() || !netDone) {
           const target = visibleTarget();
           if (shown < target) {
-            shown = Math.min(target, shown + CHARS_PER_TICK);
+            const step = Math.max(CHARS_PER_TICK, Math.ceil((target - shown) / CATCH_UP_TICKS));
+            shown = Math.min(target, shown + step);
             setMessages([...next, { role: "assistant", content: full.slice(0, shown) }]);
           }
           await new Promise((r) => setTimeout(r, TICK_MS));
