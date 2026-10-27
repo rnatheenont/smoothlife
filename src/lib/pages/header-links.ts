@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+// Re-exported so server-side callers keep one import. Client components must
+// import it from ./header-links-defaults directly — coming through here drags
+// zod into the browser bundle, which is what the split exists to prevent.
+export { HEADER_LINKS_DEFAULT } from "./header-links-defaults.ts";
+import { HEADER_LINKS_DEFAULT } from "./header-links-defaults.ts";
+
 // The shop's own navigation: the bar under the search box on a wide screen,
 // and the drawer behind the hamburger on a narrow one.
 //
@@ -51,44 +57,6 @@ export const headerLinksSchema = z.object({
 export type HeaderLinks = z.infer<typeof headerLinksSchema>;
 
 export const HEADER_SECTION = "header_links";
-
-export const HEADER_LINKS_DEFAULT: HeaderLinks = {
-  desk: [
-    { href: "/brands", th: "แบรนด์ทั้งหมด", en: "All brands", mega: true },
-    { href: "/shop", th: "สินค้าแนะนำ", en: "Recommended", mega: false },
-    // The skin check the tab bar has had on a phone from the start: on a wide
-    // screen it was reachable only from the home page, which is the one place
-    // somebody who has already started shopping is not.
-    { href: "/advisor", th: "ประเมินผิว", en: "Skin Check", mega: false },
-    { href: "/knowledge", th: "บทความ", en: "Articles", mega: false },
-    // เซ็ตสมาชิก and โปรโมชั่น are out of the navigation for now, by
-    // request — the same way the affiliate link left it. Out of the drawer
-    // below as well: the drawer is a superset of this row, not a second
-    // opinion about it, and a destination that is hidden on a desktop and
-    // offered on a phone is not hidden. Both pages still exist and still
-    // work, and this is four lines to put back.
-  ],
-  deskUtility: [
-    // Labelled "คำถามที่พบบ่อย" and pointed at /help, which is the help hub
-    // and not that page. /faq is now the page with that name on it.
-    { href: "/faq", th: "คำถามที่พบบ่อย", en: "FAQ" },
-    // The affiliate programme is out of the navigation for now, by request.
-    // The page itself is still there and still works — this is one line to
-    // put back when it is ready to be pushed again.
-  ],
-  drawer: [
-    { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: "grid" },
-    { href: "/brands", th: "แบรนด์ทั้งหมด", en: "All brands", icon: "tag" },
-    { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern", icon: "droplets" },
-    { href: "/advisor", th: "ประเมินผิว", en: "Skin Check", icon: "scan" },
-    { href: "/ai-assistant", th: "ผู้ช่วย AI", en: "AI Assistant", icon: "sparkles" },
-    { href: "/knowledge", th: "ความรู้ความงาม", en: "Beauty Knowledge", icon: "book" },
-    { href: "/account/wishlist", th: "รายการโปรด", en: "Wishlist", icon: "heart" },
-    { href: "/about", th: "ทำไมต้อง Smooth Life", en: "Why Smooth Life", icon: "shield" },
-    { href: "/faq", th: "คำถามที่พบบ่อย", en: "FAQ", icon: "help" },
-    { href: "/help", th: "ช่วยเหลือ", en: "Help", icon: "help" },
-  ],
-};
 
 /** A link with no address or no Thai label is a gap in a navigation bar.
  *  Each list falls back on its own, so a mistake in the drawer does not take

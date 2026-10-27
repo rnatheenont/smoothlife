@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { navIcon } from "@/components/icons/NavIcons";
-import { HEADER_LINKS_DEFAULT, type HeaderLinks } from "@/lib/pages/header-links";
+import { HEADER_LINKS_DEFAULT } from "@/lib/pages/header-links-defaults";
+import type { HeaderLinks } from "@/lib/pages/header-links";
 import Image from "next/image";
 import { shopifyImage } from "@/lib/shopify-image";
 import { useRouter } from "next/navigation";

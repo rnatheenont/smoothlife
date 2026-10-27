@@ -27,6 +27,17 @@ const src = path.join(root, "src");
  *  work any other way — in which case say which page, here. */
 const LITE_BUDGET = 0;
 
+/** zod is ~94 KB over the wire, and it is a server-and-admin tool: parsing a
+ *  page document, validating an API body, backing the admin editor's forms.
+ *
+ *  It reached every shopper's first load once, and not because anyone put it
+ *  there — the header, the tab bar, the footer and the contact page each
+ *  wanted one constant, and that constant shared a module with the schema
+ *  next to it. Importing the links imported the validator. The constants now
+ *  live in their own *-defaults.ts files, and this is what stops them
+ *  drifting back. */
+const ZOD_BUDGET = 0;
+
 const FORBIDDEN = /products\.generated\.ts$|product-details\.ts$/;
 // The card catalogue and the collection lists: ~650 KB and ~180 KB of data
 // that a page should be handed, not download.
@@ -74,6 +85,31 @@ const isClient = (f) => /^\s*['"]use client['"]/.test(fs.readFileSync(f, "utf8")
  *  it likes, and nobody shopping ever loads it. */
 const isAdmin = (f) => f.includes("/app/admin/") || f.includes("/components/admin/");
 
+/** Bare `import ... from "zod"` — resolve() only follows relative and @/
+ *  specifiers, so a package import needs looking for by name. */
+const importsZod = (f) =>
+  /(?:^|\n)\s*import\s+(?!type\s)[^'"]*?from\s+['"]zod['"]/.test(fs.readFileSync(f, "utf8"));
+
+function chainToZod(entry) {
+  const from = new Map([[entry, null]]);
+  const queue = [entry];
+  while (queue.length) {
+    const file = queue.shift();
+    if (importsZod(file)) {
+      const chain = [];
+      for (let f = file; f; f = from.get(f)) chain.unshift(path.relative(src, f));
+      return [...chain, "zod"];
+    }
+    for (const next of deps(file)) {
+      if (!from.has(next)) {
+        from.set(next, file);
+        queue.push(next);
+      }
+    }
+  }
+  return null;
+}
+
 function chainTo(entry, target) {
   const from = new Map([[entry, null]]);
   const queue = [entry];
@@ -97,11 +133,14 @@ function chainTo(entry, target) {
 const entries = files.filter((f) => isClient(f) && !isAdmin(f));
 const forbidden = [];
 const lite = [];
+const zod = [];
 for (const entry of entries) {
   const bad = chainTo(entry, FORBIDDEN);
   if (bad) forbidden.push(bad);
   const heavy = chainTo(entry, LITE);
   if (heavy) lite.push(heavy);
+  const validator = chainToZod(entry);
+  if (validator) zod.push(validator);
 }
 
 if (forbidden.length) {
@@ -118,5 +157,17 @@ if (lite.length > LITE_BUDGET) {
   for (const c of lite) console.error(`  ${c.join(" → ")}`);
   console.error(`  Either pass the data in as props, fetch it from /api/products/lite,`);
   console.error(`  or — if this really is the right call — raise LITE_BUDGET in this file.`);
+  process.exit(1);
+}
+
+console.log(`[client-bundle] storefront client entries reaching zod: ${zod.length} (budget ${ZOD_BUDGET})`);
+if (process.env.SHOW_CHAINS) for (const c of zod) console.log("  " + c.join(" → "));
+if (zod.length > ZOD_BUDGET) {
+  console.error("[client-bundle] zod is back in the storefront bundle, through:");
+  for (const c of zod) console.error(`  ${c.join(" → ")}`);
+  console.error("  A client component needs the constant, not the schema beside it.");
+  console.error("  Move the constant into a *-defaults.ts that imports no zod, re-export");
+  console.error("  it from the schema module for server callers, and import the type with");
+  console.error("  `import type` — see lib/pages/header-links-defaults.ts.");
   process.exit(1);
 }

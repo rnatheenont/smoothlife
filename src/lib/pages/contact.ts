@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+// Re-exported for server-side callers. Client components must import it from
+// ./contact-defaults directly, or zod rides along into the browser.
+export { CONTACT_DEFAULT } from "./contact-defaults.ts";
+import { CONTACT_DEFAULT } from "./contact-defaults.ts";
+
 // How to reach the shop, in one place.
 //
 // Before this, the phone number lived in four files — the footer, /stores,
@@ -36,17 +41,6 @@ export const contactSchema = z.object({
 export type ContactInfo = z.infer<typeof contactSchema>;
 
 /** The channels the team actually answers, from their contact sheet. */
-export const CONTACT_DEFAULT: ContactInfo = {
-  phoneDisplay: "085-489-0549",
-  phoneHref: "tel:0854890549",
-  hours: "ทุกวัน 09:00–18:00 น.",
-  lineHandle: "@smoothlifeofficial",
-  lineShopUrl: "https://shop.line.me/@smoothlifeofficial",
-  lineChatUrl: "https://line.me/R/ti/p/@smoothlifeofficial",
-  facebookUrl: "https://www.facebook.com/smoothlifeofficial",
-  instagramUrl: "https://www.instagram.com/smoothlife_official",
-  tiktokUrl: "https://www.tiktok.com/@smoothlife_pharmacy",
-};
 
 /** The section inside the global document that holds the fields. */
 export const CONTACT_SECTION = "contact_info";

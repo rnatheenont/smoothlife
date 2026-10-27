@@ -4,7 +4,7 @@ import { useState } from "react";
 import { MessageCircle, Phone, Facebook, CheckCircle2 } from "lucide-react";
 import DemoBadge from "@/components/DemoBadge";
 import { Button } from "@/components/ui";
-import { CONTACT_DEFAULT } from "@/lib/pages/contact";
+import { CONTACT_DEFAULT } from "@/lib/pages/contact-defaults";
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);

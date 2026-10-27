@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { CONTACT_DEFAULT } from "@/lib/pages/contact";
-import { FOOTER_COLUMNS_DEFAULT, type FooterColumns } from "@/lib/pages/footer-links";
+import { CONTACT_DEFAULT } from "@/lib/pages/contact-defaults";
+import { FOOTER_COLUMNS_DEFAULT } from "@/lib/pages/footer-links-defaults";
+import type { FooterColumns } from "@/lib/pages/footer-links";
 import type { ComponentType } from "react";
 import {
   Facebook,

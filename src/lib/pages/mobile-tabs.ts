@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+// Re-exported for server-side callers. Client components must import it from
+// ./mobile-tabs-defaults directly, or zod rides along into the browser.
+export { MOBILE_TABS_DEFAULT } from "./mobile-tabs-defaults.ts";
+import { MOBILE_TABS_DEFAULT } from "./mobile-tabs-defaults.ts";
+
 // The five things the shop is navigated by on a phone.
 //
 // Five, and the number is part of the design rather than a setting: the bar
@@ -33,14 +38,6 @@ export const mobileTabsSchema = z.object({
 export type MobileTab = z.infer<typeof mobileTabsSchema>["tabs"][number];
 
 export const MOBILE_TABS_SECTION = "mobile_tabs";
-
-export const MOBILE_TABS_DEFAULT: MobileTab[] = [
-  { icon: "home", href: "/", th: "หน้าแรก", en: "Home" },
-  { icon: "grid", href: "/shop", th: "ช้อป", en: "Shop" },
-  { icon: "scan-face", href: "/advisor", th: "ประเมินผิว", en: "Skin Check" },
-  { icon: "cart", href: "/cart", th: "ตะกร้า", en: "Cart" },
-  { icon: "user", href: "/account", th: "บัญชี", en: "Account" },
-];
 
 /** A tab needs somewhere to go and something to call it. Anything else is a
  *  gap in a row of five, which reads as the app having lost a button. */

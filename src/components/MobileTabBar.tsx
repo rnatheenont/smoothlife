@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { tabIcon } from "@/components/icons/TabIcons";
-import { MOBILE_TABS_DEFAULT, type MobileTab } from "@/lib/pages/mobile-tabs";
+import { MOBILE_TABS_DEFAULT } from "@/lib/pages/mobile-tabs-defaults";
+import type { MobileTab } from "@/lib/pages/mobile-tabs";
 import { useLang } from "@/lib/lang-context";
 import { useCart } from "@/lib/cart-context";
 

@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+// Re-exported for server-side callers. Client components must import it from
+// ./footer-links-defaults directly, or zod rides along into the browser.
+export { FOOTER_COLUMNS_DEFAULT } from "./footer-links-defaults.ts";
+import { FOOTER_COLUMNS_DEFAULT } from "./footer-links-defaults.ts";
+
 // The footer's link columns.
 //
 // Everything else in the footer is tied to something the code owns: the
@@ -38,37 +43,3 @@ export const FOOTER_SECTION = "footer_links";
 /** What the footer has shown since it was written. Also what it falls back to
  *  when the document cannot be read — the footer is on every page, so it can
  *  never depend on a database being reachable. */
-export const FOOTER_COLUMNS_DEFAULT: FooterColumns = [
-  {
-    title: "ช้อปปิ้ง",
-    links: [
-      { href: "/shop", label: "สินค้าทั้งหมด" },
-      { href: "/brands", label: "แบรนด์ทั้งหมด" },
-      // "โปรโมชั่น" is out here too, by request — the last place it was
-      // still being offered after it left the header bar and the drawer.
-      // The page is untouched and still answers at /promotions.
-      { href: "/concern", label: "เลือกตามปัญหาผิว" },
-    ],
-  },
-  {
-    title: "ทำไมต้อง Smooth Life",
-    links: [
-      { href: "/about", label: "เกี่ยวกับเรา" },
-      { href: "/about/quality", label: "คุณภาพและมาตรฐาน" },
-      { href: "/about/experts", label: "ผู้เชี่ยวชาญและพาร์ทเนอร์" },
-      { href: "/about/sustainability", label: "ความรับผิดชอบต่อสังคม" },
-    ],
-  },
-  {
-    title: "ช่วยเหลือและบัญชี",
-    links: [
-      { href: "/faq", label: "คำถามที่พบบ่อย" },
-      { href: "/help", label: "ศูนย์ช่วยเหลือ" },
-      { href: "/track", label: "ติดตามพัสดุ" },
-      { href: "/help/delivery", label: "การจัดส่งและคืนสินค้า" },
-      { href: "/help/payment", label: "การชำระเงิน" },
-      { href: "/loyalty", label: "สิทธิสมาชิก" },
-      { href: "/stores", label: "สาขาและติดต่อเรา" },
-    ],
-  },
-];
