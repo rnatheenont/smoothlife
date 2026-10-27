@@ -34,9 +34,6 @@
 @import "@heroui/styles/components/chip.css" layer(components);
 @import "@heroui/styles/components/alert.css" layer(components);
 
-/* The filter menus above the product grid (/shop and the category pages). */
-@import "@heroui/styles/components/popover.css" layer(components);
-
 /* Form controls across the admin console. popover/list-box carry the Select's
    menu; checkbox and switch are the two toggles the admin forms use. */
 
