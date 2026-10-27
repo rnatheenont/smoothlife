@@ -49,7 +49,10 @@ export default function ItemsTab({
   const [chosen, setChosen] = useState<Record<string, PickerProduct["variants"][number] & { slug: string }>>({});
   const [searching, setSearching] = useState(false);
   const [percent, setPercent] = useState("40");
-  const [roundTo, setRoundTo] = useState<"0" | "1" | "5" | "10">("0");
+  // Whole baht by default: no satang on a price list people read off a
+  // screen, and the discount still lands within a couple of points of the
+  // one that was typed. "ไม่ปัด" is there for when it has to be exact.
+  const [roundTo, setRoundTo] = useState<"0" | "1" | "5" | "10">("1");
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [copyFrom, setCopyFrom] = useState("");
   // Narrows what is already on screen. The box above it goes to the server
@@ -290,9 +293,11 @@ export default function ItemsTab({
                 aria-label="ปัดเศษ"
                 className="rounded bg-transparent text-[12px] text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-800/25"
               >
-                {/* First, because it is the only setting where the discount
+                {/* Kept first: it is the only setting where the discount
                     comes out exactly as typed. Rounding to 5 turns 60% off
-                    into 60–64% depending on the price. */}
+                    into 60–64% depending on the price; to the baht, 60–62.5%
+                    — the cheaper the item, the further a floored baht moves
+                    the percentage. */}
                 <option value="0">ไม่ปัด</option>
                 <option value="1">ปัดเป็นบาท</option>
                 <option value="5">ปัดเป็น 5</option>
