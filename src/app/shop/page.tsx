@@ -47,7 +47,7 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
       <div className="container-page py-5 md:py-8">
         <CategoryCircles current={searchParams} />
 
-        <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+        <div className="flex flex-col gap-6">
           <ShopFilters
             houseBrands={brandOptions().house}
             otherBrands={brandOptions().other}

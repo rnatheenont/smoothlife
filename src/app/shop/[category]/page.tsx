@@ -101,7 +101,7 @@ async function CategoryPageWritten({
         </Link>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col gap-6">
         <ShopFilters
           current={current}
           houseBrands={brandOptions().house}

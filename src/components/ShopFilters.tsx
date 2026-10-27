@@ -6,6 +6,7 @@ import type { BrandOption } from "@/lib/brand-options";
 import { multi, PROMO_FILTERS, RATING_STEPS, type FilterCounts, ShopSearchParams } from "@/lib/shop-params";
 import { SlidersHorizontal, Check, X, ChevronDown, Search, Star } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { Button, Popover } from "@heroui/react";
 import clsx from "clsx";
 
 // Fewer than this and there's nothing to collapse — the toggle would just
@@ -18,6 +19,76 @@ const VISIBLE_BRANDS = 10;
  *  same message as the option being missing. */
 function OptionCount({ n }: { n: number }) {
   return <span className={clsx("text-xs tabular-nums", n === 0 ? "text-slate-300" : "text-slate-400")}>({n})</span>;
+}
+
+/**
+ * One filter, as a pill that opens a panel.
+ *
+ * The column these came from is gone: five stacked groups took a 224px
+ * gutter off every screen for controls most shoppers touch once, and the
+ * grid is what they came for. As a row above the grid the same five read as
+ * one line of choices, and the page is as wide as the products.
+ *
+ * The count sits on the pill rather than inside the panel, because a closed
+ * panel still has to say whether it is doing anything.
+ */
+function FilterMenu({
+  label,
+  count,
+  children,
+  openMenu,
+  setOpenMenu,
+}: {
+  label: string;
+  count: number;
+  children: ReactNode;
+  /** Which menu is showing. Held by the row, not by each menu: two panels
+   *  open at once overlap, and the brand panel is tall enough to sit on top
+   *  of whichever one was opened next. */
+  openMenu: string | null;
+  setOpenMenu: (next: (prev: string | null) => string | null) => void;
+}) {
+  return (
+    <Popover
+      isOpen={openMenu === label}
+      // Closing only counts while this menu is still the open one. Pressing
+      // another trigger fires that one's "open" first and this one's
+      // "close" second — written as a plain setter, the late close wiped the
+      // menu that had just opened and the press appeared to do nothing.
+      onOpenChange={(open) =>
+        setOpenMenu((prev) => (open ? label : prev === label ? null : prev))
+      }
+    >
+      <Button
+        data-filter-pill=""
+        variant="outline"
+        className={clsx(
+          "h-10 shrink-0 gap-1.5 rounded-full px-4 text-sm font-medium",
+          count > 0 && "border-brand-emerald bg-brand-gradient-soft font-semibold text-brand-800",
+        )}
+      >
+        {label}
+        {count > 0 && (
+          <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-gradient px-1 text-[10px] font-bold text-white">
+            {count}
+          </span>
+        )}
+        <ChevronDown size={14} className="text-slate-400" aria-hidden="true" />
+      </Button>
+      {/* Non-modal, and deaf to presses on the other pills: by default the
+          open panel's dismiss layer swallowed the click that was meant for
+          the next filter, so switching from แบรนด์ to ช่วงราคา took two
+          presses — one to shut, one to open. The controlled state above is
+          what closes this one when its neighbour opens. */}
+      <Popover.Content
+        isNonModal
+        shouldCloseOnInteractOutside={(el) => !el.closest("[data-filter-pill]")}
+        className="rounded-xl2 p-0 shadow-card"
+      >
+        <Popover.Dialog className="p-3">{children}</Popover.Dialog>
+      </Popover.Content>
+    </Popover>
+  );
 }
 
 export default function ShopFilters({
@@ -55,6 +126,8 @@ export default function ShopFilters({
       document.body.style.overflow = prev;
     };
   }, [mobileOpen]);
+  // Which filter menu is showing, or none. One at a time.
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [showAllBrands, setShowAllBrands] = useState(false);
   const [brandQuery, setBrandQuery] = useState("");
   // Price boxes are typed into, so they hold their own value until applied —
@@ -162,31 +235,12 @@ export default function ShopFilters({
     router.push(pathname);
   }
 
-  const content = (
-    <div className="flex flex-col gap-6">
-      {/* Said at the top, where the filters start, rather than at the bottom
-          of a column long enough to scroll past. Somebody looking at a short
-          list of products wants to know what narrowed it and how to undo
-          that, and both answers were below the fold. */}
-      {activeFilterCount > 0 && (
-        <div className="flex items-center justify-between gap-2 rounded-lg bg-brand-gradient-soft px-3 py-2">
-          <span className="text-xs font-semibold text-brand-800">
-            ใช้ตัวกรองอยู่ {activeFilterCount} รายการ
-          </span>
-          <button
-            onClick={clearAllFilters}
-            className="shrink-0 text-xs font-bold text-brand-800 underline underline-offset-2 hover:text-brand-1000"
-          >
-            ล้างทั้งหมด
-          </button>
-        </div>
-      )}
-      {/* No category list here. The circle row at the top of the page is the
-          category control on every screen size, and a second list in the
-          sidebar meant two controls for one choice sitting 200px apart, each
-          having to mirror the other's state. */}
+  const brandPanel = (
+    // Wider than the trigger and capped to the viewport: 52 brand names in
+    // two groups need the room, and a panel wider than a phone would hang
+    // off the screen on the one size that cannot scroll sideways.
+    <div className="max-h-[22rem] w-[21rem] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain">
       <div>
-        <h4 className="text-sm font-bold text-brand-ink mb-3">แบรนด์</h4>
         <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
           แบรนด์ในเครือ
         </p>
@@ -286,8 +340,12 @@ export default function ShopFilters({
           )}
         </div>
       </div>
+    </div>
+  );
+
+  const pricePanel = (
+    <div className="w-72">
       <div>
-        <h4 className="text-sm font-bold text-brand-ink mb-3">ช่วงราคา</h4>
         <div className="flex items-center gap-2">
           <label className="flex flex-1 items-center gap-1 rounded-lg border border-surface-line px-2.5 py-1.5 text-sm">
             <span className="text-slate-400">฿</span>
@@ -321,8 +379,12 @@ export default function ShopFilters({
             watches these two values. */}
       </div>
 
+    </div>
+  );
+
+  const promoPanel = (
+    <div className="w-64">
       <div>
-        <h4 className="text-sm font-bold text-brand-ink mb-3">โปรโมชัน</h4>
         <div className="flex flex-col gap-0.5">
           {PROMO_FILTERS.map((f) => {
             const on = activePromos.includes(f.key);
@@ -357,8 +419,12 @@ export default function ShopFilters({
         </div>
       </div>
 
+    </div>
+  );
+
+  const ratingPanel = (
+    <div className="w-56">
       <div>
-        <h4 className="text-sm font-bold text-brand-ink mb-3">คะแนนสินค้า</h4>
         <div className="flex flex-col gap-0.5">
           {RATING_STEPS.map((min) => {
             const on = current.rating === String(min);
@@ -388,8 +454,12 @@ export default function ShopFilters({
         </div>
       </div>
 
+    </div>
+  );
+
+  const concernPanel = (
+    <div className="w-64">
       <div>
-        <h4 className="text-sm font-bold text-brand-ink mb-3">ปัญหาผิวที่กังวล</h4>
         <div className="flex flex-col gap-0.5">
           {concerns.map((c) => {
             const on = activeConcerns.includes(c.slug);
@@ -420,8 +490,6 @@ export default function ShopFilters({
           })}
         </div>
       </div>
-      {/* The clear control lives at the top of this column now — see the
-          summary row up there. One control, one place. */}
     </div>
   );
 
@@ -542,7 +610,54 @@ export default function ShopFilters({
         </div>
         <div className="min-w-0 flex-1">{mobileExtra}</div>
       </div>
-      <aside className="hidden lg:block lg:sticky lg:top-[152px] lg:self-start w-56 shrink-0">{content}</aside>
+      {/* Desktop: the same filters as a row above the grid. The phone keeps
+          its sheet — a row of five menus is a sidebar again on a 375px
+          screen, only sideways. */}
+      <div className="mb-5 hidden flex-wrap items-center gap-2 lg:flex">
+        <FilterMenu
+          label="แบรนด์"
+          openMenu={openMenu}
+          setOpenMenu={setOpenMenu}
+          count={activeBrands.length}>
+          {brandPanel}
+        </FilterMenu>
+        <FilterMenu
+          label="ช่วงราคา"
+          openMenu={openMenu}
+          setOpenMenu={setOpenMenu}
+          count={current.minPrice || current.maxPrice ? 1 : 0}>
+          {pricePanel}
+        </FilterMenu>
+        <FilterMenu
+          label="โปรโมชัน"
+          openMenu={openMenu}
+          setOpenMenu={setOpenMenu}
+          count={activePromos.length}>
+          {promoPanel}
+        </FilterMenu>
+        <FilterMenu
+          label="คะแนนสินค้า"
+          openMenu={openMenu}
+          setOpenMenu={setOpenMenu}
+          count={current.rating ? 1 : 0}>
+          {ratingPanel}
+        </FilterMenu>
+        <FilterMenu
+          label="ปัญหาผิวที่กังวล"
+          openMenu={openMenu}
+          setOpenMenu={setOpenMenu}
+          count={activeConcerns.length}>
+          {concernPanel}
+        </FilterMenu>
+        {activeFilterCount > 0 && (
+          <button
+            onClick={clearAllFilters}
+            className="ms-1 shrink-0 text-xs font-bold text-brand-800 underline underline-offset-2 hover:text-brand-1000"
+          >
+            ล้างทั้งหมด ({activeFilterCount})
+          </button>
+        )}
+      </div>
       {mobileOpen && (
         <div className="fixed inset-0 z-100 lg:hidden">
           <div aria-hidden="true" className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />

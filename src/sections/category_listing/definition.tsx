@@ -51,7 +51,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
 
   return (
     <section className="container-page pb-8 md:pb-10">
-      <div className="flex flex-col gap-8 lg:flex-row">
+      <div className="flex flex-col gap-6">
         <ShopFilters
           current={data.params}
           houseBrands={data.house}

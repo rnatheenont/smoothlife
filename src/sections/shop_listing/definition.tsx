@@ -86,7 +86,7 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
     <div className="container-page py-5 md:py-8">
       <CategoryCircles current={data.params} />
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+      <div className="flex flex-col gap-6">
         <ShopFilters
           houseBrands={data.house}
           otherBrands={data.other}
