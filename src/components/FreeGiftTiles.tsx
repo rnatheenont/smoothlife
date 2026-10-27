@@ -8,6 +8,7 @@ import { useLang } from "@/lib/lang-context";
 import { availableGiftFaces, type GiftFace } from "@/lib/gift-faces";
 import { giftWidgetStyle } from "@/lib/gift-widget-style";
 import type { FreeGiftPromo } from "@/data/free-gifts";
+import { Check, Gift } from "lucide-react";
 
 // The gift, as a thing you get.
 //
@@ -25,11 +26,11 @@ import type { FreeGiftPromo } from "@/data/free-gifts";
  *  across the whole page — the same gift from two campaigns is one gift to
  *  the shopper, and it is shown under the first that offers it. */
 function faceGroups(
-  evals: { promo: FreeGiftPromo }[],
+  evals: { promo: FreeGiftPromo; eligible: boolean }[],
   productBySlug: (slug: string) => { name: string; image: string } | undefined,
-): { promo: FreeGiftPromo; faces: GiftFace[] }[] {
+): { promo: FreeGiftPromo; faces: GiftFace[]; earned: boolean }[] {
   const seen = new Set<string>();
-  const groups: { promo: FreeGiftPromo; faces: GiftFace[] }[] = [];
+  const groups: { promo: FreeGiftPromo; faces: GiftFace[]; earned: boolean }[] = [];
   for (const ev of evals) {
     // A ladder is shown by its first rung: the one this product can reach
     // without knowing what else is in the basket.
@@ -43,7 +44,7 @@ function faceGroups(
       seen.add(face.key);
       faces.push(face);
     }
-    if (faces.length > 0) groups.push({ promo, faces });
+    if (faces.length > 0) groups.push({ promo, faces, earned: ev.eligible });
   }
   return groups;
 }
@@ -65,9 +66,51 @@ export default function FreeGiftTiles({ scopedToSlug }: { scopedToSlug?: string 
 
   return (
     <>
-      {groups.map(({ promo, faces }) => {
+      {groups.map(({ promo, faces, earned }) => {
         // The campaign's own look if it has one, the shop's otherwise.
         const style = giftWidgetStyle(promo.widgetStyle ?? shopDefault);
+
+        // The bar layout, drawn the way 21st.dev's Progress Bar Stepper does
+        // it: one segment per reward with its name underneath. The setting
+        // existed in the editor before this and changed nothing out here,
+        // which is a control that lies to whoever moves it.
+        if (style.layout === "bar") {
+          return (
+            <div key={promo.slug} className="flex [&+&]:mt-3" style={{ gap: style.gap }}>
+              {faces.map((face) => (
+                <span key={face.key} className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <span
+                    style={{ height: style.barThickness, borderRadius: style.barRadius }}
+                    className="overflow-hidden bg-black/10"
+                  >
+                    <span
+                      style={{
+                        display: "block",
+                        width: earned ? "100%" : "0%",
+                        height: "100%",
+                        borderRadius: style.barRadius,
+                        background: `linear-gradient(90deg, ${style.accentFrom}, ${style.accentTo})`,
+                      }}
+                      className="transition-[width] duration-500"
+                    />
+                  </span>
+                  <span className="flex items-start gap-1">
+                    <span style={{ color: earned ? style.accentFrom : undefined }} className={earned ? "" : "opacity-40"}>
+                      {earned ? <Check size={11} aria-hidden /> : <Gift size={11} aria-hidden />}
+                    </span>
+                    <span
+                      style={{ fontSize: style.tierSize, color: style.text }}
+                      className={`line-clamp-2 min-w-0 flex-1 font-semibold leading-tight ${earned ? "" : "opacity-60"}`}
+                    >
+                      {face.title}
+                    </span>
+                  </span>
+                </span>
+              ))}
+            </div>
+          );
+        }
+
         return (
           <ul
             key={promo.slug}

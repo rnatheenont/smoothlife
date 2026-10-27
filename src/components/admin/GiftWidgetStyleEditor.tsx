@@ -218,47 +218,54 @@ export default function GiftWidgetStyleEditor({
               </p>
 
               {style.layout === "bar" ? (
-                <>
-                  <div
-                    style={{ height: style.barThickness, borderRadius: style.barRadius }}
-                    className="overflow-hidden bg-black/10"
-                  >
-                    <div
-                      style={{
-                        width: `${progress}%`,
-                        background: `linear-gradient(90deg, ${style.accentFrom}, ${style.accentTo})`,
-                        borderRadius: style.barRadius,
-                      }}
-                      className="h-full transition-[width]"
-                    />
-                  </div>
-                  <div style={{ gap: style.gap }} className="mt-2 flex justify-between">
-                    {SAMPLE.map((s, i) => (
-                      <span key={s.name} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                /* One bar segment per milestone, with its name underneath —
+                   the Progress Bar Stepper pattern from 21st.dev
+                   (21st.dev/@sean0205/components/c-stepper-11, MIT). The
+                   single shared bar with icons sitting on top of it put the
+                   circles and the names in the same few pixels, so on a
+                   narrow column they overlapped each other. A step that owns
+                   its own segment cannot collide with its neighbour. */
+                <div style={{ gap: style.gap }} className="flex">
+                  {SAMPLE.map((s, i) => {
+                    const done = i < reachedCount;
+                    // The segment the shopper is inside fills proportionally;
+                    // the ones behind are full and the ones ahead are empty.
+                    const fill = done ? 100 : i === reachedCount ? ((progress * SAMPLE.length) / 100 - i) * 100 : 0;
+                    return (
+                      <span key={s.name} className="flex min-w-0 flex-1 flex-col gap-1.5">
                         <span
-                          style={{
-                            width: style.iconSize,
-                            height: style.iconSize,
-                            borderRadius: style.radius,
-                            background:
-                              i < reachedCount
-                                ? `linear-gradient(90deg, ${style.accentFrom}, ${style.accentTo})`
-                                : "rgba(15,23,42,0.08)",
-                          }}
-                          className="grid place-items-center text-white"
+                          style={{ height: style.barThickness, borderRadius: style.barRadius }}
+                          className="overflow-hidden bg-black/10"
                         >
-                          {i < reachedCount ? <Check size={14} /> : <Gift size={14} />}
+                          <span
+                            style={{
+                              display: "block",
+                              width: `${Math.max(0, Math.min(100, fill))}%`,
+                              height: "100%",
+                              borderRadius: style.barRadius,
+                              background: `linear-gradient(90deg, ${style.accentFrom}, ${style.accentTo})`,
+                            }}
+                            className="transition-[width]"
+                          />
                         </span>
-                        <span
-                          style={{ fontSize: style.tierSize, color: style.text }}
-                          className="line-clamp-2 text-center opacity-70"
-                        >
-                          {s.name}
+                        <span className="flex items-start gap-1">
+                          <span
+                            style={{ color: done ? style.accentFrom : undefined }}
+                            className={done ? "" : "opacity-40"}
+                          >
+                            {done ? <Check size={11} /> : <Gift size={11} />}
+                          </span>
+                          <span
+                            style={{ fontSize: style.tierSize, color: style.text }}
+                            className={`line-clamp-2 min-w-0 flex-1 leading-tight ${done ? "" : "opacity-60"}`}
+                          >
+                            {s.name}
+                          </span>
                         </span>
                       </span>
-                    ))}
-                  </div>
-                </>
+                    );
+                  })}
+                </div>
               ) : (
                 <ul style={{ gap: style.gap }} className="grid grid-cols-2 sm:grid-cols-3">
                   {SAMPLE.map((s, i) => (
