@@ -163,13 +163,21 @@
      Two shadows, not one bigger one: a tight contact shadow directly under
      the card so it touches the page, and a wide, light ambient one so the
      lift is felt rather than drawn. The hairline stays — on a white shelf
-     the shadow alone leaves the top edge undefined. */
+     the shadow alone leaves the top edge undefined.
+
+     Raised once since, on the brief that the first pass was still too quiet.
+     Worth saying out loud: at this weight a resting product card carries more
+     blur than shadow-overlay does. On paper that inverts the ladder; on screen
+     it does not read that way, because a menu is small, lands over content and
+     is gone, while a card is large, permanent and lit from much further away.
+     If overlay ever gets revisited, this is the note that explains why the two
+     numbers look wrong next to each other. */
   --shadow-product:
-    0 0 0 1px rgba(16, 35, 28, 0.06), 0 2px 4px -1px rgba(16, 35, 28, 0.06),
-    0 8px 16px -8px rgba(16, 35, 28, 0.1);
+    0 0 0 1px rgba(16, 35, 28, 0.07), 0 3px 6px -2px rgba(16, 35, 28, 0.08),
+    0 12px 24px -8px rgba(16, 35, 28, 0.14);
   --shadow-productHover:
-    0 0 0 1px rgba(16, 35, 28, 0.08), 0 4px 8px -2px rgba(16, 35, 28, 0.07),
-    0 16px 32px -12px rgba(16, 35, 28, 0.18);
+    0 0 0 1px rgba(16, 35, 28, 0.09), 0 6px 12px -3px rgba(16, 35, 28, 0.09),
+    0 22px 40px -12px rgba(16, 35, 28, 0.22);
   --shadow-layer-xs:
     0 3px 3px -1.5px rgba(15, 23, 42, 0.04),
     0 1px 1px -0.5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
