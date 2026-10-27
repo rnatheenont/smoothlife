@@ -44,7 +44,9 @@ export const FOOTER_COLUMNS_DEFAULT: FooterColumns = [
     links: [
       { href: "/shop", label: "สินค้าทั้งหมด" },
       { href: "/brands", label: "แบรนด์ทั้งหมด" },
-      { href: "/promotions", label: "โปรโมชั่น" },
+      // "โปรโมชั่น" is out here too, by request — the last place it was
+      // still being offered after it left the header bar and the drawer.
+      // The page is untouched and still answers at /promotions.
       { href: "/concern", label: "เลือกตามปัญหาผิว" },
     ],
   },
