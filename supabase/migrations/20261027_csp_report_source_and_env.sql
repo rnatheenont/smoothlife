@@ -62,3 +62,10 @@ as $function$
     -- with none blank it out.
     source = coalesce(excluded.source, public.csp_reports.source);
 $function$;
+
+-- CREATE OR REPLACE with two extra defaulted arguments makes an overload, not
+-- a replacement. With both present a four-argument call matches either one and
+-- PostgREST refuses to pick ("could not choose the best candidate function"),
+-- which would drop every report. The six-argument version covers the old
+-- signature through its defaults, so the original is redundant.
+drop function if exists public.record_csp_report(text, text, text, text);
