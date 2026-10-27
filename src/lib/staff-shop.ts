@@ -97,6 +97,33 @@ export async function eligibleAccountEmail(userId: string): Promise<string | nul
 }
 
 /**
+ * Should this account be shown the employee shop at all?
+ *
+ * Two ways in, and nothing else: already verified in this round, or the
+ * account itself signs in with an address the shop accepts. Somebody who is
+ * neither is not shown a verification panel, or a round name, or the fact
+ * that there is a shop — the page answers 404, the way it does for an
+ * address that does not exist.
+ *
+ * That closes the OTP panel to anyone whose account email is personal, which
+ * is deliberate: an employee who shops with a personal account links their
+ * company address at /account/verify first, and the shop appears. The panel
+ * stays for the people who can already see it — an eligible address whose
+ * mailbox proof has gone stale still has to read a fresh code.
+ *
+ * The account menu has asked this question since the shop was built (see
+ * /api/staff/access); it lives here now so the menu, the page and the data
+ * behind it cannot come to disagree about who is staff.
+ */
+export async function staffShopVisible(roundId: string, userId: string): Promise<boolean> {
+  const verified = await supabaseRest<{ user_id: string }[]>(
+    `staff_verifications?round_id=eq.${pgValue(roundId)}&user_id=eq.${pgValue(userId)}&select=user_id&limit=1`,
+  ).catch(() => []);
+  if (verified?.[0]) return true;
+  return Boolean(await eligibleAccountEmail(userId));
+}
+
+/**
  * Did this account read a code out of this mailbox recently enough?
  *
  * Two things count, because both are a real code read out of that inbox:

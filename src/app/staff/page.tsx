@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
+import { currentStaffRound, staffShopVisible } from "@/lib/staff-shop";
 import StaffShop from "./StaffShop";
 
 // The employee shop.
@@ -35,10 +36,20 @@ export default async function StaffPage() {
   //
   // A redirect rather than a 404, because the people who most often arrive
   // here signed out are employees opening the link from a chat message —
-  // they come back to /staff the moment they are in, where the verification
-  // panel decides whether they belong.
+  // they come back to /staff the moment they are in, and the check below
+  // decides whether the page exists for them.
   const session = verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
   if (!session) redirect("/account/login?returnTo=%2Fstaff");
+
+  // Signed in is not the same as entitled. A customer who found this URL
+  // used to get a verification panel here — an invitation to prove a
+  // company mailbox, on a page that told them a staff shop exists. Now the
+  // address simply does not resolve for them.
+  //
+  // notFound rather than a redirect, and rather than a page saying "you do
+  // not have access": both of those confirm there is something here.
+  const round = await currentStaffRound();
+  if (!round || !(await staffShopVisible(round.id, session))) notFound();
 
   return <StaffShop />;
 }

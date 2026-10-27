@@ -11,6 +11,7 @@ import {
   staffShippingAddress,
   staffOrdersUsed,
   staffShopItems,
+  staffShopVisible,
   staffStanding,
   upcomingStaffRound,
 } from "@/lib/staff-shop";
@@ -49,6 +50,13 @@ export async function GET(req: NextRequest) {
     // screen before this is ever called, so anyone reaching it here asked
     // for it directly — and the round's name and dates are not theirs.
     return NextResponse.json({ ok: true, state: "signin" });
+  }
+
+  // Same gate as the page. Reached directly, this answers the way it would
+  // if the shop were switched off — not with a verification panel, which is
+  // an invitation, and not with a refusal, which is a confirmation.
+  if (!(await staffShopVisible(round.id, userId))) {
+    return NextResponse.json({ ok: true, state: "unavailable" });
   }
 
   let standing = await staffStanding(round.id, userId);

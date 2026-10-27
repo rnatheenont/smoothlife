@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
-import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
-import { currentStaffRound, eligibleAccountEmail } from "@/lib/staff-shop";
+import { supabaseConfigured } from "@/lib/supabase-server";
+import { currentStaffRound, staffShopVisible } from "@/lib/staff-shop";
 
 // "Should this account see the employee shop in its menu?"
 //
@@ -19,14 +19,8 @@ export async function GET(req: NextRequest) {
   const round = await currentStaffRound();
   if (!round) return NextResponse.json({ ok: true, available: false });
 
-  // Already verified in this round is enough on its own — somebody who
-  // proved a mailbox by OTP keeps the menu entry even if their account's
-  // own address is a personal one.
-  const verified = await supabaseRest<{ user_id: string }[]>(
-    `staff_verifications?round_id=eq.${pgValue(round.id)}&user_id=eq.${pgValue(userId)}&select=user_id&limit=1`,
-  ).catch(() => []);
-
-  const available = Boolean(verified?.[0]) || Boolean(await eligibleAccountEmail(userId));
+  // The same question the page itself asks — see staffShopVisible.
+  const available = await staffShopVisible(round.id, userId);
 
   return NextResponse.json({
     ok: true,
