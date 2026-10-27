@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
@@ -62,6 +62,19 @@ function formatSold(n: number, lang: string) {
   if (n < 10000) return `${trim(n / 1000)}พัน`;
   return `${trim(n / 10000)}หมื่น`;
 }
+
+// The eight pieces of the like burst. Two sizes and two weights of the sale
+// red, alternating, so the ring never looks machined.
+const SPARKS = [
+  "size-1.5 bg-sale",
+  "size-1 bg-sale/70",
+  "size-1.5 bg-sale/85",
+  "size-1 bg-sale/60",
+  "size-1.5 bg-sale",
+  "size-1 bg-sale/70",
+  "size-1.5 bg-sale/85",
+  "size-1 bg-sale/60",
+];
 
 export default function ProductCard({ product }: { product: ProductCardData }) {
   const { addItem, giftPromos } = useCart();
@@ -285,11 +298,31 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
                   element is new, and saving the same card twice has to look
                   the same both times. */}
               {beat > 0 && (
-                <span
-                  key={`ring-${beat}`}
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 animate-heartRing rounded-full border-2 border-sale"
-                />
+                <>
+                  <span
+                    key={`ring-${beat}`}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 animate-heartRing rounded-full border-2 border-sale"
+                  />
+                  {/* The burst. Eight spokes at 45°, each sized and tinted a
+                      little differently — a ring of identical dots reads as a
+                      loading spinner, and the point is confetti.
+
+                      Keyed on the count like the pop above: a CSS animation
+                      only plays on a new element, so saving a second card has
+                      to mount a second set. */}
+                  {SPARKS.map((spark, i) => (
+                    <span
+                      key={`spark-${beat}-${i}`}
+                      aria-hidden="true"
+                      style={{ "--spark-a": `${i * 45}deg` } as CSSProperties}
+                      className={clsx(
+                        "pointer-events-none absolute left-1/2 top-1/2 -ml-[3px] -mt-[3px] animate-heartSpark rounded-full",
+                        spark
+                      )}
+                    />
+                  ))}
+                </>
               )}
               <span key={`heart-${beat}`} className={clsx(beat > 0 && "animate-heartPop")}>
                 {/* Grey until it means something. Unsaved, it inherits the

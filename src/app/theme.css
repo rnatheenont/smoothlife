@@ -204,8 +204,9 @@
   --animate-haloA: haloA 6s ease-in-out infinite;
   --animate-haloB: haloB 5s ease-in-out infinite;
   --animate-haloC: haloC 4s ease-in-out infinite;
-  --animate-heartPop: heartPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
-  --animate-heartRing: heartRing 0.55s ease-out forwards;
+  --animate-heartPop: heartPop 0.5s cubic-bezier(0.22, 1.4, 0.36, 1);
+  --animate-heartRing: heartRing 0.45s ease-out forwards;
+  --animate-heartSpark: heartSpark 0.52s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
   --animate-chatBadgeLife: chatBadgeLife 11s linear forwards;
   --animate-scanSweep: scanSweep 2.6s ease-in-out infinite;
   --animate-iconBob: iconBob 0.6s ease-out;
@@ -384,27 +385,63 @@
     }
   }
 
+  /* The like, the way the apps people already use do it: a quick duck down,
+     a big overshoot, then a smaller second one on the way back. The second
+     bounce is the whole difference between "it changed" and "it reacted" —
+     one overshoot reads as a transition, two reads as a thing with weight. */
   @keyframes heartPop {
     0% {
       transform: scale(1);
     }
-    28% {
-      transform: scale(0.78);
+    20% {
+      transform: scale(0.76);
     }
-    60% {
-      transform: scale(1.28);
+    48% {
+      transform: scale(1.34);
+    }
+    72% {
+      transform: scale(0.94);
+    }
+    88% {
+      transform: scale(1.06);
     }
     100% {
       transform: scale(1);
     }
   }
-  @keyframes heartRing {
+
+  /* One spark. Eight of them, each handed its own angle, make the burst.
+     The rotate comes first and stays constant through the whole animation,
+     so translateY below it reads as "outward along that spoke" — which is
+     why the distance can be animated without the angle wobbling.
+
+     It leaves at full size and arrives at nothing: a spark that shrank on
+     the way out looked like it was falling back in. */
+  @keyframes heartSpark {
     0% {
-      transform: scale(0.45);
-      opacity: 0.5;
+      transform: rotate(var(--spark-a)) translateY(-3px) scale(0.2);
+      opacity: 0;
+    }
+    18% {
+      opacity: 1;
+    }
+    65% {
+      transform: rotate(var(--spark-a)) translateY(-15px) scale(1);
+      opacity: 1;
     }
     100% {
-      transform: scale(2.1);
+      transform: rotate(var(--spark-a)) translateY(-20px) scale(0);
+      opacity: 0;
+    }
+  }
+  /* The shockwave under the sparks: out fast, gone before they land. */
+  @keyframes heartRing {
+    0% {
+      transform: scale(0.4);
+      opacity: 0.55;
+    }
+    100% {
+      transform: scale(2.3);
       opacity: 0;
     }
   }
