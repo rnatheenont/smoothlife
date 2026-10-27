@@ -291,13 +291,19 @@ export async function POST(req: NextRequest) {
   // cost a round trip on every single message, because nothing is being
   // decided between them. The customer is waiting on this: see the note on
   // the prompt lookups further down.
-  const [caseWaiting, humanHandling, caseAlreadyOpen] = channelUserId
-    ? await Promise.all([
-        hasWaitingCase(channel, channelUserId),
-        isHumanHandling(channel, channelUserId),
-        hasOpenCase(channel, channelUserId),
-      ])
-    : [false, false, false];
+  const [[caseWaiting, humanHandling, caseAlreadyOpen], rateLimited] = await Promise.all([
+    channelUserId
+      ? Promise.all([
+          hasWaitingCase(channel, channelUserId),
+          isHumanHandling(channel, channelUserId),
+          hasOpenCase(channel, channelUserId),
+        ])
+      : Promise.resolve([false, false, false] as [boolean, boolean, boolean]),
+    // Counting this customer's recent messages is its own query and decides
+    // nothing the three above decide, so it rides along rather than queueing
+    // behind them.
+    isRateLimited(sessionKey),
+  ]);
   // Anything said while a case is open belongs in the inbox, even the turns
   // the AI is handling. Recording only during waiting/assigned left a hole:
   // the question asked before the customer went back to the bot, then the
@@ -335,7 +341,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (await isRateLimited(sessionKey)) {
+  if (rateLimited) {
     return textResponse(
       lang === "en"
         ? "You've sent quite a few messages in a short time — please wait a few minutes before asking again."

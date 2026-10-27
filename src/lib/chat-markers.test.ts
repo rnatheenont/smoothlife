@@ -58,3 +58,17 @@ test("an unanswered question is stored whole, heading and all", () => {
   assert.equal(contentForTranscript(raw), raw);
   assert.equal(splitMarker(contentForTranscript(raw)).topic, "เลือกให้ตรงจุด");
 });
+
+// A reply that searches writes the heading, runs the tool, then writes the
+// answer — and sometimes repeats the heading when it starts writing again.
+test("a heading written twice is shown once", () => {
+  const { topic, body } = splitTopic("[[TOPIC: กันแดด]]\n\n[[TOPIC: กันแดด]]\n\nแนะนำตัวนี้ค่ะ");
+  assert.equal(topic, "กันแดด");
+  assert.equal(body, "แนะนำตัวนี้ค่ะ");
+});
+
+test("a half-written repeat does not swallow the answer", () => {
+  const { topic, body } = splitTopic("[[TOPIC: กันแดด]]\n\nแนะนำตัวนี้ค่ะ");
+  assert.equal(topic, "กันแดด");
+  assert.equal(body, "แนะนำตัวนี้ค่ะ");
+});

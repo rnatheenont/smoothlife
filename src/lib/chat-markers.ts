@@ -44,7 +44,15 @@ export function markerIndex(text: string): number {
  */
 export function splitTopic(text: string): { topic: string; body: string } {
   const complete = /^\s*\[\[TOPIC:([\s\S]*?)\]\]\s*/i.exec(text);
-  if (complete) return { topic: complete[1].trim(), body: text.slice(complete[0].length) };
+  if (complete) {
+    // A reply that searches the catalogue writes its heading, calls the tool
+    // and then writes the answer — two separate turns of model output, and
+    // the second one sometimes opens with the heading again. The first is
+    // kept and any repeat is dropped, rather than left to appear as literal
+    // brackets in the middle of the answer.
+    const rest = splitTopic(text.slice(complete[0].length));
+    return { topic: complete[1].trim(), body: rest.topic ? rest.body : text.slice(complete[0].length) };
+  }
   const partial = /^\s*\[\[TOPIC:([\s\S]*)$/i.exec(text);
   if (partial) return { topic: partial[1].trim(), body: "" };
   // Also catches the opener itself arriving a character at a time.
