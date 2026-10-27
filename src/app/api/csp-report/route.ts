@@ -11,12 +11,17 @@ import { isRateLimited, clientIp } from "@/lib/rate-limit";
 //
 // Only what's needed to fix the policy is kept: the directive, the blocked
 // resource's origin (never its full URL — signed storage links and OAuth
-// callbacks carry tokens in the query string) and the page path without its
-// query. Repeats collapse into a counter in the database.
+// callbacks carry tokens in the query string), the page path without its
+// query, the offending script's origin and path with its line number, and
+// which environment reported it. Repeats collapse into a counter.
+//
+// The last two exist because "blocked: eval" names no culprit, and because
+// preview deployments post here too — so counting production separately is
+// the only way to tell whether the live site has stopped violating.
 
 const MAX_BODY_BYTES = 16_000;
 
-type Violation = { directive: string; blocked: string; page: string; sample: string | null };
+type Violation = { directive: string; blocked: string; page: string; sample: string | null; source: string | null };
 
 function originOf(value: unknown): string {
   if (typeof value !== "string" || !value) return "(none)";
@@ -27,6 +32,21 @@ function originOf(value: unknown): string {
   } catch {
     return "(invalid)";
   }
+}
+
+/** Which script did it — origin and path, never the query string, which on
+ *  a signed storage URL or an OAuth callback carries a token. */
+function sourceOf(value: unknown, line: unknown): string | null {
+  if (typeof value !== "string" || !value) return null;
+  let where: string;
+  try {
+    const u = new URL(value);
+    where = `${u.origin}${u.pathname}`;
+  } catch {
+    where = value.split("?")[0].slice(0, 200);
+  }
+  const n = typeof line === "number" ? line : Number(line);
+  return Number.isFinite(n) && n > 0 ? `${where}:${n}` : where;
 }
 
 function pathOf(value: unknown): string {
@@ -44,6 +64,7 @@ function fromLegacy(r: Record<string, unknown>): Violation {
     blocked: originOf(r["blocked-uri"]),
     page: pathOf(r["document-uri"]),
     sample: typeof r["script-sample"] === "string" && r["script-sample"] ? String(r["script-sample"]) : null,
+    source: sourceOf(r["source-file"], r["line-number"]),
   };
 }
 
@@ -53,6 +74,7 @@ function fromReportingApi(b: Record<string, unknown>): Violation {
     blocked: originOf(b.blockedURL),
     page: pathOf(b.documentURL),
     sample: typeof b.sample === "string" && b.sample ? b.sample : null,
+    source: sourceOf(b.sourceFile, b.lineNumber),
   };
 }
 
@@ -85,7 +107,16 @@ export async function POST(req: NextRequest) {
       supabaseRest("rpc/record_csp_report", {
         method: "POST",
         returning: false,
-        body: JSON.stringify({ p_directive: v.directive, p_blocked: v.blocked, p_page: v.page, p_sample: v.sample }),
+        body: JSON.stringify({
+          p_directive: v.directive,
+          p_blocked: v.blocked,
+          p_page: v.page,
+          p_sample: v.sample,
+          p_source: v.source,
+          // Preview deployments report here too. Without this the question
+          // "has production stopped violating?" cannot be asked at all.
+          p_env: process.env.VERCEL_ENV || "development",
+        }),
       }).catch(() => {})
     )
   );

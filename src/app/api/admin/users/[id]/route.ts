@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { ADMIN_COOKIE } from "@/lib/admin-auth";
-import { checkOwnerSession } from "@/lib/admin-permissions";
+import { checkOwnerSession, invalidateAdminAccountCache } from "@/lib/admin-permissions";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { hashPassword } from "@/lib/password";
 import { UUID_RE } from "@/lib/flash-sale";
@@ -54,8 +54,15 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     await supabaseRest(`admin_users?id=eq.${pgValue(id)}`, {
       method: "PATCH",
       returning: false,
-      body: JSON.stringify({ password_hash: hashPassword(tempPassword) }),
+      // The point of a reset is usually that someone else may be holding the
+      // account. Changing the password alone would leave their cookie working
+      // for up to another 12 hours.
+      body: JSON.stringify({
+        password_hash: hashPassword(tempPassword),
+        sessions_valid_from: new Date().toISOString(),
+      }),
     });
+    invalidateAdminAccountCache(id);
     return NextResponse.json({ ok: true, tempPassword });
   }
 
@@ -105,11 +112,21 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   if (body.status === "active" || body.status === "suspended") patch.status = body.status;
   if (Object.keys(patch).length === 0) return NextResponse.json({ ok: false, error: "ไม่มีข้อมูลให้แก้ไข" }, { status: 400 });
 
+  // Suspending, demoting or moving the login address all change what the
+  // person holding that cookie is allowed to do, and the cookie carries the
+  // old role inside it. Revoke so the next request has to come back with a
+  // freshly issued one. Renaming is left alone — a display name grants
+  // nothing, and signing someone out over a typo fix would be rude.
+  if (patch.status !== undefined || patch.role_key !== undefined || patch.email !== undefined) {
+    patch.sessions_valid_from = new Date().toISOString();
+  }
+
   const [updated] = await supabaseRest<{ id: string; email: string; display_name: string; role_key: string; status: string }[]>(
     `admin_users?id=eq.${pgValue(id)}&select=id,email,display_name,role_key,status`,
     { method: "PATCH", body: JSON.stringify(patch) }
   );
   if (!updated) return NextResponse.json({ ok: false, error: "ไม่พบผู้ใช้นี้" }, { status: 404 });
+  if (patch.sessions_valid_from !== undefined) invalidateAdminAccountCache(id);
 
   // Logged because it moves where a password reset can be sent — the one
   // change here that could hand an account to someone else. Both addresses

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkAdminPassword, createAdminToken, adminCookieOptions, ADMIN_COOKIE } from "@/lib/admin-auth";
+import { adminSigningConfigured, checkAdminPassword, createAdminToken, adminCookieOptions, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyPassword } from "@/lib/password";
 import { clientIp, isRateLimited, isRateLimitedShared } from "@/lib/rate-limit";
@@ -36,6 +36,10 @@ export async function POST(req: NextRequest) {
   // for the door to the admin panel. Its real allowance is per warm instance,
   // so it sits looser than the durable limit it backs up rather than
   // second-guessing it.
+  if (!adminSigningConfigured()) {
+    return NextResponse.json({ ok: false, error: "ระบบแอดมินยังไม่ได้ตั้งค่า" }, { status: 503 });
+  }
+
   const ip = clientIp(req);
   if (isRateLimited(`admin-login-mem:${ip}`, 10, LOGIN_WINDOW_MS)) {
     return NextResponse.json(TOO_MANY, { status: 429 });

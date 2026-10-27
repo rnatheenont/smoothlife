@@ -1,6 +1,6 @@
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
-import { checkAdminPermission } from "@/lib/admin-permissions";
+import { adminSessionLive, checkAdminPermission } from "@/lib/admin-permissions";
 import { isPublicAdminRoute, ruleFor } from "@/lib/admin-route-permissions";
 import { ATTRIBUTION_COOKIE, attributionCookieOptions, buildAttribution } from "@/lib/attribution";
 import { botName, recordBotHit } from "@/lib/bot-hits";
@@ -37,6 +37,12 @@ async function guardAdminApi(req: NextRequest) {
 
   const token = req.cookies.get(ADMIN_COOKIE)?.value;
   if (!verifyAdminToken(token)) return deny(401, "กรุณาเข้าสู่ระบบแอดมิน");
+
+  // A valid signature only says the cookie is under 12 hours old. Suspending
+  // someone has to take effect now, not whenever their cookie happens to
+  // expire, so the account is checked on every request — cached briefly, so
+  // this is usually not a round trip.
+  if (!(await adminSessionLive(token))) return deny(401, "เซสชันนี้ถูกยกเลิกแล้ว กรุณาเข้าสู่ระบบใหม่");
 
   // Signed in is the whole requirement — either every role is meant to have
   // it, or the route gates itself more strictly (accounts and roles do).

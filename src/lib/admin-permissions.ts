@@ -1,5 +1,5 @@
 import { supabaseRest } from "@/lib/supabase-server";
-import { getAdminSession, verifyAdminToken, type AdminSession } from "@/lib/admin-auth";
+import { adminTokenIssuedAt, getAdminSession, verifyAdminToken, type AdminSession } from "@/lib/admin-auth";
 
 // A legacy shared-password session has no admin_users row and no role, but it
 // must keep being able to do everything it could do yesterday — otherwise
@@ -38,6 +38,60 @@ async function loadPermissions(): Promise<Map<string, Set<string>>> {
 export async function permissionsForRole(role: string): Promise<string[]> {
   const byRole = await loadPermissions();
   return [...(byRole.get(role) ?? new Set<string>())];
+}
+
+/**
+ * Is the account behind this cookie still allowed in, right now?
+ *
+ * The cookie itself only proves it was signed within the last 12 hours, so
+ * on its own `status: "suspended"` stopped nothing until it expired. This
+ * reads the row the cookie points at and refuses when the account is gone,
+ * suspended, or has had its sessions revoked since the token was issued.
+ *
+ * A legacy shared-password session has no row to read — it passes here, and
+ * the only way to end one is to rotate ADMIN_PANEL_SECRET.
+ *
+ * Fails **open** on a read error, and says so in the log. Supabase being
+ * briefly unreachable should not lock the whole team out of the panel, and
+ * the window it leaves is the one that existed here unconditionally before.
+ */
+let accountCache: Map<string, { at: number; row: AdminAccountRow | null }> = new Map();
+const ACCOUNT_CACHE_MS = 15_000;
+
+type AdminAccountRow = { status: string; sessions_valid_from: string | null };
+
+export function invalidateAdminAccountCache(userId?: string) {
+  if (userId) accountCache.delete(userId);
+  else accountCache = new Map();
+}
+
+export async function adminSessionLive(token: string | undefined | null): Promise<boolean> {
+  const session = getAdminSession(token);
+  if (!session) return true; // legacy shared-password session — nothing to look up
+  const issuedAt = adminTokenIssuedAt(token);
+  if (issuedAt === null) return false;
+
+  const cached = accountCache.get(session.userId);
+  let row: AdminAccountRow | null;
+  if (cached && Date.now() - cached.at < ACCOUNT_CACHE_MS) {
+    row = cached.row;
+  } else {
+    try {
+      const rows = await supabaseRest<AdminAccountRow[]>(
+        `admin_users?id=eq.${session.userId}&select=status,sessions_valid_from&limit=1`
+      );
+      row = rows[0] ?? null;
+    } catch (err) {
+      console.error("[admin] could not verify session is still live, allowing through", err);
+      return true;
+    }
+    accountCache.set(session.userId, { at: Date.now(), row });
+  }
+
+  if (!row) return false; // account deleted out from under the cookie
+  if (row.status !== "active") return false;
+  if (row.sessions_valid_from && issuedAt < Date.parse(row.sessions_valid_from)) return false;
+  return true;
 }
 
 /** Call after editing role_permissions from the admin UI so the change is
