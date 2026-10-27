@@ -280,7 +280,7 @@
    the figure and drifting out of step, which is how the site ended up with a
    1512 header sitting over 1280 content. */
 :root {
-  --page-max: 1512px;
+  --page-max: 1600px;
   /* Overwritten by Header on every resize and every show/hide. The 0 here is
      what server-rendered HTML and a JS-less page get: a sticky bar flush with
      the top, which is wrong by the height of the bar for one frame and never
@@ -292,15 +292,26 @@
   max-width: var(--page-max);
   margin-left: auto;
   margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-@media (min-width: 768px) {
-  .container-page {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
+  /* The side gutter grows with the window instead of stopping at 768px.
+     
+     It used to be 16px, then 24px from 768 and never again — so a 1512px
+     block of content on a wide monitor had the same 24px of air beside it
+     as a phone, and read as packed to the edges. Meanwhile the window
+     outside the block kept growing, which is the other half of the same
+     complaint: tight in the middle, empty at the sides.
+     
+     clamp does both ends with one value. 1rem holds the phone exactly
+     where it was; 3.5vw gives a mid-sized window room that scales with
+     it; 3.5rem stops the gutter eating the content on the widest screens.
+     
+     Figures, so the next person does not have to measure:
+       375px  → 16px (unchanged)
+       768px  → 27px
+       1024px → 36px
+       1280px → 45px
+       1512px → 53px
+       1600px+ → 56px, and the window's own margins take the rest. */
+  padding-inline: clamp(1rem, 3.5vw, 3.5rem);
 }
 
 /* Campaign colours, scoped to the campaign page and nowhere else.
