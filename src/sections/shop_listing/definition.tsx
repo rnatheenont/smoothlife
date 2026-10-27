@@ -1,11 +1,11 @@
 import { z } from "zod";
 import ProductCard from "@/components/ProductCard";
+import CategoryCircles from "@/components/shop/CategoryCircles";
 import ShopFilters from "@/components/ShopFilters";
 import ActiveFilterChips from "@/components/shop/ActiveFilterChips";
 import SortSelect from "@/components/SortSelect";
 import SortMenu from "@/components/shop/SortMenu";
 import Pagination from "@/components/Pagination";
-import CategoryCircles from "@/components/shop/CategoryCircles";
 import ViewToggle from "@/components/shop/ViewToggle";
 import ProductRow from "@/components/shop/ProductRow";
 import { categories } from "@/data/categories";
@@ -84,19 +84,20 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
 
   return (
     <div className="container-page py-5 md:py-8">
-      <CategoryCircles current={data.params} />
-
+      {/* Phones and tablets only: the banner above carries this row from lg.
+          Here it is sticky under the app bar, which it can only be inside
+          the container it scrolls with. */}
+      <div className="lg:hidden">
+        <CategoryCircles current={data.params} />
+      </div>
       <div className="flex flex-col gap-6">
         <div className="min-w-0 flex-1">
           {/* One toolbar: what narrows the list on the left, how it is
               ordered on the right. */}
-          <div className="mb-4 flex flex-col gap-3">
-            <h2 className="text-base font-bold text-brand-ink md:text-lg">
-              {data.heading}{" "}
-              <span className="text-sm font-medium text-slate-500">
-                {data.total.toLocaleString("th-TH")} รายการ
-              </span>
-            </h2>
+          {/* No heading here any more: the banner above says which category
+              this is and how many there are, and a second copy of both was
+              the page telling you twice. */}
+          <div className="mb-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <ShopFilters
                 houseBrands={data.house}

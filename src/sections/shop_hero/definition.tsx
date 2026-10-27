@@ -1,6 +1,8 @@
 import { z } from "zod";
 import ShopHero from "@/components/shop/ShopHero";
+import CategoryCircles from "@/components/shop/CategoryCircles";
 import { categories } from "@/data/categories";
+import { filterProducts } from "@/lib/filter-products";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // The banner at the top of the shop.
@@ -21,15 +23,22 @@ const schema = z.object({
 });
 
 function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
-  const slug = ctx.query?.category;
+  const query = ctx.query ?? {};
+  const slug = query.category;
   const active = slug ? categories.find((c) => c.slug === slug) : undefined;
+  // Counted here as well as in the listing below. Two passes over an
+  // in-memory array is cheaper than threading one number between two
+  // sections a page document is free to reorder or drop.
+  const count = filterProducts(query).length;
   return (
     <ShopHero
       eyebrow={settings.eyebrow || undefined}
       title={active ? active.nameTh : settings.title}
       subtitle={settings.subtitle}
-      categorySlug={active?.slug}
-    />
+      count={count}
+    >
+      <CategoryCircles current={query} />
+    </ShopHero>
   );
 }
 

@@ -41,11 +41,16 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
       <ShopHero
         title={activeCategory ? activeCategory.nameTh : "สินค้าทั้งหมด"}
         subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
-        categorySlug={activeCategory?.slug}
-      />
+        count={allItems.length}
+      >
+        <CategoryCircles current={searchParams} />
+      </ShopHero>
 
       <div className="container-page py-5 md:py-8">
-        <CategoryCircles current={searchParams} />
+        {/* Phones and tablets only — see the note in ShopHero. */}
+        <div className="lg:hidden">
+          <CategoryCircles current={searchParams} />
+        </div>
 
         <div className="flex flex-col gap-6">
           <div className="min-w-0 flex-1">
@@ -53,11 +58,9 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
                 ordered on the right. The filters had a row of their own
                 above the count, and two rows of controls for one list is
                 one row too many. */}
-            <div className="mb-4 flex flex-col gap-3">
-              <h2 className="text-base font-bold text-brand-ink md:text-lg">
-                {activeCategory ? activeCategory.nameTh : "สินค้าทั้งหมด"}{" "}
-                <span className="text-sm font-medium text-slate-500">{allItems.length.toLocaleString("th-TH")} รายการ</span>
-              </h2>
+            {/* No heading here any more: the banner above says which
+                category this is and how many there are. */}
+            <div className="mb-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <ShopFilters
                   houseBrands={brandOptions().house}
