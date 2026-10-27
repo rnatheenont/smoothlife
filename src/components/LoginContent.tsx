@@ -89,6 +89,7 @@ function TermsCheckbox({ checked, onChange }: { checked: boolean; onChange: (v: 
 import { useAuth } from "@/lib/auth-context";
 import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
+import { askToSendOtp } from "@/lib/otp-allowance";
 import DemoBadge from "./DemoBadge";
 import LoginShell from "@/components/account/LoginShell";
 import LineIcon from "@/components/icons/LineIcon";
@@ -357,6 +358,12 @@ export default function LoginContent({
     setOtpError("");
     setOtpSending(true);
     try {
+      // Permission before the SMS. See @/lib/otp-allowance.
+      const allowed = await askToSendOtp(phone);
+      if (!allowed.ok) {
+        setOtpError(allowed.error);
+        return;
+      }
       const auth = getFirebaseAuth();
       if (!recaptchaVerifierRef.current) {
         recaptchaVerifierRef.current = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });

@@ -23,6 +23,7 @@ import {
   getFirebaseAuth,
   toE164Thai,
 } from "@/lib/firebase-client";
+import { askToSendOtp } from "@/lib/otp-allowance";
 import { Avatar, Button } from "@/components/ui";
 import OtpField from "@/components/OtpField";
 import {
@@ -493,6 +494,12 @@ function PhoneChangeCard() {
     setError("");
     setSending(true);
     try {
+      // Permission before the SMS. See @/lib/otp-allowance.
+      const allowed = await askToSendOtp(phone);
+      if (!allowed.ok) {
+        setError(allowed.error);
+        return;
+      }
       const auth = getFirebaseAuth();
       if (!recaptchaVerifierRef.current) {
         recaptchaVerifierRef.current = new RecaptchaVerifier(

@@ -11,6 +11,7 @@ import AccountLayout from "@/components/account/AccountLayout";
 import { Button } from "@/components/ui";
 import { getFirebaseAuth } from "@/lib/firebase-client";
 import { toE164Thai } from "@/lib/thai-phone";
+import { askToSendOtp } from "@/lib/otp-allowance";
 import { CHANNELS, channelLabel, type ChannelKey } from "@/lib/account-identities";
 
 // "ช่องทางเข้าสู่ระบบ" — every way in, and one account behind them.
@@ -136,6 +137,12 @@ function VerifyContent() {
     setError("");
     setBusy(true);
     try {
+      // Permission before the SMS. See @/lib/otp-allowance.
+      const allowed = await askToSendOtp(phone);
+      if (!allowed.ok) {
+        setError(allowed.error);
+        return;
+      }
       const auth = getFirebaseAuth();
       if (!recaptchaRef.current) {
         recaptchaRef.current = new RecaptchaVerifier(auth, "verify-recaptcha", { size: "invisible" });
