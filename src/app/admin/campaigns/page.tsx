@@ -91,6 +91,20 @@ const WINNER_STATUS = {
   forfeited: "สละสิทธิ์",
 } as const;
 
+/**
+ * The server's reason, or something better than silence.
+ *
+ * `json.error` is empty whenever the response was not JSON at all — a 500
+ * from an unhandled throw answers with an HTML page — and the fallback then
+ * printed a sentence that only repeated the button's name. The status code is
+ * not an explanation, but it is the difference between "try again" and
+ * "report this".
+ */
+function failed(res: Response, json: { error?: string }, fallback: string) {
+  if (json?.error) return new Error(json.error);
+  return new Error(res.ok ? fallback : `${fallback} (เซิร์ฟเวอร์ตอบ ${res.status})`);
+}
+
 export default function Page() {
   const [data, setData] = useState<Data | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("queue");
@@ -164,7 +178,7 @@ export default function Page() {
       );
       const json = await res.json();
       if (!res.ok || !json.ok)
-        throw new Error(json.error || "โหลดข้อมูลไม่สำเร็จ");
+        throw failed(res, json, "โหลดข้อมูลไม่สำเร็จ");
       setData(json as Data);
       setError(null);
     } catch (err) {
@@ -200,7 +214,7 @@ export default function Page() {
       );
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok)
-        throw new Error(json.error || "โหลดยอดขายไม่สำเร็จ");
+        throw failed(res, json, "โหลดยอดขายไม่สำเร็จ");
       setSales(json as Sales);
       setSalesError(null);
     } catch (err) {
@@ -230,7 +244,7 @@ export default function Page() {
       );
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok)
-        throw new Error(json.error || "ดึงกลับไม่สำเร็จ");
+        throw failed(res, json, "ดึงกลับไม่สำเร็จ");
       await load();
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "ดึงกลับไม่สำเร็จ");
@@ -263,7 +277,7 @@ export default function Page() {
         },
       );
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "บันทึกไม่สำเร็จ");
+      if (!res.ok || !json.ok) throw failed(res, json, "บันทึกไม่สำเร็จ");
       await load();
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
@@ -286,7 +300,7 @@ export default function Page() {
       );
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok)
-        throw new Error(json.error || "คำนวณใหม่ไม่สำเร็จ");
+        throw failed(res, json, "คำนวณใหม่ไม่สำเร็จ");
       await load();
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "คำนวณใหม่ไม่สำเร็จ");
@@ -317,7 +331,7 @@ export default function Page() {
         body: JSON.stringify({ action: "amounts", ...amounts }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "บันทึกยอดไม่สำเร็จ");
+      if (!res.ok || !json.ok) throw failed(res, json, "บันทึกยอดไม่สำเร็จ");
       await load();
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "บันทึกยอดไม่สำเร็จ");
@@ -342,7 +356,7 @@ export default function Page() {
         body: JSON.stringify({ action: "order-number", orderNumber }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "แก้เลขคำสั่งซื้อไม่สำเร็จ");
+      if (!res.ok || !json.ok) throw failed(res, json, "แก้เลขคำสั่งซื้อไม่สำเร็จ");
       await load();
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "แก้เลขคำสั่งซื้อไม่สำเร็จ");
@@ -361,7 +375,7 @@ export default function Page() {
         { method: "DELETE" },
       );
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "ลบไม่สำเร็จ");
+      if (!res.ok || !json.ok) throw failed(res, json, "ลบไม่สำเร็จ");
       await load();
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "ลบไม่สำเร็จ");
@@ -411,7 +425,7 @@ export default function Page() {
         },
       );
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "บันทึกไม่สำเร็จ");
+      if (!res.ok || !json.ok) throw failed(res, json, "บันทึกไม่สำเร็จ");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
@@ -443,7 +457,7 @@ export default function Page() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok)
-        throw new Error(json.error || "จับสลากไม่สำเร็จ");
+        throw failed(res, json, "จับสลากไม่สำเร็จ");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "จับสลากไม่สำเร็จ");
@@ -466,7 +480,7 @@ export default function Page() {
         { method: "DELETE" },
       );
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "ล้างผลไม่สำเร็จ");
+      if (!res.ok || !json.ok) throw failed(res, json, "ล้างผลไม่สำเร็จ");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "ล้างผลไม่สำเร็จ");

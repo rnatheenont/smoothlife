@@ -296,6 +296,60 @@ async function reopen(CAMPAIGN: string, id: string, token: string | undefined) {
  * the audit trail worth keeping. Then it recalculates, because a number
  * nobody acts on is just another thing to remember to press.
  */
+type Claim = {
+  id: string;
+  status: string | null;
+  contact_name: string | null;
+  contact_phone: string | null;
+  manual_receipt_no: string | null;
+  declared_order_number: string | null;
+};
+
+const STATUS_WORD: Record<string, string> = {
+  pending_review: "รอตรวจ",
+  approved: "อนุมัติแล้ว",
+  rejected: "ตีกลับแล้ว",
+};
+
+/** The digits the unique index is built on — see the index definition. */
+const claimDigits = (value: string | null | undefined) => (value ?? "").replace(/\D/g, "");
+
+/**
+ * The entry in this campaign that already claims this order number, if any.
+ *
+ * PostgREST cannot filter on the index's expression, so this casts a wider
+ * net on either column and settles it here with the same normalisation the
+ * index uses.
+ */
+async function findClaim(CAMPAIGN: string, typed: string, exceptId: string): Promise<Claim | null> {
+  const digits = claimDigits(typed);
+  if (!digits) return null;
+  const like = encodeURIComponent(`*${digits}*`);
+  const rows = await supabaseRest<Claim[]>(
+    `receipt_campaign_entries?campaign_key=eq.${pgValue(CAMPAIGN)}` +
+      `&or=(manual_receipt_no.ilike.${like},declared_order_number.ilike.${like})` +
+      `&select=id,status,contact_name,contact_phone,manual_receipt_no,declared_order_number&limit=50`,
+  ).catch((): Claim[] => []);
+  return (
+    rows.find(
+      (row) =>
+        row.id !== exceptId &&
+        claimDigits(row.manual_receipt_no || row.declared_order_number) === digits,
+    ) ?? null
+  );
+}
+
+/** Said in full: who has it, what state it is in, and what to do about it. */
+function claimTakenMessage(claim: Claim) {
+  const who = [claim.contact_name?.trim(), claim.contact_phone?.trim()].filter(Boolean).join(" · ");
+  const state = STATUS_WORD[claim.status ?? ""] ?? claim.status ?? "ไม่ทราบสถานะ";
+  const number = claim.manual_receipt_no || claim.declared_order_number || "";
+  return (
+    `เลขคำสั่งซื้อ ${number} ถูกใบเสร็จอีกใบใช้ไปแล้ว (${who || "ไม่ระบุชื่อ"} · ${state}) — ` +
+    `หนึ่งคำสั่งซื้อรับสิทธิ์ได้ครั้งเดียว ถ้าใบนั้นกรอกเลขผิด ให้ไปแก้หรือตีกลับใบนั้นก่อน แล้วค่อยกลับมาแก้ใบนี้`
+  );
+}
+
 async function setOrderNumber(
   CAMPAIGN: string,
   id: string,
@@ -323,11 +377,36 @@ async function setOrderNumber(
     return NextResponse.json({ ok: false, error: "ไม่พบใบเสร็จรายการนี้" }, { status: 404 });
   }
 
-  await supabaseRest(`receipt_campaign_entries?id=eq.${pgValue(id)}`, {
-    method: "PATCH",
-    returning: false,
-    body: JSON.stringify({ manual_receipt_no: typed }),
-  });
+  // One order, one claim. The database enforces it on the digits of
+  // whichever number is in play (receipt_campaign_entries_one_claim_per_number),
+  // and without this check the write throws, Next answers with a 500 that is
+  // not JSON, and the reviewer gets "แก้เลขคำสั่งซื้อไม่สำเร็จ" — which is
+  // how somebody ends up pressing the same button five times. Looked up
+  // first so the answer can say who already has it.
+  const taken = await findClaim(CAMPAIGN, typed, id);
+  if (taken) {
+    return NextResponse.json({ ok: false, error: claimTakenMessage(taken) }, { status: 409 });
+  }
+
+  try {
+    await supabaseRest(`receipt_campaign_entries?id=eq.${pgValue(id)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({ manual_receipt_no: typed }),
+    });
+  } catch (err) {
+    // The check above lost a race, or the number collides in a way it did not
+    // look for. Either way this is the same answer, not a 500.
+    if (String(err).includes("receipt_campaign_entries_one_claim_per_number")) {
+      const clash = await findClaim(CAMPAIGN, typed, id);
+      return NextResponse.json(
+        { ok: false, error: clash ? claimTakenMessage(clash) : `เลขคำสั่งซื้อ ${typed} ถูกใช้ไปแล้วในใบเสร็จอื่นของกิจกรรมนี้` },
+        { status: 409 },
+      );
+    }
+    console.error("[admin/receipts] order-number save failed", err);
+    return NextResponse.json({ ok: false, error: "บันทึกเลขคำสั่งซื้อไม่สำเร็จ" }, { status: 500 });
+  }
 
   await supabaseRest("admin_audit_log", {
     method: "POST",
