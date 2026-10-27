@@ -103,7 +103,7 @@ function ProfileContent() {
   }
 
   return (
-    <div className="max-w-md">
+    <div>
       <div className="flex items-center gap-2 text-brand-800 mb-2">
         <UserIcon size={18} />
         <span className="text-xs font-semibold">Profile</span>

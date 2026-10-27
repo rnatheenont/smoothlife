@@ -173,7 +173,7 @@ function CheckinContent() {
   const nextRewardDay = !cycle ? null : !cycle.day3RewardClaimed ? 3 : !cycle.day7RewardClaimed ? 7 : null;
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <h1 className="text-2xl font-bold text-brand-ink mb-1">เช็กอินรายวัน</h1>
       <p className="text-sm text-slate-500 mb-6">เช็กอินทุกวัน สะสมแต้ม ครบ 7 วันรับคูปองส่วนลดพิเศษ</p>
 

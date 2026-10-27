@@ -115,8 +115,12 @@ function AccountShell({ children }: { children: ReactNode }) {
     router.push("/");
   }
 
+  // No max-w of its own. The account area used to stop at 1152px while the
+  // rest of the shop ran to the page width, so an order list sat in half the
+  // room it had. container-page is the one place that decides how wide a
+  // page is, and this is a page.
   return (
-    <div className="container-page py-6 md:py-10 max-w-6xl mx-auto">
+    <div className="container-page py-6 md:py-10">
       <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-8">
         {/* Desktop sidebar */}
         <aside className="hidden lg:block">

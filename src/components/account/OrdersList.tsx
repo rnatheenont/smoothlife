@@ -160,7 +160,7 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
   }
 
   return (
-    <div className={embedded ? "" : "max-w-3xl"}>
+    <div>
       <Heading embedded={embedded} />
       {totals && totals.orders > 0 && (
         <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">

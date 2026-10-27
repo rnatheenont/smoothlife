@@ -229,7 +229,7 @@ function VerifyContent() {
   const held = new Set(identities.map((i) => i.provider));
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <div key={recaptchaKey} id="verify-recaptcha" />
 
       <header className="mb-5">

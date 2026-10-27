@@ -60,7 +60,7 @@ function LeaderboardContent() {
   const youInTop = data.entries.some((e) => e.isYou);
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <h1 className="text-2xl font-bold text-brand-ink mb-1 flex items-center gap-2">
         <Trophy size={22} className="text-amber-500" /> อันดับสมาชิก
       </h1>

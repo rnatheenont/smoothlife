@@ -70,7 +70,7 @@ function NewAddressContent() {
   }
 
   return (
-    <div className="max-w-lg">
+    <div>
       <div className="flex items-center gap-2 text-brand-800 mb-2">
         <MapPin size={18} />
         <span className="text-xs font-semibold">Shipping address</span>

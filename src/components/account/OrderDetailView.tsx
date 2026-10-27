@@ -55,7 +55,7 @@ export default function OrderDetailView({
   const grossItems = Number(order.subtotal) + discounts;
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <Link
         href="/account/orders"
         className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand-800"
