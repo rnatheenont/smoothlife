@@ -14,6 +14,7 @@ import { useOrderTotals } from "@/lib/use-order-totals";
 import { formatTHB } from "@/lib/format";
 import type { ProductCardData } from "@/data/card";
 import { pointsForAmount } from "@/data/coupons";
+import { giftsOf } from "@/data/free-gifts";
 import { subscriptionPlans } from "@/data/subscriptions";
 import CouponPicker from "@/components/CouponPicker";
 import { Button } from "@/components/ui";
@@ -29,7 +30,7 @@ import ProductCard from "@/components/ProductCard";
  * the one thing a cart must never do is change on the day it moves.
  */
 export default function CartView() {
-  const { lines, updateQty, removeItem, changeVariant, productBySlug, giftOffers, chooseGift } =
+  const { lines, updateQty, removeItem, changeVariant, productBySlug, giftOffers, chooseGift, giftPromos } =
     useCart();
   const { open: openLogin } = useLoginModal();
   const { user } = useAuth();
@@ -75,6 +76,71 @@ export default function CartView() {
   // chose — and the total — most of a screen further down. Nothing here can
   // be changed, removed or paid for; it only has to be recognised.
   const giftLines = lines.filter((l) => l.isGift);
+
+  /**
+   * The gifts, grouped by the rung of the ladder that paid for them.
+   *
+   * The shelf listed them in one flat row, so a basket that had cleared the
+   * first rung of a two-rung campaign looked exactly like one that had
+   * cleared the only rung of a flat one — nothing said which level these
+   * came from, and nothing said there was another one above.
+   *
+   * `giftPromoSlug` carries the rung already: "slug::tier-0". It is read
+   * back here rather than recomputed, so the heading and the gift under it
+   * cannot disagree.
+   */
+  const giftGroups = (() => {
+    const order: string[] = [];
+    const byKey = new Map<string, typeof giftLines>();
+    for (const line of giftLines) {
+      // A tier that hands over several things keys each one separately
+      // ("…::tier-0::gift-1") so the lines do not collide. The heading is
+      // about the rung, not the gift, so that tail comes off — otherwise a
+      // two-gift tier printed its own title twice.
+      const key = String(line.giftPromoSlug ?? "").replace(/::gift-\d+$/, "");
+      if (!byKey.has(key)) {
+        byKey.set(key, []);
+        order.push(key);
+      }
+      byKey.get(key)!.push(line);
+    }
+    return order.map((key) => {
+      const [slug, tierPart] = key.split("::");
+      const promo = giftPromos.find((p) => p.slug === slug);
+      const tierIndex = tierPart?.startsWith("tier-") ? Number(tierPart.slice(5)) : null;
+      const tiers = [...(promo?.tiers ?? [])].sort((a, b) => a.minSubtotal - b.minSubtotal);
+      const tier = tierIndex !== null ? tiers[tierIndex] : undefined;
+      return {
+        key,
+        lines: byKey.get(key)!,
+        promoTitle: promo ? (lang === "en" ? promo.titleEn : promo.titleTh) : null,
+        tierLabel:
+          tier && tierIndex !== null
+            ? `${t(`ระดับ ${tierIndex + 1}`, `Tier ${tierIndex + 1}`)} · ${t("ครบ", "from")} ${formatTHB(tier.minSubtotal)}`
+            : null,
+      };
+    });
+  })();
+
+  /** The next rung still to come, so the shelf says what is above it rather
+   *  than stopping at what has been earned. */
+  const nextRung = (() => {
+    const paying = lines.filter((l) => !l.isGift);
+    const spend = paying.reduce((sum, l) => sum + l.price * l.qty, 0);
+    for (const promo of giftPromos) {
+      if (!promo.active || promo.kind !== "tiered") continue;
+      const tiers = [...(promo.tiers ?? [])].sort((a, b) => a.minSubtotal - b.minSubtotal);
+      const idx = tiers.findIndex((x) => spend < x.minSubtotal);
+      if (idx === -1) continue;
+      return {
+        // 1-based, the way the headings count: tiers[0] is "ระดับ 1".
+        index: idx + 1,
+        missing: tiers[idx].minSubtotal - spend,
+        count: giftsOf(tiers[idx]).length,
+      };
+    }
+    return null;
+  })();
 
   /** Tick a reward on or off, keeping within what the campaign allows. Past
    *  the cap the oldest pick makes way, so the control never dead-ends with
@@ -359,8 +425,19 @@ export default function CartView() {
               {/* Two across on a phone, four on a laptop: a picture and a
                   name is all there is to read, and five of them fit in the
                   height one of the rows above used to take. */}
-              <ul className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-4">
-                {giftLines.map((line) => (
+              <div className="space-y-2 p-3">
+              {giftGroups.map((group) => (
+                <div key={group.key}>
+                  {group.tierLabel && (
+                    <p className="mb-1.5 flex flex-wrap items-baseline gap-x-1.5 text-[11px]">
+                      <span className="font-bold text-brand-800">{group.tierLabel}</span>
+                      {group.promoTitle && (
+                        <span className="min-w-0 truncate text-slate-500">{group.promoTitle}</span>
+                      )}
+                    </p>
+                  )}
+                  <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                {group.lines.map((line) => (
                   <li
                     key={`${line.variantId}-${line.giftPromoSlug}`}
                     className="flex items-center gap-2 rounded-xl bg-white/80 p-2"
@@ -381,7 +458,21 @@ export default function CartView() {
                     </span>
                   </li>
                 ))}
-              </ul>
+                  </ul>
+                </div>
+              ))}
+
+              {/* What is still above the rung they are on. Without it the
+                  shelf reads as the end of the campaign rather than the
+                  middle of it. */}
+              {nextRung && (
+                <p className="rounded-xl bg-white/70 px-2.5 py-2 text-[11px] font-semibold text-brand-800">
+                  {lang === "en"
+                    ? `Spend ${formatTHB(nextRung.missing)} more to reach tier ${nextRung.index} — ${nextRung.count} more gift${nextRung.count === 1 ? "" : "s"}`
+                    : `ซื้อเพิ่มอีก ${formatTHB(nextRung.missing)} ถึงระดับ ${nextRung.index} รับเพิ่มอีก ${nextRung.count} ชิ้น`}
+                </p>
+              )}
+              </div>
             </section>
           )}
 
