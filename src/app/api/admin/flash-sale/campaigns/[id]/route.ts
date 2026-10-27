@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { CAMPAIGN_COLUMNS, parseCampaignInput, rowToCampaign, variantIdOf, type FlashSaleCampaignRow } from "@/lib/flash-sale-campaigns";
+import { CAMPAIGN_COLUMNS, parseCampaignInput, rowToCampaign, thanksColumns, variantIdOf, type FlashSaleCampaignRow } from "@/lib/flash-sale-campaigns";
 import { unpublishedIndex } from "@/lib/flash-sale-catalogue";
 import { updateFlashSaleCampaign } from "@/lib/flash-sale";
 
@@ -57,6 +57,16 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
         { status: missing ? 404 : 400 }
       );
     }
+    // Written outside fs_update_campaign for the same reason as on create:
+    // the wording on the card at the end should never be able to fail a save
+    // that is also moving stock or the clock. It applies whatever the
+    // function decided about scope, because words are safe to change at any
+    // point in a sale's life.
+    await supabaseRest(`flash_sale_campaigns?id=eq.${pgValue(id)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify(thanksColumns(r)),
+    }).catch((e) => console.error("[admin/flash-sale] thanks copy not saved", e));
     const [row] = await supabaseRest<FlashSaleCampaignRow[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=${CAMPAIGN_COLUMNS}`);
     return NextResponse.json({ ok: true, campaign: rowToCampaign(row), scope: result.scope });
   }

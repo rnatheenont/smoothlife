@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { createFlashSaleCampaign } from "@/lib/flash-sale";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { CAMPAIGN_COLUMNS, parseCampaignInput, rowToCampaign, variantIdOf, type FlashSaleCampaignRow } from "@/lib/flash-sale-campaigns";
+import { CAMPAIGN_COLUMNS, parseCampaignInput, rowToCampaign, thanksColumns, variantIdOf, type FlashSaleCampaignRow } from "@/lib/flash-sale-campaigns";
 import { unpublishedIndex } from "@/lib/flash-sale-catalogue";
 
 // Admin: the flash-sale campaign list (GET) and adding a campaign (POST).
@@ -75,6 +75,15 @@ export async function POST(req: NextRequest) {
         sale_price: parsed.salePrices[slug],
       })),
     });
+    // The thank-you card's wording, written beside the row the RPC just
+    // made. It is deliberately not part of fs_create_campaign: the function
+    // builds the stock rows in one transaction, and a sale's stock has no
+    // business failing over a line of marketing copy.
+    await supabaseRest(`flash_sale_campaigns?id=eq.${pgValue(id)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify(thanksColumns(r)),
+    }).catch((e) => console.error("[admin/flash-sale] thanks copy not saved", e));
     const [row] = await supabaseRest<FlashSaleCampaignRow[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=${CAMPAIGN_COLUMNS}`);
     return NextResponse.json({ ok: true, campaign: rowToCampaign(row) });
   } catch (err) {

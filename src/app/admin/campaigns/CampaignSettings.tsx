@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { Panel } from "@/components/admin/layout-kit";
+import ThanksCard from "@/components/ThanksCard";
 import AdminSelect from "@/components/admin/AdminSelect";
 import { Button, Checkbox, Input, Spinner, TextArea } from "@heroui/react";
 import AdminSearch from "@/components/admin/AdminSearch";
@@ -34,6 +35,12 @@ type Content = {
   confirmDeadline: number;
   steps: Step[];
   terms: string[];
+  thanks: {
+    title: string;
+    body: string;
+    noticeTitle: string;
+    noticeBody: string;
+  };
   storeUrl: string;
   accent: string;
   shaderBackground: boolean;
@@ -67,6 +74,27 @@ function previewEntries(
     rules.tiered ? round(amount / step) * worth : amount >= step ? worth : 0,
   );
 }
+
+const thaiLong = (ms: number) =>
+  new Date(ms).toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Bangkok",
+  });
+
+/**
+ * The campaign's real dates, put into the thank-you copy.
+ *
+ * Deliberately a copy of fillThanks() in lib/receipt-campaign-content rather
+ * than an import: that module reaches for supabase-server, and importing it
+ * here would pull server code into the browser bundle.
+ */
+const fillThanks = (text: string, c: Content) =>
+  text
+    .replaceAll("{closes}", thaiLong(c.closesAt))
+    .replaceAll("{announce}", thaiLong(c.announceAt))
+    .replaceAll("{confirm}", thaiLong(c.confirmDeadline));
 
 /** <input type="datetime-local"> wants wall-clock time, and the shop's is Bangkok. */
 function toLocalInput(ms: number): string {
@@ -197,6 +225,7 @@ export default function CampaignSettings({
           ),
           steps: content.steps,
           terms: content.terms.filter((t) => t.trim()),
+          thanks: content.thanks,
           storeUrl: content.storeUrl,
           accent: content.accent,
           shaderBackground: content.shaderBackground,
@@ -355,6 +384,78 @@ export default function CampaignSettings({
           ))}
         </div>
       </Panel>
+
+      {/* The card the page shows once the window has shut. It is the last
+          thing everyone who took part sees, and until now the only way to
+          change a word of it was a deploy. */}
+      <Panel title="การ์ดขอบคุณ (ขึ้นเมื่อปิดรับใบเสร็จแล้ว)" padded>
+        <p className="mb-3 text-[12px] text-slate-500">
+          พิมพ์ <code className="rounded bg-surface-soft px-1">{"{closes}"}</code>{" "}
+          <code className="rounded bg-surface-soft px-1">{"{announce}"}</code>{" "}
+          <code className="rounded bg-surface-soft px-1">{"{confirm}"}</code>{" "}
+          แทนวันที่ได้ ระบบจะใส่วันจริงจากหัวข้อ &quot;กำหนดการ&quot; ให้เอง —
+          เลื่อนวันแล้วการ์ดเปลี่ยนตาม ไม่ต้องกลับมาแก้ · เว้นว่างไว้ = ใช้ข้อความเดิมของระบบ
+        </p>
+        <div className="flex flex-col gap-3">
+          <label className="block">
+            <span className="text-[12px] font-semibold text-slate-500">หัวข้อขอบคุณ</span>
+            <Input
+              className={`mt-1 ${field}`}
+              value={content.thanks.title}
+              onChange={(e) => set("thanks", { ...content.thanks, title: e.target.value })}
+            />
+          </label>
+          <label className="block">
+            <span className="text-[12px] font-semibold text-slate-500">คำอธิบายใต้หัวข้อ</span>
+            <TextArea
+              fullWidth
+              className="mt-1"
+              rows={2}
+              value={content.thanks.body}
+              onChange={(e) => set("thanks", { ...content.thanks, body: e.target.value })}
+            />
+          </label>
+          <label className="block">
+            <span className="text-[12px] font-semibold text-slate-500">
+              หัวข้อกล่องแจ้งเตือน
+            </span>
+            <Input
+              className={`mt-1 ${field}`}
+              value={content.thanks.noticeTitle}
+              onChange={(e) => set("thanks", { ...content.thanks, noticeTitle: e.target.value })}
+            />
+          </label>
+          <label className="block">
+            <span className="text-[12px] font-semibold text-slate-500">
+              ข้อความแจ้งเตือน
+            </span>
+            <TextArea
+              fullWidth
+              className="mt-1"
+              rows={2}
+              value={content.thanks.noticeBody}
+              onChange={(e) => set("thanks", { ...content.thanks, noticeBody: e.target.value })}
+            />
+          </label>
+        </div>
+
+        {/* The real card, with the real dates in it. Typing a date by hand
+            instead of a placeholder is a mistake you can see here. */}
+        <p className="mb-2 mt-4 text-[12px] font-semibold text-slate-500">
+          ตัวอย่างที่ลูกค้าจะเห็น
+        </p>
+        <ThanksCard
+          accent={content.accent || undefined}
+          eyebrow="ปิดรับใบเสร็จแล้ว"
+          title={content.thanks.title || "—"}
+          body={fillThanks(content.thanks.body, content)}
+          notice={{
+            title: fillThanks(content.thanks.noticeTitle, content),
+            body: fillThanks(content.thanks.noticeBody, content),
+          }}
+        />
+      </Panel>
+
 
       <Panel title="ขั้นตอนการร่วมกิจกรรม" padded>
         <div className="flex flex-col gap-3">

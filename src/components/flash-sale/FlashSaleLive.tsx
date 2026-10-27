@@ -413,6 +413,7 @@ export default function FlashSaleLive({
       join={() => act("join")}
       leave={() => act("leave")}
       checkout={checkout}
+      thanks={theme.thanks}
       hideOpeningTime={theme.kind === "special"}
     />
   );
@@ -665,6 +666,15 @@ export default function FlashSaleLive({
   );
 }
 
+/** What the card says when the campaign has not been given its own words. */
+export const DEFAULT_THANKS = {
+  title: "ขอบคุณที่แวะมาร่วมสนุกนะคะ",
+  bodySoldOut: "รอบนี้ของหมดเร็วมาก ไว้เจอกันรอบหน้านะคะ",
+  bodyEnded: "รอบนี้ปิดการขายแล้ว ไว้เจอกันรอบหน้านะคะ",
+  noticeTitle: "รอบหน้าแจ้งทาง LINE ก่อนใคร",
+  noticeBody: "ผูกบัญชี LINE ไว้ เราจะส่งข้อความบอกทันทีที่ Flash Sale รอบใหม่เปิด",
+} as const;
+
 function Panel({
   status,
   productName,
@@ -679,9 +689,12 @@ function Panel({
   join,
   leave,
   checkout,
+  thanks,
   hideOpeningTime = false,
 }: {
   checkout: React.ReactNode;
+  /** The campaign's own thank-you wording; null anywhere = the default. */
+  thanks: CampaignTheme["thanks"];
   /** The special page already counts down to the opening in its own header. */
   hideOpeningTime?: boolean;
   status: Status;
@@ -811,11 +824,14 @@ function Panel({
         compact
         accent="var(--fs-accent)"
         eyebrow={productSoldOut ? "สินค้าหมดแล้ว" : "ปิดการขายแล้ว"}
-        title="ขอบคุณที่แวะมาร่วมสนุกนะคะ"
-        body={productSoldOut ? "รอบนี้ของหมดเร็วมาก ไว้เจอกันรอบหน้านะคะ" : "รอบนี้ปิดการขายแล้ว ไว้เจอกันรอบหน้านะคะ"}
+        title={thanks.title || DEFAULT_THANKS.title}
+        body={
+          thanks.body ||
+          (productSoldOut ? DEFAULT_THANKS.bodySoldOut : DEFAULT_THANKS.bodyEnded)
+        }
         notice={{
-          title: "รอบหน้าแจ้งทาง LINE ก่อนใคร",
-          body: "ผูกบัญชี LINE ไว้ เราจะส่งข้อความบอกทันทีที่ Flash Sale รอบใหม่เปิด",
+          title: thanks.noticeTitle || DEFAULT_THANKS.noticeTitle,
+          body: thanks.noticeBody || DEFAULT_THANKS.noticeBody,
         }}
         actions={
           <>

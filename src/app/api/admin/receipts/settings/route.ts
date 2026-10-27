@@ -81,6 +81,11 @@ export async function PUT(req: NextRequest) {
         .slice(0, 6)
     : [];
 
+  // The thank-you card's words. Blank means "keep saying what you shipped
+  // with" — the loader falls back — so clearing a field is a way back to the
+  // default rather than a card with a hole in it.
+  const thanks = (body.thanks ?? {}) as Record<string, unknown>;
+
   const terms: string[] = Array.isArray(body.terms)
     ? body.terms.map((t: unknown) => text(t, 500)).filter(Boolean).slice(0, 30)
     : [];
@@ -127,6 +132,10 @@ export async function PUT(req: NextRequest) {
     confirm_deadline: when(body.confirmDeadline),
     steps,
     terms,
+    thanks_title: text(thanks.title, 120) || null,
+    thanks_body: text(thanks.body, 600) || null,
+    thanks_notice_title: text(thanks.noticeTitle, 120) || null,
+    thanks_notice_body: text(thanks.noticeBody, 600) || null,
     // Only ever a page of the live shop; a typo falls back to what the
     // campaign already had rather than sending customers off-site.
     store_url: storeUrlOf(text(body.storeUrl, 300), DEFAULT_CONTENT.storeUrl),
@@ -173,6 +182,9 @@ export async function PUT(req: NextRequest) {
         announceAt: row.announce_at,
         terms: terms.length,
         steps: steps.length,
+        thanksEdited: Boolean(
+          row.thanks_title || row.thanks_body || row.thanks_notice_title || row.thanks_notice_body,
+        ),
         rules: { generalThreshold, keychainPrice, keychainEntries, tiered: row.tiered, stacks: row.stacks, rounding, keychainSlugs },
       },
     }),

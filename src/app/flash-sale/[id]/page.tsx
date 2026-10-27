@@ -25,13 +25,17 @@ type Row = {
   hero_note: string | null;
   hero_align: "top" | "center" | "bottom";
   accent_color: string | null;
+  thanks_title: string | null;
+  thanks_body: string | null;
+  thanks_notice_title: string | null;
+  thanks_notice_body: string | null;
   faq: { q: string; a: string }[];
   flash_sales: { product_slug: string; sale_price: number | string | null }[];
 };
 
 async function getCampaign(id: string): Promise<Row | null> {
   if (!UUID_RE.test(id) || !supabaseConfigured()) return null;
-  const rows = await supabaseRest<Row[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=id,title,product_slugs,kind,published,hero_image_url,hero_headline,hero_note,hero_align,accent_color,faq,flash_sales(product_slug,sale_price)`);
+  const rows = await supabaseRest<Row[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=id,title,product_slugs,kind,published,hero_image_url,hero_headline,hero_note,hero_align,accent_color,thanks_title,thanks_body,thanks_notice_title,thanks_notice_body,faq,flash_sales(product_slug,sale_price)`);
   return rows[0] ?? null;
 }
 
@@ -100,6 +104,12 @@ export default async function FlashSalePage(props: { params: Promise<{ id: strin
     heroAlign: campaign.hero_align ?? "top",
     accent: campaign.accent_color ?? DEFAULT_ACCENT,
     faq: Array.isArray(campaign.faq) ? campaign.faq : [],
+    thanks: {
+      title: campaign.thanks_title,
+      body: campaign.thanks_body,
+      noticeTitle: campaign.thanks_notice_title,
+      noticeBody: campaign.thanks_notice_body,
+    },
   };
   return <FlashSaleLive campaignId={campaign.id} title={campaign.title} products={products} theme={theme} />;
 }

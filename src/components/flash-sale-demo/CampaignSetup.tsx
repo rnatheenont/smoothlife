@@ -8,6 +8,7 @@ import { formatTHB } from "@/lib/format";
 import { MAX_GROUP_PRODUCTS, SPECIAL_ACCENT_DEFAULT, type CampaignConfig, type DemoProduct } from "./campaign";
 import { fromLocalInput, toLocalInput } from "./scheduler";
 import { UNLIMITED_REQUEUE } from "@/lib/flash-sale-limits";
+import { DEFAULT_THANKS } from "@/components/flash-sale/FlashSaleLive";
 
 export type CatalogueItem = DemoProduct & {
   category: string;
@@ -128,6 +129,10 @@ export default function CampaignSetup({
   const [heroAlign, setHeroAlign] = useState<"top" | "center" | "bottom">(config.presentation?.heroAlign ?? "top");
   const [accent, setAccent] = useState(config.presentation?.accent ?? SPECIAL_ACCENT_DEFAULT);
   const [faq, setFaq] = useState<{ q: string; a: string }[]>(config.presentation?.faq ?? []);
+  const [thanksTitle, setThanksTitle] = useState(config.thanks?.title ?? "");
+  const [thanksBody, setThanksBody] = useState(config.thanks?.body ?? "");
+  const [thanksNoticeTitle, setThanksNoticeTitle] = useState(config.thanks?.noticeTitle ?? "");
+  const [thanksNoticeBody, setThanksNoticeBody] = useState(config.thanks?.noticeBody ?? "");
   // The banner, from the machine it is sitting on. Pasting a Shopify Files
   // link still works and is still the fallback; asking someone to go and make
   // one first is not a step a campaign form should need.
@@ -658,6 +663,72 @@ export default function CampaignSetup({
             </fieldset>
           )}
 
+          {/* Shown on every campaign, not just the special page: the card at
+              the end is the last thing a regular sale says too. Blank fields
+              fall back to the wording the card ships with, which is what the
+              placeholders show. */}
+          <fieldset className="flex min-w-0 flex-col gap-3 rounded-xl2 border border-surface-line p-3">
+            <legend className="px-1 text-sm font-semibold text-brand-ink">การ์ดขอบคุณ (ตอนขายจบหรือของหมด)</legend>
+            <p className="text-xs text-slate-500">
+              ขึ้นแทนปุ่มเข้าคิวเมื่อปิดการขายหรือสินค้าหมด — เว้นว่างไว้ = ใช้ข้อความเดิมของระบบ
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="fs-thanks-title" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+                  หัวข้อขอบคุณ
+                </label>
+                <input
+                  id="fs-thanks-title"
+                  type="text"
+                  value={thanksTitle}
+                  onChange={(e) => setThanksTitle(e.target.value)}
+                  placeholder={DEFAULT_THANKS.title}
+                  className={fieldClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="fs-thanks-notice-title" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+                  หัวข้อกล่องแจ้งเตือน
+                </label>
+                <input
+                  id="fs-thanks-notice-title"
+                  type="text"
+                  value={thanksNoticeTitle}
+                  onChange={(e) => setThanksNoticeTitle(e.target.value)}
+                  placeholder={DEFAULT_THANKS.noticeTitle}
+                  className={fieldClass}
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="fs-thanks-body" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+                คำอธิบายใต้หัวข้อ
+              </label>
+              <input
+                id="fs-thanks-body"
+                type="text"
+                value={thanksBody}
+                onChange={(e) => setThanksBody(e.target.value)}
+                placeholder={DEFAULT_THANKS.bodySoldOut}
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="fs-thanks-notice-body" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+                ข้อความแจ้งเตือน
+              </label>
+              <input
+                id="fs-thanks-notice-body"
+                type="text"
+                value={thanksNoticeBody}
+                onChange={(e) => setThanksNoticeBody(e.target.value)}
+                placeholder={DEFAULT_THANKS.noticeBody}
+                className={fieldClass}
+              />
+            </div>
+          </fieldset>
+
+
           <div>
             <label htmlFor="fs-stock" className="mb-1.5 block text-sm font-semibold text-brand-ink">
               สต็อกต่อสินค้า (ชิ้น)
@@ -729,6 +800,12 @@ export default function CampaignSetup({
                   mode,
                   kind: pageKind,
                   presentation,
+                  thanks: {
+                    title: thanksTitle.trim() || undefined,
+                    body: thanksBody.trim() || undefined,
+                    noticeTitle: thanksNoticeTitle.trim() || undefined,
+                    noticeBody: thanksNoticeBody.trim() || undefined,
+                  },
                   title,
                   // Demo shows the flash price, with the regular price struck through.
                   products: products.map((p) => {

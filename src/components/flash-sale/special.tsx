@@ -21,6 +21,13 @@ export type CampaignTheme = {
   heroAlign: HeroAlign;
   accent: string;
   faq: { q: string; a: string }[];
+  /** The thank-you card's words; null anywhere falls back to the default. */
+  thanks: {
+    title: string | null;
+    body: string | null;
+    noticeTitle: string | null;
+    noticeBody: string | null;
+  };
 };
 
 // Vertical placement in a column layout is justify-content, not items-*.

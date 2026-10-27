@@ -5,7 +5,7 @@ import { CalendarDays, Gift, Receipt, Ticket } from "lucide-react";
 import ReceiptForm from "./ReceiptForm";
 import ThanksCard, { thanksAction } from "@/components/ThanksCard";
 import { isTestMode } from "@/lib/receipt-campaign";
-import { labelsOf, loadCampaignContent } from "@/lib/receipt-campaign-content";
+import { fillThanks, labelsOf, loadCampaignContent } from "@/lib/receipt-campaign-content";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 
@@ -112,11 +112,11 @@ export default async function Page({
           className="mt-10"
           accent="var(--rc-ink)"
           eyebrow="ปิดรับใบเสร็จแล้ว"
-          title="ขอบคุณที่ร่วมสนุกกับเรานะคะ"
-          body={`ปิดรับใบเสร็จไปเมื่อ ${label.closesLong} ใบเสร็จทุกใบที่ส่งเข้ามาทันเวลา ได้รับสิทธิ์ลุ้นรางวัลเรียบร้อยแล้ว`}
+          title={content.thanks.title}
+          body={fillThanks(content.thanks.body, label)}
           notice={{
-            title: `ประกาศผลวันที่ ${label.announce}`,
-            body: `เก็บใบเสร็จตัวจริงไว้ก่อนนะคะ ผู้ได้รับรางวัลต้องยืนยันสิทธิ์ด้วยใบเสร็จตัวจริงภายใน ${label.confirm}`,
+            title: fillThanks(content.thanks.noticeTitle, label),
+            body: fillThanks(content.thanks.noticeBody, label),
           }}
           actions={
             <>

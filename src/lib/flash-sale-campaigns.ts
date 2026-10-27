@@ -19,6 +19,17 @@ export type CampaignPresentation = {
   heroAlign: HeroAlign;
   accent: string | null;
   faq: { q: string; a: string }[];
+  /** The thank-you card's words. null anywhere = keep the shipped wording. */
+  thanks: CampaignThanks;
+};
+
+/** Null, not "", so a cleared field reads as "use the default" rather than
+ *  as a card with a blank line in it. */
+export type CampaignThanks = {
+  title: string | null;
+  body: string | null;
+  noticeTitle: string | null;
+  noticeBody: string | null;
 };
 
 export const DEFAULT_ACCENT = "#952ede";
@@ -33,6 +44,10 @@ export type FlashSaleCampaignRow = {
   hero_note: string | null;
   hero_align: HeroAlign;
   accent_color: string | null;
+  thanks_title: string | null;
+  thanks_body: string | null;
+  thanks_notice_title: string | null;
+  thanks_notice_body: string | null;
   faq: { q: string; a: string }[];
   group_kind: "category" | "brand" | "collection" | null;
   group_key: string | null;
@@ -50,7 +65,7 @@ export type FlashSaleCampaignRow = {
 };
 
 export const CAMPAIGN_COLUMNS =
-  "id,title,mode,kind,published,hero_image_url,hero_headline,hero_note,hero_align,accent_color,faq,group_kind,group_key,product_slugs,stock_per_product,reservation_window_minutes,max_requeue_per_customer,starts_at,ends_at,ended_manually_at,created_at,flash_sales(product_slug,sale_price)";
+  "id,title,mode,kind,published,hero_image_url,hero_headline,hero_note,hero_align,accent_color,thanks_title,thanks_body,thanks_notice_title,thanks_notice_body,faq,group_kind,group_key,product_slugs,stock_per_product,reservation_window_minutes,max_requeue_per_customer,starts_at,ends_at,ended_manually_at,created_at,flash_sales(product_slug,sale_price)";
 
 /** What the admin page receives: times as epoch ms. */
 export type FlashSaleCampaignDTO = {
@@ -87,6 +102,12 @@ export function rowToCampaign(r: FlashSaleCampaignRow): FlashSaleCampaignDTO {
       heroAlign: r.hero_align === "center" || r.hero_align === "bottom" ? r.hero_align : "top",
       accent: r.accent_color,
       faq: Array.isArray(r.faq) ? r.faq : [],
+      thanks: {
+        title: r.thanks_title,
+        body: r.thanks_body,
+        noticeTitle: r.thanks_notice_title,
+        noticeBody: r.thanks_notice_body,
+      },
     },
     groupKind: r.group_kind,
     groupKey: r.group_key,
@@ -201,6 +222,37 @@ function parsePresentation(b: Record<string, unknown>): Pick<FlashSaleCampaignRo
   };
 }
 
+/**
+ * The thank-you card's words.
+ *
+ * Kept out of parsePresentation on purpose: the hero artwork and the accent
+ * are the special campaign's dressing and a regular one does not store them,
+ * but the card at the end shows on every campaign — so a regular sale that
+ * dropped these would silently lose the only wording it has.
+ */
+function parseThanks(b: Record<string, unknown>): Pick<FlashSaleCampaignRow, "thanks_title" | "thanks_body" | "thanks_notice_title" | "thanks_notice_body"> {
+  const text = (v: unknown, max: number) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
+  const thanks = (b.thanks ?? {}) as Record<string, unknown>;
+  return {
+    thanks_title: text(thanks.title, 120),
+    thanks_body: text(thanks.body, 600),
+    thanks_notice_title: text(thanks.noticeTitle, 120),
+    thanks_notice_body: text(thanks.noticeBody, 600),
+  };
+}
+
+/** The four columns the campaign RPCs do not touch, written straight after
+ *  them. Keeping them out of fs_create_campaign / fs_update_campaign means
+ *  the thank-you card's wording cannot break a sale's stock or its clock. */
+export function thanksColumns(row: Pick<FlashSaleCampaignRow, "thanks_title" | "thanks_body" | "thanks_notice_title" | "thanks_notice_body">) {
+  return {
+    thanks_title: row.thanks_title,
+    thanks_body: row.thanks_body,
+    thanks_notice_title: row.thanks_notice_title,
+    thanks_notice_body: row.thanks_notice_body,
+  };
+}
+
 /** Validates a create request; returns the row to insert or a Thai error message. */
 export function parseCampaignInput(
   body: unknown,
@@ -276,6 +328,7 @@ export function parseCampaignInput(
       ...(kind === "special"
         ? presentation
         : { hero_image_url: null, hero_headline: null, hero_note: null, hero_align: "top" as const, accent_color: null, faq: [] }),
+      ...parseThanks(b),
       group_kind: groupKind as FlashSaleCampaignRow["group_kind"],
       group_key: groupKey,
       product_slugs: slugs,

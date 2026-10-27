@@ -74,6 +74,14 @@ export function stepImageOf(value: unknown): string | null {
   }
 }
 
+/** The words on the card the page shows once the campaign is over. */
+export type CampaignThanks = {
+  title: string;
+  body: string;
+  noticeTitle: string;
+  noticeBody: string;
+};
+
 export type CampaignContent = {
   eyebrow: string;
   title: string;
@@ -85,6 +93,7 @@ export type CampaignContent = {
   steps: CampaignStep[];
   /** The published conditions, one line each, shown on the campaign page. */
   terms: string[];
+  thanks: CampaignThanks;
   /**
    * Where "กลับไปหน้าร้าน" leads.
    *
@@ -157,6 +166,13 @@ export const DEFAULT_CONTENT: CampaignContent = {
   published: true,
   accent: DEFAULT_ACCENT,
   shaderBackground: false,
+  thanks: {
+    title: "ขอบคุณที่ร่วมสนุกกับเรานะคะ",
+    body: "ปิดรับใบเสร็จไปเมื่อ {closes} ใบเสร็จทุกใบที่ส่งเข้ามาทันเวลา ได้รับสิทธิ์ลุ้นรางวัลเรียบร้อยแล้ว",
+    noticeTitle: "ประกาศผลวันที่ {announce}",
+    noticeBody:
+      "เก็บใบเสร็จตัวจริงไว้ก่อนนะคะ ผู้ได้รับรางวัลต้องยืนยันสิทธิ์ด้วยใบเสร็จตัวจริงภายใน {confirm}",
+  },
   terms: [
     "ยอดช็อปทุกๆ 690 บาทต่อใบเสร็จ ได้รับ 1 สิทธิ์ ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้",
     "ยอดช็อป Set Keychain 990 บาทต่อใบเสร็จ ได้รับ 3 สิทธิ์ ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้",
@@ -176,6 +192,10 @@ type Row = {
   confirm_deadline: string | null;
   steps: CampaignStep[] | null;
   terms: string[] | null;
+  thanks_title: string | null;
+  thanks_body: string | null;
+  thanks_notice_title: string | null;
+  thanks_notice_body: string | null;
   store_url: string | null;
   published: boolean | null;
   accent_color: string | null;
@@ -212,6 +232,7 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
   const [row] = await supabaseRest<Row[]>(
     `receipt_campaign_settings?campaign_key=eq.${pgValue(campaignKey)}` +
       `&select=eyebrow,title,intro,opens_at,closes_at,announce_at,confirm_deadline,steps,terms,store_url,published,accent_color,shader_background,` +
+      `thanks_title,thanks_body,thanks_notice_title,thanks_notice_body,` +
       `general_threshold,keychain_price,keychain_entries,tiered,stacks,rounding,keychain_slugs&limit=1`
   ).catch(() => [] as Row[]);
   if (!row) return DEFAULT_CONTENT;
@@ -233,6 +254,12 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
     confirmDeadline: ms(row.confirm_deadline, DEFAULT_CONTENT.confirmDeadline),
     steps: steps.length ? steps : DEFAULT_CONTENT.steps,
     terms: terms.length ? terms : DEFAULT_CONTENT.terms,
+    thanks: {
+      title: row.thanks_title?.trim() || DEFAULT_CONTENT.thanks.title,
+      body: row.thanks_body?.trim() || DEFAULT_CONTENT.thanks.body,
+      noticeTitle: row.thanks_notice_title?.trim() || DEFAULT_CONTENT.thanks.noticeTitle,
+      noticeBody: row.thanks_notice_body?.trim() || DEFAULT_CONTENT.thanks.noticeBody,
+    },
     storeUrl: storeUrlOf(row.store_url, DEFAULT_CONTENT.storeUrl),
     // Only an explicit false hides it: a row written before this column
     // existed is a campaign that has been live for weeks.
@@ -261,6 +288,24 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
       vipSlugs: DEFAULT_RULES.vipSlugs,
     },
   };
+}
+
+/** What an admin may type into the thank-you copy and have filled in. */
+export const THANKS_TOKENS = ["{closes}", "{announce}", "{confirm}"] as const;
+
+/**
+ * Puts the campaign's real dates into a line of thank-you copy.
+ *
+ * The alternative was asking marketing to type the dates out, which works
+ * until the window moves and the card goes on saying the old one — the form
+ * is the one place that would not have been updated, because nothing about
+ * it looks like a date field.
+ */
+export function fillThanks(text: string, label: ReturnType<typeof labelsOf>): string {
+  return text
+    .replaceAll("{closes}", label.closesLong)
+    .replaceAll("{announce}", label.announce)
+    .replaceAll("{confirm}", label.confirm);
 }
 
 /** The window as the eligibility filter wants it. */

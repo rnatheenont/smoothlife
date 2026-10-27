@@ -41,10 +41,21 @@ export type CampaignPresentation = {
   faq?: { q: string; a: string }[];
 };
 
+/** Blank means "use the wording the card ships with". */
+export type CampaignThanks = {
+  title?: string;
+  body?: string;
+  noticeTitle?: string;
+  noticeBody?: string;
+};
+
 export type CampaignConfig = {
   /** "special" gets the branded drop page; "regular" the plain flash-sale page. */
   kind?: "regular" | "special";
   presentation?: CampaignPresentation;
+  /** The thank-you card's words. Outside `presentation` on purpose: that is
+   *  the special page's dressing, and this card shows on every campaign. */
+  thanks?: CampaignThanks;
   /** "single" = one product; "group" = every product in the chosen group. */
   mode: "single" | "group";
   title: string;

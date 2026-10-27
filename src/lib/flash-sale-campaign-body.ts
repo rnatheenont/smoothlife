@@ -22,6 +22,14 @@ export function campaignBody(config: CampaignConfig, startsAt: number, endsAt?: 
     heroAlign: config.presentation?.heroAlign ?? "top",
     accent: config.presentation?.accent ?? null,
     faq: config.presentation?.faq ?? [],
+    // Sent for every kind: the card at the end is not the special page's
+    // dressing, it is the last thing a regular sale says too.
+    thanks: {
+      title: config.thanks?.title ?? null,
+      body: config.thanks?.body ?? null,
+      noticeTitle: config.thanks?.noticeTitle ?? null,
+      noticeBody: config.thanks?.noticeBody ?? null,
+    },
     groupKind: config.group?.kind,
     groupKey: config.group?.key,
     productSlugs: config.products.map((p) => p.slug),
@@ -70,6 +78,12 @@ export function campaignToConfig(
       heroAlign: c.presentation.heroAlign,
       accent: c.presentation.accent ?? undefined,
       faq: c.presentation.faq,
+    },
+    thanks: {
+      title: c.presentation.thanks.title ?? undefined,
+      body: c.presentation.thanks.body ?? undefined,
+      noticeTitle: c.presentation.thanks.noticeTitle ?? undefined,
+      noticeBody: c.presentation.thanks.noticeBody ?? undefined,
     },
     title: c.title,
     products,
