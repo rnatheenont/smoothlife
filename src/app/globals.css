@@ -280,12 +280,13 @@
    the figure and drifting out of step, which is how the site ended up with a
    1512 header sitting over 1280 content. */
 :root {
-  /* A 14-inch MacBook is 1512 CSS pixels wide, which is the screen this
-     shop is designed on and the reason this number has always been 1512.
-     Capping here means a wider monitor shows the same box of content as
-     that laptop rather than a stretched version of it — the page looks the
-     same everywhere above this width, which is the point. */
-  --page-max: 1512px;
+  /* Pulled in tighter than either laptop it is read on: a 14-inch MacBook
+     is 1512 CSS pixels wide and a 16-inch is 1728, and the page sits inside
+     both rather than reaching for the edges of either. Above this width
+     every screen shows the same box of content — only the empty margin
+     around it grows — which is what makes the shop look like one thing on
+     a laptop and on a monitor. */
+  --page-max: 1400px;
   /* Overwritten by Header on every resize and every show/hide. The 0 here is
      what server-rendered HTML and a JS-less page get: a sticky bar flush with
      the top, which is wrong by the height of the bar for one frame and never
