@@ -52,7 +52,13 @@ export default function GiftWidgetStyleEditor({
     : fillTemplate(style.afterTh, { nearest_reward: SAMPLE[SAMPLE.length - 1].name });
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+    // A container query, not a breakpoint. This editor is shown twice — full
+    // width on the widgets page, and in half a column inside the campaign
+    // form — and `lg:` asks the viewport, which is wide in both cases. So in
+    // the campaign form the two columns stayed side by side in half the
+    // room and the preview sat on top of the sliders.
+    <div className="@container">
+      <div className="grid gap-4 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <div className="min-w-0">
         <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl2 bg-surface-soft p-1">
           {GIFT_WIDGET_TABS.map((t) => (
@@ -289,6 +295,7 @@ export default function GiftWidgetStyleEditor({
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
