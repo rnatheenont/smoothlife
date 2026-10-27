@@ -42,6 +42,8 @@ export default function AdminLineRichMenuPage() {
     text: string;
   } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [fixing, setFixing] = useState(false);
+  const [fixMessage, setFixMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -56,6 +58,34 @@ export default function AdminLineRichMenuPage() {
   useEffect(() => {
     load();
   }, []);
+
+  /** Writes SITE_URL into LINE's Webhook URL field and switches the webhook
+   *  on, using the token the server already holds. */
+  async function fixWebhook() {
+    setFixing(true);
+    setFixMessage(null);
+    try {
+      const res = await fetch("/api/admin/line-rich-menu/webhook", { method: "POST" });
+      const body = await res.json();
+      if (body.ok) {
+        // Three different outcomes wear the same HTTP 200, and only one of
+        // them means customers can type to us. Say which one it is.
+        const text = !body.active
+          ? "ใส่ Webhook URL ให้แล้ว เหลือเปิดสวิตช์ “Use webhook” ใน LINE Developers Console เอง (ตัวนี้ไม่มี API ให้กด)"
+          : body.test && !body.test.success
+            ? `ใส่ Webhook URL ให้แล้ว แต่ LINE ยิงทดสอบมาไม่ผ่าน${body.test.statusCode ? ` (HTTP ${body.test.statusCode})` : ""}${body.test.reason ? ` — ${body.test.reason}` : ""}`
+            : "ตั้งค่าให้แล้ว — ลูกค้าพิมพ์คุยในไลน์ได้เลย";
+        setFixMessage({ kind: body.active ? "ok" : "error", text });
+        await load();
+      } else {
+        setFixMessage({ kind: "error", text: body.detail ? `${body.error} (${body.detail})` : body.error });
+      }
+    } catch (err) {
+      setFixMessage({ kind: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setFixing(false);
+    }
+  }
 
   async function install(file: File) {
     setInstalling(true);
@@ -265,9 +295,12 @@ export default function AdminLineRichMenuPage() {
                 ? "เปิดใช้งานแล้ว — ลูกค้าพิมพ์คุยในไลน์ได้เลย"
                 : !status?.webhook?.secretSet
                   ? "ยังไม่ได้ตั้งค่า LINE_MESSAGING_CHANNEL_SECRET"
-                  : status?.webhook?.registered
-                    ? "LINE ชี้เว็บฮุกไปที่อื่นอยู่ หรือยังปิด Use webhook"
-                    : "ยังไม่ได้ใส่ Webhook URL ใน LINE Developers Console"}
+                  : status?.webhook?.registered &&
+                      status.webhook.registered !== status.webhook.url
+                    ? "LINE ชี้เว็บฮุกไปที่โดเมนอื่นอยู่"
+                    : status?.webhook?.registered
+                      ? "URL ถูกแล้ว แต่ยังปิดสวิตช์ “Use webhook” อยู่"
+                      : "ยังไม่ได้ใส่ Webhook URL ใน LINE Developers Console"}
             </p>
             <p className="mt-2 text-[11px] text-slate-500">
               Webhook URL — วางใน Messaging API &gt; Webhook URL
@@ -281,6 +314,26 @@ export default function AdminLineRichMenuPage() {
                   ตอนนี้ LINE ชี้ไปที่ {status.webhook.registered}
                 </p>
               )}
+
+            {/* The URL above is what the server knows is right, so there is no
+                reason to make somebody copy it into another console by hand —
+                that copy is where the wrong domain came from. */}
+            {status?.configured && !webhookLive && (
+              <button
+                type="button"
+                onClick={fixWebhook}
+                disabled={fixing}
+                className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-brand-gradient px-3.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
+              >
+                {fixing ? <Spinner size="sm" color="current" /> : <RefreshCw size={12} aria-hidden />}
+                {fixing ? "กำลังตั้งค่า…" : "ตั้งค่าให้อัตโนมัติ"}
+              </button>
+            )}
+            {fixMessage && (
+              <p className={`mt-2 break-all text-[11px] ${fixMessage.kind === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
+                {fixMessage.text}
+              </p>
+            )}
             <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
               อย่าลืมปิด “ข้อความตอบกลับอัตโนมัติ” ใน manager.line.biz &gt;
               การตั้งค่า &gt; การตอบกลับ ไม่งั้น LINE

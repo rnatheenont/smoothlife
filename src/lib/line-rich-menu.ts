@@ -136,6 +136,49 @@ export async function getWebhookEndpoint(): Promise<{ endpoint: string; active: 
   }
 }
 
+/**
+ * Writes this site's URL into LINE's "Webhook URL" field.
+ *
+ * Only the URL. LINE publishes three webhook APIs — set the URL, read it back,
+ * and send a test delivery — and no API for the "Use webhook" toggle sitting
+ * underneath the field, so that one stays a human step in the console. The
+ * caller gets `active` back from LINE and must say so rather than reporting
+ * success: a correct URL with the toggle off is still customers typing into
+ * silence.
+ */
+export async function setWebhookEndpoint(endpoint: string): Promise<{
+  endpoint: string;
+  active: boolean;
+  /** What LINE saw when it posted a test event here, if it managed to. */
+  test?: { success: boolean; statusCode?: number; reason?: string };
+}> {
+  await lineFetch(`${API}/channel/webhook/endpoint`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endpoint }),
+  });
+
+  // Ask LINE to deliver a real test event, because "the field is saved" and
+  // "LINE can reach us" are different claims and only the second one is the
+  // thing being fixed. Best-effort: a failed test is worth reporting, not
+  // worth undoing the URL over.
+  let test: { success: boolean; statusCode?: number; reason?: string } | undefined;
+  try {
+    const body = await lineFetch(`${API}/channel/webhook/test`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ endpoint }),
+    });
+    const parsed = JSON.parse(body) as { success?: boolean; statusCode?: number; reason?: string };
+    test = { success: Boolean(parsed.success), statusCode: parsed.statusCode, reason: parsed.reason };
+  } catch {
+    // Leave it undefined; the stored URL below is still the useful answer.
+  }
+
+  const current = await getWebhookEndpoint();
+  return { endpoint: current?.endpoint ?? endpoint, active: current?.active ?? false, test };
+}
+
 /** Removes a menu. Used to clear out superseded ones so the list stays honest. */
 export async function deleteRichMenu(richMenuId: string) {
   await lineFetch(`${API}/richmenu/${richMenuId}`, { method: "DELETE" });
