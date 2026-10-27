@@ -350,8 +350,13 @@ async function handleText(event: LineEvent, lineUserId: string, text: string, im
     console.error("[line-webhook] chat pipeline failed", err);
   }
 
-  const { text: answer, kind, options, reason } = splitMarker(raw);
-  let reply = renderForLine(answer) || FALLBACK;
+  const { text: answer, topic, kind, options, reason } = splitMarker(raw);
+  // LINE has no heading to put it in — a message bubble is one run of plain
+  // text — so the topic becomes the reply's first line instead of being
+  // dropped. Dropping it would make the LINE answer open mid-thought, since
+  // the assistant is told not to repeat the heading in its first sentence.
+  const withTopic = topic ? `${topic}\n\n${answer}` : answer;
+  let reply = renderForLine(withTopic) || FALLBACK;
   // Built from the answer before the brackets were stripped out of it.
   const carousel = await productCarousel(productSlugsIn(answer));
 

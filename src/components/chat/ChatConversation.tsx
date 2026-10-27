@@ -22,6 +22,7 @@ import { useLang } from "@/lib/lang-context";
 import type { useChatSession } from "@/lib/use-chat-session";
 import { PHOTO_MARKER } from "@/lib/chat-image-store";
 import { renderMessageContent } from "@/components/chat/ChatMessageContent";
+import { splitTopic } from "@/lib/chat-markers";
 import { Avatar, Button } from "@/components/ui";
 
 // The conversation itself — everything from the escalation banner down to the
@@ -72,6 +73,36 @@ const SIZES = {
     inputText: "text-[15px]",
   },
 } as const;
+
+/**
+ * One reply from น้อง Smoothie: its topic as a heading, then the answer.
+ *
+ * The heading exists because the first second or two of a reply is spent
+ * waiting — the model has to read the question, often search the catalogue,
+ * and only then start writing. The topic is the first thing it writes, so it
+ * lands well before the answer does and the customer can already see that
+ * the right question was understood.
+ *
+ * Both sources hand this the raw "[[TOPIC: ...]]" marker — the live stream
+ * because it is reading the model's own output, the history because it puts
+ * the marker back (see hydrateHistory) — so the splitting happens here, once.
+ * A half-arrived marker reads as a half-arrived heading, never as brackets.
+ */
+function AssistantBubble({ content }: { content: string }) {
+  const { topic, body } = splitTopic(content);
+  return (
+    <>
+      {topic && (
+        <span className="mb-1.5 block text-[12px] font-bold leading-tight text-brand-800">
+          {topic}
+        </span>
+      )}
+      {/* Nothing yet but the heading: the bubble must not collapse to a
+          sliver and then jump open when the first sentence arrives. */}
+      {body ? renderMessageContent(body) : topic ? <span className="sr-only">…</span> : renderMessageContent(content)}
+    </>
+  );
+}
 
 export default function ChatConversation({
   session,
@@ -313,7 +344,7 @@ export default function ChatConversation({
                       {t("แนบรูปไว้ตรงนี้ (รูปไม่ได้อยู่ในเครื่องนี้)", "Photo was attached here (not on this device)")}
                     </span>
                   )}
-                  {m.role === "assistant" ? renderMessageContent(displayContent) : displayContent}
+                  {m.role === "assistant" ? <AssistantBubble content={displayContent} /> : displayContent}
                 </div>
               </div>
             );

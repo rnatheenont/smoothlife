@@ -29,9 +29,34 @@ export function markerIndex(text: string): number {
   return text[best - 1] === "\n" ? best - 1 : best;
 }
 
+/**
+ * The heading the reply opens with, and the reply without it.
+ *
+ * "[[TOPIC: ...]]" is the one marker that leads rather than trails, so it
+ * cannot go in MARKER_OPENERS above: markerIndex cuts everything from the
+ * first opener onwards, and a leading one would cut the whole reply away.
+ *
+ * It is matched only at the very start, and a half-arrived one counts. While
+ * a reply streams, the text begins as "[[TOPIC: มอยส์เจอร" with no closing
+ * brackets yet — showing that to the customer as literal punctuation for a
+ * second is worse than showing no heading at all, so the partial marker is
+ * read as a partial heading and the brackets never appear.
+ */
+export function splitTopic(text: string): { topic: string; body: string } {
+  const complete = /^\s*\[\[TOPIC:([\s\S]*?)\]\]\s*/i.exec(text);
+  if (complete) return { topic: complete[1].trim(), body: text.slice(complete[0].length) };
+  const partial = /^\s*\[\[TOPIC:([\s\S]*)$/i.exec(text);
+  if (partial) return { topic: partial[1].trim(), body: "" };
+  // Also catches the opener itself arriving a character at a time.
+  if (/^\s*\[?\[?T?O?P?I?C?:?$/i.test(text)) return { topic: "", body: "" };
+  return { topic: "", body: text };
+}
+
 export type SplitMessage = {
-  /** The reply as the customer should see it. */
+  /** The reply as the customer should see it, without its heading. */
   text: string;
+  /** The heading it opened with, if any. */
+  topic: string;
   kind: "ask" | "suggest" | "handoff" | "close" | null;
   options: string[];
   /** For "handoff" and "close": why, in her words. */
@@ -40,7 +65,14 @@ export type SplitMessage = {
 
 export function splitMarker(content: string): SplitMessage {
   const idx = markerIndex(content);
-  if (idx === -1) return { text: content, kind: null, options: [], reason: "" };
+  // Every caller reads `.text`, so stripping the heading here is what keeps
+  // the brackets out of the places that only want the words — the inbox, the
+  // LINE reply, the search index — without each of them having to know the
+  // marker exists.
+  if (idx === -1) {
+    const { topic, body } = splitTopic(content);
+    return { text: body, topic, kind: null, options: [], reason: "" };
+  }
 
   // Every marker in the reply, not just the first. The model is told to write
   // at most one, and it does not always: an ASK and a HANDOFF arrived in the
@@ -57,8 +89,9 @@ export function splitMarker(content: string): SplitMessage {
     });
   }
 
-  const text = content.slice(0, idx).trimEnd();
-  if (found.length === 0) return { text, kind: null, options: [], reason: "" };
+  const { topic, body } = splitTopic(content.slice(0, idx).trimEnd());
+  const text = body;
+  if (found.length === 0) return { text, topic, kind: null, options: [], reason: "" };
 
   // A handover wins when both appear. Dropping it would leave the customer
   // waiting on a request nobody received; dropping the chips only costs them a
@@ -67,6 +100,7 @@ export function splitMarker(content: string): SplitMessage {
 
   return {
     text,
+    topic,
     kind: chosen.kind,
     options:
       chosen.kind === "handoff" || chosen.kind === "close"
@@ -89,6 +123,11 @@ export function splitMarker(content: string): SplitMessage {
  * two buttons under a week-old message.
  */
 export function contentForTranscript(content: string): string {
-  const { text, kind } = splitMarker(content);
-  return kind === "ask" ? content : text;
+  const { kind } = splitMarker(content);
+  if (kind === "ask") return content;
+  // Cut at the trailing markers rather than taking splitMarker's `text`: that
+  // one has the heading removed for display, and the stored copy keeps it, so
+  // reopening the chat tomorrow shows the same reply it showed today.
+  const idx = markerIndex(content);
+  return idx === -1 ? content : content.slice(0, idx).trimEnd();
 }
