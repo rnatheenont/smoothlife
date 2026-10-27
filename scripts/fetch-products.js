@@ -889,6 +889,7 @@ function serialise(list) {
       f.push(`specs:[${rows.join(",")}]`);
     }
     if (p.sold) f.push(`sold:${p.sold}`);
+    if (p.views) f.push(`views:${p.views}`);
     if (p.badges.length) f.push(`badges:[${p.badges.map((b) => `"${b}"`).join(",")}]`);
     f.push(`shortDesc:"${esc(p.shortDesc)}"`);
     if (p.description) f.push(`description:"${esc(p.description)}"`);
@@ -963,6 +964,7 @@ function serialiseLite(list) {
     f.push(`rating:${p.rating}`);
     f.push(`reviewCount:${p.reviewCount}`);
     if (p.sold) f.push(`sold:${p.sold}`);
+    if (p.views) f.push(`views:${p.views}`);
     if (p.badges.length) f.push(`badges:[${p.badges.map((b) => `"${b}"`).join(",")}]`);
     const short = String(p.shortDesc || "");
     f.push(`shortDesc:"${esc(short.length > LITE_SHORT_DESC ? short.slice(0, LITE_SHORT_DESC) + "…" : short)}"`);
@@ -1098,6 +1100,63 @@ async function fetchUnitsSold() {
   }
 }
 
+/* ---------- product views ---------- */
+
+/**
+ * How often each product was opened in the last 30 days.
+ *
+ * The one number here that comes from customers rather than from the shop.
+ * Everything else that decides the "แนะนำ" order — the New badge, how deep a
+ * discount is — is the shop's own opinion of what matters; this is what people
+ * actually clicked on. Recorded by /api/products/view into a per-day counter;
+ * see supabase/migrations/20261027_product_views.sql.
+ *
+ * Thirty days, not all time: a product that was popular last winter is not
+ * what to lead with now, and a window short enough to move means the order
+ * follows demand instead of settling into the shape of whatever launched
+ * first. A new product has no views by definition, which is what its New badge
+ * is for.
+ *
+ * Read at build time because the catalogue is a built file — the same reason
+ * `sold` is fetched here. The order is therefore as fresh as the last
+ * catalogue refresh, which is daily; a ranking that moved every minute would
+ * mostly be noise anyway.
+ *
+ * Never a build blocker: no views means the order is exactly what it was
+ * before this existed.
+ */
+async function fetchProductViews() {
+  const base = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const totals = new Map();
+  if (!base || !key) {
+    console.log("[catalogue] product views: no Supabase credentials — skipping");
+    return totals;
+  }
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    // Summed here rather than in Postgres: it is one small row per product per
+    // day, and a plain select needs no function to maintain alongside it.
+    const res = await fetch(
+      base + "/rest/v1/product_views?day=gte." + since + "&select=product_slug,views&limit=100000",
+      { headers: { apikey: key, Authorization: "Bearer " + key }, signal: controller.signal }
+    ).finally(() => clearTimeout(timer));
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    for (const row of (await res.json()) || []) {
+      const n = Number(row.views) || 0;
+      if (!row.product_slug || n <= 0) continue;
+      totals.set(row.product_slug, (totals.get(row.product_slug) || 0) + n);
+    }
+    console.log("[catalogue] product views: " + totals.size + " products opened in the last 30 days");
+  } catch (err) {
+    console.warn("[catalogue] product views unavailable — ranking falls back to badges: " + (err && err.message));
+    return new Map();
+  }
+  return totals;
+}
+
 async function main() {
   console.log("[catalogue] fetching live catalogue from " + (DOMAIN || "(CATALOGUE_FIXTURE)"));
   const raw = await fetchAll();
@@ -1120,6 +1179,13 @@ async function main() {
       const slug = idToSlug.get(p.id);
       const m = slug && mapped.find((x) => x.slug === slug);
       if (m && sold.get(p.id)) m.sold = sold.get(p.id);
+    }
+    // Keyed by our slug, not Shopify's id: the counter is written by the
+    // storefront, which only ever knew the slug.
+    const views = await fetchProductViews();
+    for (const m of mapped) {
+      const n = views.get(m.slug);
+      if (n) m.views = n;
     }
   }
   const min = process.env.CATALOGUE_FIXTURE ? 1 : 1;

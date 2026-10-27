@@ -1,6 +1,6 @@
 import { z } from "zod";
 import ProductDetailInteractive from "@/components/ProductDetailInteractive";
-import TrackRecentlyViewed from "@/components/TrackRecentlyViewed";
+import TrackProductView from "@/components/TrackProductView";
 import { brandHrefFor } from "@/data/brands";
 import { getRelatedProducts } from "@/data/products";
 import { getProductDetail } from "@/data/product-details";
@@ -140,7 +140,7 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data | null>)
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(productJsonLd(data.product, data.reviews)) }}
       />
-      <TrackRecentlyViewed slug={data.product.slug} />
+      <TrackProductView slug={data.product.slug} />
       <ProductDetailInteractive
         product={data.product}
         related={data.related}

@@ -16,7 +16,7 @@ import ProductCard from "@/components/ProductCard";
 import SectionHeading from "@/components/SectionHeading";
 import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";
-import TrackRecentlyViewed from "@/components/TrackRecentlyViewed";
+import TrackProductView from "@/components/TrackProductView";
 import RecentlyViewedSection from "@/components/RecentlyViewedSection";
 import { productJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { canonicalSlugFor } from "@/lib/product-canonical";
@@ -181,7 +181,7 @@ async function ProductPageWritten({ found }: { found: NonNullable<ReturnType<typ
           __html: jsonLdScript(breadcrumbJsonLd(breadcrumbItems)),
         }}
       />
-      <TrackRecentlyViewed slug={product.slug} />
+      <TrackProductView slug={product.slug} />
       <div className="flex items-center gap-3 mb-4">
         <BackButton fallbackHref={`/shop/${product.category}`} />
         <Breadcrumb items={breadcrumbItems} />

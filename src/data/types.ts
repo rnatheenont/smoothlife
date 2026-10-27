@@ -67,6 +67,14 @@ export type Product = {
   specs?: { label: string; value: string }[];
   /** Units actually sold (paid orders, net of refunds and cancellations). Set at build time. */
   sold?: number;
+  /**
+   * How many times this product was opened in the last 30 days — the shop's
+   * only measure of interest that customers rather than the shop decide.
+   * Counted by /api/products/view, totalled at build time, and absent on a
+   * product nobody has opened in a month, which is most of them on any given
+   * day. Feeds the "แนะนำ" order; see toFeaturedOrder in filter-products.ts.
+   */
+  views?: number;
   badges?: ("Bestseller" | "New" | "Sale" | "BOGO" | "Bundle")[];
   shortDesc: string;
   description?: string;
