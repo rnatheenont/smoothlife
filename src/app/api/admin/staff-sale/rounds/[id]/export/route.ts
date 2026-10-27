@@ -2,21 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseRest } from "@/lib/supabase-server";
 import { auditStaffSale, guard } from "@/lib/staff-sale-admin";
 import { ORDER_COLUMNS, ROUND_COLUMNS, type StaffOrder, type StaffRound } from "@/lib/staff-sale";
+import { csvDocument, csvSlug } from "@/lib/csv";
 
 // Admin: one round as a CSV, for HR and accounting.
 //
 // One row per order line rather than per order: the questions this file gets
 // opened to answer are "what did each person buy" and "what did we sell at
 // what discount", and both need the line.
-
-function csvCell(value: unknown): string {
-  const s = value == null ? "" : String(value);
-  // Excel reads a leading =, +, - or @ as a formula. A product name is not
-  // a formula, and a staff list is exactly the kind of file that gets
-  // forwarded around.
-  const safe = /^[=+\-@]/.test(s) ? `'${s}` : s;
-  return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
-}
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const stop = guard(req);
@@ -51,10 +43,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     "ต้องคืนเงิน",
   ];
 
-  const lines = [header.map(csvCell).join(",")];
+  const rows: unknown[][] = [];
   for (const o of orders) {
     for (const l of o.lines ?? []) {
-      lines.push(
+      rows.push(
         [
           round.name,
           o.staff_email,
@@ -71,21 +63,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           (Number(l.staff_price) * Number(l.qty)).toFixed(2),
           Number(o.subtotal_thb).toFixed(2),
           o.needs_refund ? "ใช่" : "",
-        ]
-          .map(csvCell)
-          .join(","),
+        ],
       );
     }
   }
 
-  await auditStaffSale(req, "staff_sale.export", id, { name: round.name, rows: lines.length - 1 });
+  await auditStaffSale(req, "staff_sale.export", id, { name: round.name, rows: rows.length });
 
   const stamp = new Date().toISOString().slice(0, 10);
-  const slug = round.name.replace(/[^\p{L}\p{N}]+/gu, "-").slice(0, 40);
+  // csvSlug rather than the pattern that was here: that one kept letters and
+  // digits only, and Thai vowels and tone marks are neither, so a round
+  // called "รอบปีใหม่" downloaded as "รอบป-ใหม".
+  const slug = csvSlug(round.name);
   return new NextResponse(
-    // The BOM is what makes Excel on Windows read this as UTF-8 instead of
-    // turning every Thai character into mojibake.
-    `﻿${lines.join("\n")}`,
+    csvDocument(header, rows),
     {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",

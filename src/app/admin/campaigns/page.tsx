@@ -10,7 +10,7 @@
 // order, and the photo is what says the order is really theirs.
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import {
   PageHeader,
   Panel,
@@ -24,6 +24,7 @@ import NewCampaign from "./NewCampaign";
 import QueueTable from "./QueueTable";
 import SalesPanel, { type Sales } from "./SalesPanel";
 import { when, type QueueItem } from "./queue-vocab";
+import { csvDocument, csvSlug } from "@/lib/csv";
 import { formatTHB } from "@/lib/format";
 import { Button, Spinner } from "@heroui/react";
 import AdminSearch from "@/components/admin/AdminSearch";
@@ -41,6 +42,39 @@ type Vip = {
   reserve: boolean;
 };
 type Fan = { userId: string; customer: string | null; entries: number };
+
+/**
+ * The Lucky Fan list as a file.
+ *
+ * The draw happens elsewhere; this is the sheet somebody opens to check it
+ * afterwards, or to hand to whoever is running the announcement. So it
+ * carries the id as well as the name: the table falls back to the first
+ * eight characters of the id when a customer has no name on file, and two
+ * different people can look identical in that column.
+ *
+ * The rank is written out rather than left to whoever opens it, because
+ * sorting by สิทธิ์ in a spreadsheet re-orders ties arbitrarily and the
+ * order on screen is the order the list was drawn in.
+ */
+function downloadFanCsv(rows: Fan[], campaignName: string | null) {
+  const stamp = new Date().toISOString().slice(0, 10);
+  const csv = csvDocument(
+    ["ลำดับ", "ลูกค้า", "รหัสผู้ใช้", "สิทธิ์"],
+    rows.map((f, i) => [i + 1, f.customer ?? "", f.userId, f.entries]),
+  );
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `lucky-fan-${csvSlug(campaignName ?? "campaign")}-${stamp}.csv`;
+  // Appended before the click: Firefox ignores a click on an anchor that is
+  // not in the document, and does it silently.
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Not revoked in the same tick — Safari has not started the download yet
+  // and cancels it when the blob disappears underneath.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
 type Winner = {
   id: string;
   prizeType: "vip" | "lucky_fan";
@@ -1000,7 +1034,30 @@ export default function Page() {
           )}
 
           {tab === "fan" && (
-            <Panel title="สิทธิ์ Lucky Fan">
+            <Panel
+              title="สิทธิ์ Lucky Fan"
+              toolbar={
+                // Built in the browser from the rows already on screen,
+                // rather than through a route of its own: the console has
+                // the whole list loaded, and an /api/admin route would be a
+                // second place for the same numbers to come from and
+                // disagree with.
+                //
+                // It exports what is shown, search and all, and the count on
+                // the button says how many that is — a file that quietly
+                // ignored the filter you just typed would be worse than one
+                // that quietly applied it.
+                <button
+                  type="button"
+                  disabled={fanShown.length === 0}
+                  onClick={() => downloadFanCsv(fanShown, campaignName)}
+                  className={`${pill} ml-auto disabled:opacity-40`}
+                >
+                  <Download size={14} aria-hidden />
+                  ดาวน์โหลด CSV ({fanShown.length})
+                </button>
+              }
+            >
               <p className="px-3 pt-3 text-[12px] text-slate-500">
                 ดูเพื่อความโปร่งใส ไม่ใช่การตัดสิน —
                 ผู้ชนะมาจากการสุ่มถ่วงน้ำหนักตามจำนวนสิทธิ์
