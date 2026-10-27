@@ -82,6 +82,32 @@ export default function ShopFilters({
     router.push(`/shop?${params.toString()}`);
   }
 
+  // The price boxes apply themselves, a breath after the typing stops.
+  //
+  // Not on every keystroke: "500" is three keystrokes and would be three
+  // navigations, the last two of which land on a list nobody asked for. Not
+  // on blur either — a shopper who types a number and then reaches for the
+  // scrollbar never blurs the field, and would sit looking at an unfiltered
+  // list wondering what they did wrong.
+  //
+  // The guard above the timer is what keeps it quiet: when the boxes already
+  // say what the URL says there is nothing to do, which is the state after
+  // every navigation this effect itself causes, and after "ล้างทั้งหมด"
+  // empties both. `?? ""` because a parameter that is absent and a box that
+  // is empty mean the same thing here.
+  useEffect(() => {
+    const urlMin = current.minPrice ?? "";
+    const urlMax = current.maxPrice ?? "";
+    if (minPrice === urlMin && maxPrice === urlMax) return;
+    const id = setTimeout(() => {
+      updateParams({ minPrice: minPrice || null, maxPrice: maxPrice || null });
+    }, 600);
+    return () => clearTimeout(id);
+    // updateParams is rebuilt on every render, so listing it here would
+    // restart the timer on every render and the debounce would never land.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minPrice, maxPrice, current.minPrice, current.maxPrice]);
+
   function updateParams(changes: Record<string, string | null>) {
     const params = new URLSearchParams();
     Object.entries(current).forEach(([k, v]) => {
@@ -287,12 +313,12 @@ export default function ShopFilters({
             />
           </label>
         </div>
-        <button
-          onClick={() => updateParams({ minPrice: minPrice || null, maxPrice: maxPrice || null })}
-          className="mt-2 w-full rounded-lg bg-brand-gradient-soft py-1.5 text-xs font-semibold text-brand-800"
-        >
-          ใช้ช่วงราคานี้
-        </button>
+        {/* No apply button. Every other control on this column takes effect
+            the moment it is touched, and a pair of boxes that needed a second
+            press to count was the one that behaved differently — a shopper
+            who typed a number and saw nothing happen had no way to tell
+            whether the filter was on. It applies itself; see the effect that
+            watches these two values. */}
       </div>
 
       <div>
