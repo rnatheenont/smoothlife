@@ -303,7 +303,14 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
         // a block whose bottom row cannot be reached is worse than a tall one.
         className={`[--dome-r:1] [--dome-w:var(--dome-w-sm,100vw)] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:[--dome-r:var(--dome-fit-r,1.3)] md:[--dome-w:min(96vw,1100px,var(--dome-max,1100px))] lg:[--dome-r:var(--dome-fit-r,1.8)] lg:[--dome-w:min(96vw,var(--dome-max,1440px))] ${
           pinned
-            ? `h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-start pb-14 md:pb-16 ${top ? "md:justify-start" : "md:justify-center"}`
+            ? // On a phone the block takes the height it needs and no more.
+              // Locking it to the viewport put every spare pixel in one lump
+              // under the buy button — about 90 of them at 375x812 — which
+              // reads as the page having stopped rather than as breathing
+              // room. The lock is what makes this a full-screen composition
+              // on a laptop, where the arc is wide and the slack is small, so
+              // it stays from md up.
+              `overflow-hidden flex flex-col justify-start pb-6 md:h-[calc(100vh-var(--stage-top))] md:pb-16 ${top ? "md:justify-start" : "md:justify-center"}`
             : ""
         }`}
       >
@@ -447,7 +454,7 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
             At 16% of the way up the arc is still 98% of its full width, so
             90% of the dome keeps the row clear of the curve. `gap` is the
             floor the spread may not close past on a narrow screen. */}
-        <div ref={ctrl} className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:pb-4 md:-mt-[calc(var(--dome-h)*0.17)] md:max-w-[min(1180px,max(calc(var(--dome-w)*0.9),46rem))] md:flex-row md:items-center md:justify-between md:gap-6">
+        <div ref={ctrl} className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-2 md:pb-4 md:-mt-[calc(var(--dome-h)*0.17)] md:max-w-[min(1180px,max(calc(var(--dome-w)*0.9),46rem))] md:flex-row md:items-center md:justify-between md:gap-6">
           <div className="flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/90 p-1 shadow-[0_6px_18px_rgba(15,23,42,0.08)] md:max-w-[calc(50%-5rem)] md:flex-nowrap md:gap-0.5 lg:gap-1">
             {model.items.map((c, i) => {
               const on = i === here.item;
