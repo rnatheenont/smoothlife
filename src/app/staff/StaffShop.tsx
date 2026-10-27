@@ -326,6 +326,23 @@ export default function StaffShop() {
   const shownCount = shownProducts.length;
 
   /**
+   * Whether "ไม่เกิน N ชิ้นต่อสินค้า" is the whole truth.
+   *
+   * The round carries one number and every product may override it. On the
+   * open round 189 of 387 items do, which makes the flat sentence a promise
+   * the shop then breaks with a grey button. Said once, under the heading,
+   * rather than on every card: the cards carry their own number where it
+   * differs.
+   */
+  const someItemsLimitedLower = useMemo(() => {
+    const round = shop?.round.max_per_item ?? null;
+    if (round === null) return false;
+    return (shop?.items ?? []).some(
+      (i) => i.per_person_limit !== null && i.per_person_limit < round,
+    );
+  }, [shop]);
+
+  /**
    * Which option each card is showing.
    *
    * Only holds what somebody has chosen; a card nobody has touched falls
@@ -661,7 +678,9 @@ export default function StaffShop() {
                     {[
                       shop.round.max_orders ? `ซื้อได้ ${shop.round.max_orders} ครั้งต่อรอบ` : null,
                       shop.round.max_per_item
-                        ? `ไม่เกิน ${shop.round.max_per_item} ชิ้นต่อสินค้า`
+                        ? `ไม่เกิน ${shop.round.max_per_item} ชิ้นต่อสินค้า${
+                            someItemsLimitedLower ? " (บางรายการน้อยกว่านี้)" : ""
+                          }`
                         : null,
                     ]
                       .filter(Boolean)
@@ -676,7 +695,9 @@ export default function StaffShop() {
                 {[
                   shop.round.max_orders ? `ซื้อได้ ${shop.round.max_orders} ครั้งต่อรอบ` : null,
                   shop.round.max_per_item
-                    ? `ไม่เกิน ${shop.round.max_per_item} ชิ้นต่อสินค้า`
+                    ? `ไม่เกิน ${shop.round.max_per_item} ชิ้นต่อสินค้า${
+                        someItemsLimitedLower ? " (บางรายการน้อยกว่านี้)" : ""
+                      }`
                     : null,
                   `รวมไม่เกิน ฿${baht(shop.standing.cap_thb)}`,
                 ]
@@ -863,6 +884,16 @@ export default function StaffShop() {
                     const soldOut = item.left === 0 || !item.in_stock;
                     const atLimit =
                       item.per_person_limit !== null && item.mine + qty >= item.per_person_limit;
+                    // Why the plus is grey, in the one place somebody looking
+                    // at a grey plus is already looking. A product whose limit
+                    // matches the round's says nothing — the heading already
+                    // did — so the line only appears when it is news.
+                    const limitLine = atLimit
+                      ? `ครบ ${item.per_person_limit} ชิ้นต่อคนแล้ว`
+                      : item.per_person_limit !== null &&
+                          item.per_person_limit !== shop.round.max_per_item
+                        ? `ไม่เกิน ${item.per_person_limit} ชิ้น`
+                        : null;
                     const off =
                       item.regular_price > 0
                         ? Math.round((1 - item.staff_price / item.regular_price) * 100)
@@ -983,18 +1014,29 @@ export default function StaffShop() {
                               </span>
                             )}
 
-                            {/* The per-person limit came off every card: it
-                                is the same number on all of them, it is
-                                already said once under the heading, and the
-                                button goes grey when somebody reaches it.
-                                What is left here is only what differs card
-                                to card — the last few of something, and
-                                what this person has already ordered. */}
-                            {(soldOut || item.left !== null || item.mine > 0) && (
-                              <p className="mt-1 text-[11px] text-slate-500">
+                            {/* The per-person limit was taken off every card
+                                on the grounds that it was the same number on
+                                all of them and was already said once under
+                                the heading. That stopped being true the day
+                                the round got per-product limits: 189 of the
+                                387 items are not the round's 6, and a card
+                                that says nothing leaves a grey button with no
+                                reason next to a heading promising six.
+                                
+                                So it is back, but only where it carries
+                                information — when this product allows fewer
+                                than the round does, and when the number has
+                                been reached. */}
+                            {(soldOut || item.left !== null || item.mine > 0 || limitLine) && (
+                              <p
+                                className={`mt-1 text-[11px] ${
+                                  atLimit && !soldOut ? "font-medium text-brand-800" : "text-slate-500"
+                                }`}
+                              >
                                 {soldOut
                                   ? "สินค้าหมด"
                                   : [
+                                      limitLine,
                                       item.left !== null ? `เหลือ ${item.left} ชิ้น` : null,
                                       item.mine > 0 ? `สั่งไปแล้ว ${item.mine}` : null,
                                     ]
@@ -1024,10 +1066,23 @@ export default function StaffShop() {
                                   type="button"
                                   onClick={(e) => add(item, e.currentTarget)}
                                   disabled={full}
-                                  title={full ? "ครบจำนวนแล้ว" : "หยิบใส่ตะกร้า"}
+                                  // "ครบจำนวนแล้ว" was true but useless: the
+                                  // question a grey button raises is which
+                                  // number, and there are two it could be.
+                                  title={
+                                    !full
+                                      ? "หยิบใส่ตะกร้า"
+                                      : atLimit
+                                        ? `ครบ ${item.per_person_limit} ชิ้นต่อคนแล้ว`
+                                        : "เหลือเท่าที่หยิบไว้แล้ว"
+                                  }
                                   aria-label={
                                     full
-                                      ? `${product.name}${item.size ? ` ${item.size}` : ""} ครบจำนวนแล้ว`
+                                      ? `${product.name}${item.size ? ` ${item.size}` : ""} ${
+                                          atLimit
+                                            ? `ครบ ${item.per_person_limit} ชิ้นต่อคนแล้ว`
+                                            : "เหลือเท่าที่หยิบไว้แล้ว"
+                                        }`
                                       : `หยิบ ${product.name}${item.size ? ` ${item.size}` : ""} ใส่ตะกร้า`
                                   }
                                   // The shop's own call-to-action colour,
