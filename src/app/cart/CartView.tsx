@@ -104,16 +104,21 @@ export default function CartView() {
       }
       byKey.get(key)!.push(line);
     }
+    const titled = new Set<string>();
     return order.map((key) => {
       const [slug, tierPart] = key.split("::");
       const promo = giftPromos.find((p) => p.slug === slug);
       const tierIndex = tierPart?.startsWith("tier-") ? Number(tierPart.slice(5)) : null;
       const tiers = [...(promo?.tiers ?? [])].sort((a, b) => a.minSubtotal - b.minSubtotal);
       const tier = tierIndex !== null ? tiers[tierIndex] : undefined;
+      // The campaign's name once, on its first rung. Two rungs of one ladder
+      // repeating the same title reads as two campaigns.
+      const firstOfPromo = !titled.has(slug);
+      titled.add(slug);
       return {
         key,
         lines: byKey.get(key)!,
-        promoTitle: promo ? (lang === "en" ? promo.titleEn : promo.titleTh) : null,
+        promoTitle: promo && firstOfPromo ? (lang === "en" ? promo.titleEn : promo.titleTh) : null,
         tierLabel:
           tier && tierIndex !== null
             ? `${t(`ระดับ ${tierIndex + 1}`, `Tier ${tierIndex + 1}`)} · ${t("ครบ", "from")} ${formatTHB(tier.minSubtotal)}`
