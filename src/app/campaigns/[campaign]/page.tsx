@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { CalendarDays, Gift, Receipt, Ticket } from "lucide-react";
 import ReceiptForm from "./ReceiptForm";
+import ThanksCard, { thanksAction } from "@/components/ThanksCard";
 import { isTestMode } from "@/lib/receipt-campaign";
 import { labelsOf, loadCampaignContent } from "@/lib/receipt-campaign-content";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
@@ -103,13 +104,38 @@ export default async function Page({
         ))}
       </ol>
 
-      {!open && (
+      {/* Over and done with: thanks first, then the date they are actually
+          waiting for. The grey two-liner this replaced was the last thing
+          everyone who took part ever saw from the campaign. */}
+      {closed && (
+        <ThanksCard
+          className="mt-10"
+          accent="var(--rc-ink)"
+          eyebrow="ปิดรับใบเสร็จแล้ว"
+          title="ขอบคุณที่ร่วมสนุกกับเรานะคะ"
+          body={`ปิดรับใบเสร็จไปเมื่อ ${label.closesLong} ใบเสร็จทุกใบที่ส่งเข้ามาทันเวลา ได้รับสิทธิ์ลุ้นรางวัลเรียบร้อยแล้ว`}
+          notice={{
+            title: `ประกาศผลวันที่ ${label.announce}`,
+            body: `เก็บใบเสร็จตัวจริงไว้ก่อนนะคะ ผู้ได้รับรางวัลต้องยืนยันสิทธิ์ด้วยใบเสร็จตัวจริงภายใน ${label.confirm}`,
+          }}
+          actions={
+            <>
+              <a href="#my-entries" className={thanksAction.primary} style={{ backgroundColor: "var(--thanks-accent)" }}>
+                ดูสิทธิ์ของฉัน
+              </a>
+              <a href={content.storeUrl} className={thanksAction.secondary}>
+                ช้อป DENTISTE&apos; ต่อ
+              </a>
+            </>
+          }
+        />
+      )}
+
+      {!open && !closed && (
         <div className="mt-10 rounded-2xl border border-black/10 bg-white p-5">
-          <p className="text-[14px] font-bold text-black">{closed ? "ปิดรับใบเสร็จแล้ว" : "ยังไม่เปิดรับใบเสร็จ"}</p>
+          <p className="text-[14px] font-bold text-black">ยังไม่เปิดรับใบเสร็จ</p>
           <p className="mt-1 text-[14px] leading-relaxed text-black/70">
-            {closed
-              ? `หมดเขตส่งใบเสร็จเมื่อ ${label.closesLong} — ประกาศผลวันที่ ${label.announce}`
-              : `ฟอร์มส่งใบเสร็จจะเปิดวันที่ ${label.opensLong} และประกาศผลวันที่ ${label.announce}`}
+            {`ฟอร์มส่งใบเสร็จจะเปิดวันที่ ${label.opensLong} และประกาศผลวันที่ ${label.announce}`}
             {" "}เก็บใบเสร็จตัวจริงไว้เป็นหลักฐานด้วยนะคะ
           </p>
         </div>
@@ -117,7 +143,7 @@ export default async function Page({
 
       {/* The form is rendered even while the window is shut, so someone who
           already sent a receipt can still see where it got to. */}
-      <div className="mt-10">
+      <div id="my-entries" className="mt-10 scroll-mt-24">
         <ReceiptForm campaign={campaign} open={open} opensLabel={label.opens} closesLabel={label.closes} />
       </div>
 

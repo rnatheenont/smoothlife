@@ -11,6 +11,7 @@ import { UNLIMITED_REQUEUE } from "@/lib/flash-sale-limits";
 import type { FlashSaleStatus } from "@/lib/flash-sale";
 import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
 import MobileStickyBar from "@/components/MobileStickyBar";
+import ThanksCard, { thanksAction } from "@/components/ThanksCard";
 import PaymentModal from "@/components/PaymentModal";
 import { emptyAddressForm, type AddressFormValue } from "@/components/account/AddressFields";
 import { SHOPIFY_EMAIL_LOGIN, shopifyAuthStartPath } from "@/lib/shopify-email-login";
@@ -801,12 +802,32 @@ function Panel({
     );
   }
 
+  // Whoever reads this did not get one — the paid branch is above. So it
+  // thanks them for turning up rather than for buying, and the only useful
+  // thing left to offer is a way to hear about the next round first.
   if (campaign.phase === "ended" || productSoldOut) {
     return (
-      <div>
-        <h3 className="text-xl font-bold text-brand-ink">{productSoldOut ? "สินค้าหมดแล้ว" : "ปิดการขายแล้ว"}</h3>
-        <p className="mt-1 text-sm text-slate-600">ขอบคุณที่ร่วมกิจกรรม ติดตาม Flash Sale รอบถัดไปทาง LINE</p>
-      </div>
+      <ThanksCard
+        compact
+        accent="var(--fs-accent)"
+        eyebrow={productSoldOut ? "สินค้าหมดแล้ว" : "ปิดการขายแล้ว"}
+        title="ขอบคุณที่แวะมาร่วมสนุกนะคะ"
+        body={productSoldOut ? "รอบนี้ของหมดเร็วมาก ไว้เจอกันรอบหน้านะคะ" : "รอบนี้ปิดการขายแล้ว ไว้เจอกันรอบหน้านะคะ"}
+        notice={{
+          title: "รอบหน้าแจ้งทาง LINE ก่อนใคร",
+          body: "ผูกบัญชี LINE ไว้ เราจะส่งข้อความบอกทันทีที่ Flash Sale รอบใหม่เปิด",
+        }}
+        actions={
+          <>
+            <Link href="/account" className={thanksAction.primary} style={{ backgroundColor: "var(--thanks-accent)" }}>
+              ผูกบัญชี LINE
+            </Link>
+            <Link href="/shop" className={thanksAction.secondary}>
+              ดูสินค้าอื่น
+            </Link>
+          </>
+        }
+      />
     );
   }
 
