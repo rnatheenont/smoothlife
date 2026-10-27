@@ -52,7 +52,21 @@
      tint this faint reads as paper rather than as a colour, which is the
      point: it is a background, not a decision. */
   --color-surface-page: #f8faf9;
-  --color-surface-soft: #f4faf8;
+  /* The well: a panel recessed into the page — the review and question boxes
+     on a product, and three hundred-odd smaller places.
+
+     It used to be #f4faf8, which differs from the page above it by four
+     points of red and nothing else. That is about one per cent of luminance:
+     not enough to read as a panel, but enough to read as a green cast on the
+     paper, so a well looked less like a well than like a stain. Deepened to
+     a clean step down, even across all three channels, so the eye reads a
+     shade of the same paper rather than a change of colour.
+
+     Note for whoever reorganises this palette: surface-soft, surface-muted
+     and surface-mist are now within three points of each other and are, to
+     any eye, one colour under three names. Collapsing them is a worthwhile
+     job and a separate one — it touches four hundred class names. */
+  --color-surface-soft: #edf4f1;
   --color-surface-muted: #eef3f2;
   --color-surface-mist: #eef5f1;
   --color-surface-line: #dce7e1;
