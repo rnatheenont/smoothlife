@@ -88,8 +88,18 @@ const SIZES = {
  * the marker back (see hydrateHistory) — so the splitting happens here, once.
  * A half-arrived marker reads as a half-arrived heading, never as brackets.
  */
-function AssistantBubble({ content }: { content: string }) {
-  const { topic, body } = splitTopic(content);
+function AssistantBubble({ content, streaming }: { content: string; streaming: boolean }) {
+  const { t } = useLang();
+  const { topic, body, pending } = splitTopic(content);
+  // The heading is written before the catalogue search, so there is a real
+  // couple of seconds where the bubble holds a heading and nothing else. Left
+  // bare it reads as a reply that stopped halfway; this says what the pause
+  // is for. Only while the reply is still arriving — a finished reply with no
+  // body is a different problem and should not claim to be searching.
+  const searching = streaming && !body;
+  // `pending` covers the instant the text is just "[[" — no topic yet and no
+  // body, which used to fall through to printing the brackets themselves.
+  const headingOnly = pending || Boolean(topic);
   return (
     <>
       {topic && (
@@ -97,9 +107,16 @@ function AssistantBubble({ content }: { content: string }) {
           {topic}
         </span>
       )}
-      {/* Nothing yet but the heading: the bubble must not collapse to a
-          sliver and then jump open when the first sentence arrives. */}
-      {body ? renderMessageContent(body) : topic ? <span className="sr-only">…</span> : renderMessageContent(content)}
+      {body ? (
+        renderMessageContent(body)
+      ) : headingOnly ? (
+        <span className="flex items-center gap-1.5 text-[13px] text-slate-400">
+          <Loader2 size={13} className="animate-spin" aria-hidden />
+          {searching ? t("กำลังหาให้ค่ะ…", "Looking that up…") : "…"}
+        </span>
+      ) : (
+        renderMessageContent(content)
+      )}
     </>
   );
 }
@@ -344,7 +361,11 @@ export default function ChatConversation({
                       {t("แนบรูปไว้ตรงนี้ (รูปไม่ได้อยู่ในเครื่องนี้)", "Photo was attached here (not on this device)")}
                     </span>
                   )}
-                  {m.role === "assistant" ? <AssistantBubble content={displayContent} /> : displayContent}
+                  {m.role === "assistant" ? (
+                    <AssistantBubble content={displayContent} streaming={loading && i === messages.length - 1} />
+                  ) : (
+                    displayContent
+                  )}
                 </div>
               </div>
             );

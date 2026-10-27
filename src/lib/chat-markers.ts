@@ -42,7 +42,7 @@ export function markerIndex(text: string): number {
  * second is worse than showing no heading at all, so the partial marker is
  * read as a partial heading and the brackets never appear.
  */
-export function splitTopic(text: string): { topic: string; body: string } {
+export function splitTopic(text: string): { topic: string; body: string; pending: boolean } {
   const complete = /^\s*\[\[TOPIC:([\s\S]*?)\]\]\s*/i.exec(text);
   if (complete) {
     // A reply that searches the catalogue writes its heading, calls the tool
@@ -51,13 +51,25 @@ export function splitTopic(text: string): { topic: string; body: string } {
     // kept and any repeat is dropped, rather than left to appear as literal
     // brackets in the middle of the answer.
     const rest = splitTopic(text.slice(complete[0].length));
-    return { topic: complete[1].trim(), body: rest.topic ? rest.body : text.slice(complete[0].length) };
+    return {
+      topic: complete[1].trim(),
+      body: rest.topic ? rest.body : text.slice(complete[0].length),
+      pending: false,
+    };
   }
   const partial = /^\s*\[\[TOPIC:([\s\S]*)$/i.exec(text);
-  if (partial) return { topic: partial[1].trim(), body: "" };
-  // Also catches the opener itself arriving a character at a time.
-  if (/^\s*\[?\[?T?O?P?I?C?:?$/i.test(text)) return { topic: "", body: "" };
-  return { topic: "", body: text };
+  // The closing "]]" is revealed a character at a time too, so there is a
+  // frame where the heading reads "กันแดด]". Trimmed rather than shown.
+  if (partial) return { topic: partial[1].replace(/\]+$/, "").trim(), body: "", pending: true };
+  // The opener itself, arriving a character at a time. `pending` is what
+  // tells the caller apart from an empty reply: at the instant the text is
+  // exactly "[[" there is no topic and no body yet, and a caller that only
+  // checked those two fell back to printing the raw text — so the customer
+  // saw "[[" sitting in the bubble for a frame. Seen on a real reply.
+  if (text.length > 0 && /^\s*\[(\[(T(O(P(I(C(:)?)?)?)?)?)?)?$/i.test(text)) {
+    return { topic: "", body: "", pending: true };
+  }
+  return { topic: "", body: text, pending: false };
 }
 
 export type SplitMessage = {

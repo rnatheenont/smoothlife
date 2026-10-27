@@ -20,12 +20,24 @@ test("a reply without one is left alone", () => {
 });
 
 test("a half-arrived heading never shows its brackets", () => {
-  for (const partial of ["[", "[[", "[[TOP", "[[TOPIC:", "[[TOPIC: มอยส์เจอร"]) {
-    const { topic, body } = splitTopic(partial);
+  // Every prefix of the opener, because the reveal shows the reply one
+  // character at a time and every one of these is a frame somebody sees.
+  for (const partial of ["[", "[[", "[[T", "[[TO", "[[TOP", "[[TOPI", "[[TOPIC", "[[TOPIC:", "[[TOPIC: มอยส์เจอร"]) {
+    const { topic, body, pending } = splitTopic(partial);
     assert.equal(body, "", `body for ${JSON.stringify(partial)}`);
     assert.ok(!topic.includes("["), `topic for ${JSON.stringify(partial)}`);
+    // Without this the bubble has no topic and no body to render and falls
+    // back to the raw text — which is how "[[" reached a customer.
+    assert.equal(pending, true, `pending for ${JSON.stringify(partial)}`);
   }
   assert.equal(splitTopic("[[TOPIC: มอยส์เจอร").topic, "มอยส์เจอร");
+});
+
+test("ordinary text is never mistaken for a half-written marker", () => {
+  for (const plain of ["สวัสดีค่ะ", "[sic] แบบนี้ค่ะ", "[[SUGGEST: a]]", ""]) {
+    assert.equal(splitTopic(plain).pending, false, JSON.stringify(plain));
+  }
+  assert.equal(splitTopic("สวัสดีค่ะ").body, "สวัสดีค่ะ");
 });
 
 test("a heading mid-reply is ordinary text, not a marker", () => {
@@ -71,4 +83,9 @@ test("a half-written repeat does not swallow the answer", () => {
   const { topic, body } = splitTopic("[[TOPIC: กันแดด]]\n\nแนะนำตัวนี้ค่ะ");
   assert.equal(topic, "กันแดด");
   assert.equal(body, "แนะนำตัวนี้ค่ะ");
+});
+
+test("the closing bracket never shows up inside the heading", () => {
+  assert.equal(splitTopic("[[TOPIC: กันแดด]").topic, "กันแดด");
+  assert.equal(splitTopic("[[TOPIC: กันแดด]").pending, true);
 });
