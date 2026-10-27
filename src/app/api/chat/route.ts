@@ -285,15 +285,25 @@ export async function POST(req: NextRequest) {
   // isHumanHandling in lib/conversations. The message is still filed so the
   // person who eventually opens the case sees everything that was said while
   // it sat in the queue.
-  const caseWaiting = channelUserId ? await hasWaitingCase(channel, channelUserId) : false;
-  const humanHandling = channelUserId ? await isHumanHandling(channel, channelUserId) : false;
+  //
+  // Asked all at once. These three were three awaits in a row, and the third
+  // only ran when the first two came back false — which saved one query and
+  // cost a round trip on every single message, because nothing is being
+  // decided between them. The customer is waiting on this: see the note on
+  // the prompt lookups further down.
+  const [caseWaiting, humanHandling, caseAlreadyOpen] = channelUserId
+    ? await Promise.all([
+        hasWaitingCase(channel, channelUserId),
+        isHumanHandling(channel, channelUserId),
+        hasOpenCase(channel, channelUserId),
+      ])
+    : [false, false, false];
   // Anything said while a case is open belongs in the inbox, even the turns
   // the AI is handling. Recording only during waiting/assigned left a hole:
   // the question asked before the customer went back to the bot, then the
   // staff reply after, and nothing between — so staff read an answer to a
   // question that was not on the page.
-  const caseOpen =
-    caseWaiting || humanHandling || (channelUserId ? await hasOpenCase(channel, channelUserId) : false);
+  const caseOpen = caseWaiting || humanHandling || caseAlreadyOpen;
 
   // Only the humanHandling branch below returns before the AI path, and with
   // it the persistMessage further down — so only it has to write the
@@ -336,43 +346,44 @@ export async function POST(req: NextRequest) {
   // Real order history — only when logged in AND linked to a Shopify
   // customer record. Best-effort: any failure just falls back to "not
   // available" rather than breaking the reply.
-  let orderHistory: string | null = null;
-  let deliveryStatus: string | null = null;
-  let hasShopifyLink = false;
-  if (uid && supabaseConfigured() && shopifyAdminConfigured()) {
+  async function orderContext(): Promise<{
+    orderHistory: string | null;
+    deliveryStatus: string | null;
+    hasShopifyLink: boolean;
+  }> {
+    const none = { orderHistory: null, deliveryStatus: null, hasShopifyLink: false };
+    if (!uid || !supabaseConfigured() || !shopifyAdminConfigured()) return none;
     try {
-      const [row] = await supabaseRest<{ shopify_customer_id: string | null }[]>(
-        `users?id=eq.${uid}&select=shopify_customer_id`
+      // The account row and the other-store links do not depend on each
+      // other; only the Shopify order calls depend on both.
+      const [[row], links] = await Promise.all([
+        supabaseRest<{ shopify_customer_id: string | null }[]>(`users?id=eq.${uid}&select=shopify_customer_id`),
+        // Orders placed on smooth-e.com or dentiste-oralcare.com too,
+        // labelled with their store, for accounts linked there.
+        otherStoreLinks(uid),
+      ]);
+      if (!row?.shopify_customer_id && links.length === 0) return none;
+      const [orders, others] = await Promise.all([
+        row?.shopify_customer_id ? getCustomerOrders(row.shopify_customer_id) : Promise.resolve([]),
+        links.length ? otherStoreOrders(links, 5) : Promise.resolve([]),
+      ]);
+      const all = [...(orders ?? []), ...others.flatMap((o) => o.orders)].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
-      // Orders placed on smooth-e.com or dentiste-oralcare.com too, labelled
-      // with their store, for accounts linked there.
-      const links = await otherStoreLinks(uid);
-      const others = links.length ? await otherStoreOrders(links, 5) : [];
-      if (row?.shopify_customer_id || links.length > 0) {
-        hasShopifyLink = true;
-        const orders = row?.shopify_customer_id ? await getCustomerOrders(row.shopify_customer_id) : [];
-        const all = [...(orders ?? []), ...others.flatMap((o) => o.orders)].sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        orderHistory = orderHistorySummary(all);
+      return {
+        hasShopifyLink: true,
+        orderHistory: orderHistorySummary(all),
         // Dates and thresholds worked out in code — see delivery-status.ts.
         // The model is given conclusions to repeat, not raw timestamps to
         // reason about, because "9 days ago" is not a judgement call. Smooth
         // Life's shipping timings only, so only its orders.
-        deliveryStatus = deliveryStatusForPrompt(orders);
-      }
+        deliveryStatus: deliveryStatusForPrompt(orders),
+      };
     } catch (err) {
       console.error("[chat] order history lookup failed", err);
+      return none;
     }
   }
-
-  // Points and tier, for the customer who asks "กี่แต้มแล้ว" mid-conversation.
-  // Needs only a signed-in account, not a linked Shopify one — the ledger is
-  // ours, unlike the order history above.
-  const loyalty = uid ? await loyaltySummaryForPrompt(uid) : null;
-
-  const reviewsQaData = viewingProduct ? await fetchReviewsAndQuestions(viewingProduct.slug) : null;
-  const reviewsQa = reviewsSummary(reviewsQaData);
 
   const trimmed = messages
     .filter((m: any) => m && typeof m.content === "string" && m.content.trim())
@@ -382,18 +393,48 @@ export async function POST(req: NextRequest) {
       content: m.content as string,
     }));
 
-  // Persist the latest user turn (fire-and-forget-ish — awaited but never
-  // throws, see persistMessage). Only the newest message, since earlier
-  // turns in this request were already persisted on their own request.
+  // Everything the prompt needs, asked for at once.
+  //
+  // These were six awaits in a row — the account row, the other-store links,
+  // two Shopify order calls, the points balance, the product's reviews, the
+  // blocked-topic rules — plus a write, and none of them is an input to any
+  // other. In a row they are six round trips the customer sits through
+  // before the model has even been handed the question; together they cost
+  // one. The reply did not get faster to write, it just stopped waiting in a
+  // queue to start.
+  //
+  // Persisting the customer's turn joins the batch for the same reason. It
+  // is a write nothing here reads back, and it was the last thing standing
+  // between the question and the model.
+  //
   // The photo itself is never saved (see the consent copy — "temporary
   // analysis only") but a "[[PHOTO]]" prefix marks that one was attached,
   // so reopening the chat later still shows a placeholder instead of the
   // text just looking like a random orphaned question.
   const lastUserMsg = trimmed[trimmed.length - 1];
-  if (lastUserMsg?.role === "user") {
-    const content = imageBase64 ? `[[PHOTO]] ${lastUserMsg.content}` : lastUserMsg.content;
-    await persistMessage({ uid, sessionKey, role: "user", content, viewingSlug: viewingProduct?.slug });
-  }
+  const [orders, loyalty, reviewsQaData, blockedTopics] = await Promise.all([
+    orderContext(),
+    // Points and tier, for the customer who asks "กี่แต้มแล้ว"
+    // mid-conversation. Needs only a signed-in account, not a linked Shopify
+    // one — the ledger is ours, unlike the order history above.
+    uid ? loyaltySummaryForPrompt(uid) : Promise.resolve(null),
+    viewingProduct ? fetchReviewsAndQuestions(viewingProduct.slug) : Promise.resolve(null),
+    // Read every turn rather than cached in the module: switching a rule off
+    // is something staff do because something is going wrong right now, and
+    // a process that keeps refusing for another ten minutes is not off.
+    activeBlockedTopics(),
+    lastUserMsg?.role === "user"
+      ? persistMessage({
+          uid,
+          sessionKey,
+          role: "user",
+          content: imageBase64 ? `[[PHOTO]] ${lastUserMsg.content}` : lastUserMsg.content,
+          viewingSlug: viewingProduct?.slug,
+        })
+      : Promise.resolve(),
+  ]);
+  const { orderHistory, deliveryStatus, hasShopifyLink } = orders;
+  const reviewsQa = reviewsSummary(reviewsQaData);
 
   // Attach the photo (if any) to the most recent user turn only — earlier
   // turns never carry an image, so the payload doesn't balloon on longer chats.
@@ -417,10 +458,6 @@ export async function POST(req: NextRequest) {
 
   const client = new Anthropic({ apiKey: key });
   const encoder = new TextEncoder();
-  // Read every turn rather than cached in the module: switching a rule off is
-  // something staff do because something is going wrong right now, and a
-  // process that keeps refusing for another ten minutes is not off.
-  const blockedTopics = await activeBlockedTopics();
   const system = systemPrompt(
     profile,
     lang,
