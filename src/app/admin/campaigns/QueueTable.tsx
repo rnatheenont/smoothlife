@@ -207,7 +207,7 @@ function OrderNumberFix({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={typed || "เช่น 4418"}
-        className="min-w-0 flex-1 rounded-lg border border-surface-line px-2 py-1 font-mono text-[12px] text-brand-ink focus:border-brand-800 focus:outline-none"
+        className="min-w-0 flex-1 rounded-lg border border-surface-line px-2 py-1 font-mono text-[12px] text-brand-ink focus:border-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-800/25"
       />
       <button
         type="button"

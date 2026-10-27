@@ -516,3 +516,46 @@
 @media (prefers-reduced-motion: reduce) {
   .janeke-float { animation: none; }
 }
+
+
+/* An icon button drawn at 36px is a 36px target, and the mobile guidelines
+   ask for 44. Rather than redraw every icon — which would change a layout
+   that is right — this grows only what the finger lands on, centred on the
+   button and invisible.
+   
+   Safe to put on neighbours: two 36px buttons 8px apart expand to exactly
+   touching, never overlapping. */
+.tap-44 {
+  position: relative;
+}
+.tap-44::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+
+/* The skip link, parked just above the viewport until a keyboard focuses it.
+   
+   Not `sr-only focus:not-sr-only`: those two utilities set the same
+   properties and whichever Tailwind emits last wins, so the link stayed 1px
+   square even while focused — present in the tree, invisible to the person
+   who had just tabbed to it. A transform has no such argument with anything. */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  inset-inline-start: 0.75rem;
+  z-index: 100;
+  transform: translateY(calc(-100% - 1.5rem));
+  transition: transform 150ms ease;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .skip-link { transition: none; }
+}

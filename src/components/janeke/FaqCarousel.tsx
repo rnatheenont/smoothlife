@@ -175,7 +175,7 @@ export default function FaqCarousel({ cards }: { cards: FaqCard[] }) {
               onClick={() => setActive(i)}
               aria-label={c.question}
               aria-current={i === active}
-              className={`h-2 rounded-full transition-all ${
+              className={`h-2 rounded-full transition-[width,background-color] ${
                 i === active ? "w-6 bg-[#685048]" : "w-2 bg-[#d8d2cd] hover:bg-[#b5aca5]"
               }`}
             />

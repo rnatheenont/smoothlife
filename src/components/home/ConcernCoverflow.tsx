@@ -265,7 +265,7 @@ export default function ConcernCoverflow({ byConcern }: { byConcern: Record<stri
             onClick={take(() => setActive(i))}
             aria-label={c.nameTh}
             aria-current={i === active || undefined}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
+            className={`h-1.5 rounded-full transition-[width,background-color] duration-300 ${
               i === active ? "w-7 bg-brand-teal" : "w-4 bg-slate-300 hover:bg-slate-400"
             }`}
           />

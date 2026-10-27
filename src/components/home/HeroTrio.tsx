@@ -224,7 +224,7 @@ export default function HeroTrio({ banners }: { banners: HeroBanner[] }) {
                 onClick={() => setIndex(n + i - 1)}
                 aria-label={`แบนเนอร์ที่ ${i + 1}`}
                 aria-current={active || undefined}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
+                className={`h-1.5 rounded-full transition-[width,background-color] duration-300 ${
                   active ? "w-8 bg-brand-teal" : "w-5 bg-slate-300 hover:bg-slate-400"
                 }`}
               />

@@ -70,7 +70,7 @@ export default function CategoryIconRow({ items = shortcuts }: { items?: Shortcu
                   {s.word}
                 </span>
               ) : (
-                <span className="grid h-[68px] w-[68px] place-items-center rounded-full border border-slate-200/80 bg-white text-brand-1000 transition-all duration-300 group-hover:-translate-y-1 group-hover:border-brand-200 group-hover:shadow-card group-active:scale-95 lg:h-[88px] lg:w-[88px]">
+                <span className="grid h-[68px] w-[68px] place-items-center rounded-full border border-slate-200/80 bg-white text-brand-1000 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-1 group-hover:border-brand-200 group-hover:shadow-card group-active:scale-95 lg:h-[88px] lg:w-[88px]">
                   {s.Icon && (
                     // The disc lifts; the mark inside it bobs. Both only on
                     // hover, and the bob runs once — see iconBob.

@@ -111,7 +111,7 @@ export default function BrandCircleRow({
                 className="group flex w-[96px] shrink-0 flex-col items-center gap-3 lg:w-[116px]"
               >
                 <span
-                  className={`grid h-[88px] w-[88px] place-items-center overflow-hidden rounded-full bg-white transition-all duration-300 group-active:scale-95 lg:h-[116px] lg:w-[116px] ${
+                  className={`grid h-[88px] w-[88px] place-items-center overflow-hidden rounded-full bg-white transition-[transform,border-color,border-width,box-shadow] duration-300 group-active:scale-95 lg:h-[116px] lg:w-[116px] ${
                     on
                       ? "border-2 border-brand-teal shadow-card"
                       : "border border-slate-200/80 group-hover:border-brand-200 group-hover:shadow-card"

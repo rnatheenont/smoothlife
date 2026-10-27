@@ -50,7 +50,7 @@ function BrandCard({ b }: { b: BrandEntry }) {
     <Link
       href={`/brands/${b.slug}`}
       title={b.name}
-      className="flex h-full flex-col rounded-xl2 border border-slate-200 bg-white p-3 transition-all hover:-translate-y-0.5 hover:border-brand-teal hover:shadow-cardHover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+      className="flex h-full flex-col rounded-xl2 border border-slate-200 bg-white p-3 transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-brand-teal hover:shadow-cardHover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
     >
       {/* Square, because these logo files are square — a 5:3 or 4:3 box fits a
           1200x1200 logo to its height and leaves the width empty. */}
@@ -189,7 +189,7 @@ export default function BrandsDirectory({
               <Link
                 key={b.slug}
                 href={`/brands/${b.slug}`}
-                className="flex items-center gap-4 rounded-xl2 border border-brand-emerald/30 bg-brand-gradient-soft p-4 transition-all hover:-translate-y-0.5 hover:border-brand-emerald hover:shadow-cardHover"
+                className="flex items-center gap-4 rounded-xl2 border border-brand-emerald/30 bg-brand-gradient-soft p-4 transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-brand-emerald hover:shadow-cardHover"
               >
                 <span className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-white/70 md:size-24">
                   {b.image && (

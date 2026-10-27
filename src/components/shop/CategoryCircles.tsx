@@ -68,7 +68,7 @@ export default function CategoryCircles({ current }: { current: ShopSearchParams
           >
             <span
               className={clsx(
-                "grid h-16 w-16 place-items-center rounded-full transition-all duration-300 group-active:scale-95 md:h-[72px] md:w-[72px]",
+                "grid h-16 w-16 place-items-center rounded-full transition-[transform,border-color,background-color,box-shadow] duration-300 group-active:scale-95 md:h-[72px] md:w-[72px]",
                 active
                   ? "border border-brand-600 bg-brand-gradient-soft text-brand-1000"
                   : "border border-slate-200/80 bg-white text-brand-1000 group-hover:border-brand-200 group-hover:shadow-card"

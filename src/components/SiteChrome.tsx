@@ -67,9 +67,22 @@ export function SiteShell({
 }) {
   return (
     <>
+      {/* First thing a keyboard reaches, and invisible until it does. Without
+          it, getting to the page means tabbing through the announcement, the
+          ticker, the search box and a nav bar — on every page, every time. */}
+      <a
+        href="#main"
+        className="skip-link rounded-xl2 bg-brand-800 px-4 py-2 text-sm font-semibold text-white shadow-cardHover"
+      >
+        ข้ามไปเนื้อหาหลัก
+      </a>
       {announcement}
       <Header ticker={ticker} menu={menu} />
-      <main className="flex-1">{children}</main>
+      {/* tabIndex -1 so following the link moves focus here, not just the
+          scroll position — otherwise the next Tab goes back to the header. */}
+      <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
+        {children}
+      </main>
       <Footer columns={footerColumns} />
       <div className="h-[60px] lg:hidden" aria-hidden />
     </>

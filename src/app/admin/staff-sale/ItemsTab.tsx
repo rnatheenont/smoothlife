@@ -280,13 +280,13 @@ export default function ItemsTab({
                 onChange={(e) => setPercent(e.target.value)}
                 inputMode="numeric"
                 aria-label="ส่วนลดเป็นเปอร์เซ็นต์"
-                className="w-12 bg-transparent text-[13px] font-semibold text-brand-ink focus:outline-none"
+                className="w-12 rounded bg-transparent text-[13px] font-semibold text-brand-ink focus:outline-none focus:ring-2 focus:ring-brand-800/25"
               />
               <select
                 value={roundTo}
                 onChange={(e) => setRoundTo(e.target.value as "1" | "5" | "10")}
                 aria-label="ปัดเศษ"
-                className="bg-transparent text-[12px] text-slate-500 focus:outline-none"
+                className="rounded bg-transparent text-[12px] text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-800/25"
               >
                 <option value="1">ปัดเป็นบาท</option>
                 <option value="5">ปัดเป็น 5</option>

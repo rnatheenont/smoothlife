@@ -292,7 +292,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
               onClick={handleWish}
               aria-label={isWished ? "เอาออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}
               aria-pressed={isWished}
-              className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 transition-colors hover:text-sale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 @[14rem]:h-10 @[14rem]:w-10"
+              className="tap-44 relative grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 transition-colors hover:text-sale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 @[14rem]:h-10 @[14rem]:w-10"
             >
               {/* Keyed on the count: a CSS animation only plays when the
                   element is new, and saving the same card twice has to look
@@ -361,7 +361,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
                   //
                   // Confirmation goes flat: a state that keeps moving reads
                   // as still working.
-                  "ml-auto grid size-10 shrink-0 place-items-center rounded-full text-white shadow-card transition-[filter,background-color] active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2",
+                  "tap-44 ml-auto grid size-10 shrink-0 place-items-center rounded-full text-white shadow-card transition-[filter,background-color] active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2",
                   added ? "bg-brand-emerald" : "bg-brand-gradient hover:brightness-105"
                 )}
               >

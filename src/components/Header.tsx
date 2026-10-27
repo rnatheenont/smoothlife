@@ -155,7 +155,7 @@ export default function Header({
           goes in it may as well be the shop. */}
       {ticker.length > 0 && (
         <div
-          className={`overflow-hidden bg-slate-100 transition-all duration-300 lg:max-h-16 lg:opacity-100 ${
+          className={`overflow-hidden bg-slate-100 transition-[max-height,opacity] duration-300 lg:max-h-16 lg:opacity-100 ${
             scrolled ? "max-h-0 opacity-0" : "max-h-16 opacity-100"
           }`}
         >

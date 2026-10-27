@@ -327,7 +327,7 @@ export default function AdminKnowledgeBasePage() {
   ].filter(Boolean) as { label: string; clear: () => void }[];
 
   const fieldClass =
-    "min-h-11 w-full rounded-xl2 border border-surface-line bg-white px-3 text-sm text-brand-ink focus:border-brand-800 focus:outline-none";
+    "min-h-11 w-full rounded-xl2 border border-surface-line bg-white px-3 text-sm text-brand-ink focus:border-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-800/25";
 
   return (
     <div>
