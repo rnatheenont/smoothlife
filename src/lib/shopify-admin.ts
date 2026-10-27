@@ -2386,7 +2386,12 @@ export async function createPaidShopifyOrder(opts: {
     countryCode: string;
     phone?: string;
   };
-  note: string;
+  /**
+   * Optional: the shop's own checkout leaves it unset. Flows that have
+   * something the order cannot otherwise say — which billing cycle, which
+   * flash sale — still pass one.
+   */
+  note?: string;
   tranRef: string;
   /** The Shopify discount code the customer used, and what it took off. */
   discount?: { code: string; amount: number } | null;

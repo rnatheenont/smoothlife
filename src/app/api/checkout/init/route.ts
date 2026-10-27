@@ -254,7 +254,10 @@ export async function POST(req: NextRequest) {
       // The digits, not whatever separators were typed around them — this
       // is the number support reads back and the courier dials.
       contact_phone: phoneDigits,
-      shipping_address: shippingAddress,
+      // The number goes in with the address, not only beside it. The
+      // courier reads the address; what was stored had the street and no
+      // way to ring the door.
+      shipping_address: { ...shippingAddress, phone: phoneDigits },
       // The gifts go in here, because this column is what the webhook hands
       // to createPaidShopifyOrder once the payment lands. Nothing downstream
       // has to learn about gifts; the order simply has them.

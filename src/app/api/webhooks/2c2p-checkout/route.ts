@@ -20,6 +20,7 @@ type TransactionRow = {
   campaign_discount_code: string | null;
   campaign_discount_amount: number | null;
   contact_email: string | null;
+  contact_phone: string | null;
   shipping_address: {
     firstName?: string;
     lastName?: string;
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [transaction] = await supabaseRest<TransactionRow[]>(
-    `payment_transactions?invoice_no=eq.${callback.invoiceNo}&select=id,cart_token,status,amount,currency_code,line_items,contact_email,shipping_address,discount_code,discount_amount,campaign_discount_code,campaign_discount_amount`
+    `payment_transactions?invoice_no=eq.${callback.invoiceNo}&select=id,cart_token,status,amount,currency_code,line_items,contact_email,contact_phone,shipping_address,discount_code,discount_amount,campaign_discount_code,campaign_discount_amount`
   );
   if (!transaction) {
     console.error("[webhooks/2c2p-checkout] no transaction matches invoice", callback.invoiceNo);
@@ -111,9 +112,18 @@ export async function POST(req: NextRequest) {
         province: addr.state,
         zip: addr.postalCode,
         countryCode: addr.countryCode,
-        phone: addr.phone,
+        // The checkout form keeps the number in its own field, not inside
+        // the address, so shipping_address has never carried one and every
+        // order reached Shopify with an undialable address. contact_phone
+        // is the same number the shopper typed; init now writes it into the
+        // address too, and this covers the rows that were already waiting
+        // for payment when that change shipped.
+        phone: addr.phone || transaction.contact_phone || undefined,
       },
-      note: "สั่งซื้อผ่านหน้าชำระเงินของเว็บไซต์ (2C2P)",
+      // No note. It said the order came from the website's payment page,
+      // which the Channel already says, on an order that can only have come
+      // from there — and it sat at the top of the order where a note that
+      // matters would go.
       tranRef: callback.tranRef,
       // A gift is a ฿0 line and nothing more, so without this an order that
       // gave five things away is indistinguishable from one that gave none —
