@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useChatSession } from "@/lib/use-chat-session";
-import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
+import { seedChat } from "@/lib/chat-handoff";
 import ChatConversation from "@/components/chat/ChatConversation";
 import ChatMascot, { chatMood } from "@/components/chat/ChatMascot";
 
@@ -24,43 +24,23 @@ export default function ChatFullscreen() {
   const { messages, reset, hasProfile, send, setInput, handleImagePick, historyLoaded, loading } = session;
   const seeded = useRef(false);
 
-  // What the home page's hero band hands over: a question as ?q=, a photo as
-  // ?photo=1 plus a data URL parked in sessionStorage (see chat-handoff).
-  // Waits for the stored history so it lands after the conversation so far
-  // rather than ahead of it, and clears both the parameters and the slot once
-  // used — a reload should not ask the same thing or re-attach the same
-  // picture again.
+  // A question can still arrive here by link — ?q=, plus ?photo=1 for a
+  // picture parked in sessionStorage (see chat-handoff). The hero band no
+  // longer sends one this way, but the LINE menu and anything else pointing
+  // at /chat?q= does, so the entry point stays.
   //
-  // A question on its own is sent straight away. A question *with* a photo is
-  // put in the composer instead: the photo has a consent prompt in front of
-  // it, so sending the text now would split one message into two and leave
-  // the picture behind.
+  // Waits for the stored history so it lands after the conversation so far
+  // rather than ahead of it, and clears the parameters once used: a reload
+  // should not ask the same thing twice.
   useEffect(() => {
     if (seeded.current || !historyLoaded) return;
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q")?.trim();
-    const wantsPhoto = params.get("photo") === "1";
-    if (!q && !wantsPhoto) return;
+    const photo = params.get("photo") === "1";
+    if (!q && !photo) return;
     seeded.current = true;
     window.history.replaceState(null, "", "/chat");
-
-    let dataUrl: string | null = null;
-    if (wantsPhoto) {
-      try {
-        dataUrl = sessionStorage.getItem(HERO_PHOTO_KEY);
-        sessionStorage.removeItem(HERO_PHOTO_KEY);
-      } catch {}
-    }
-
-    if (dataUrl) {
-      if (q) setInput(q);
-      fetch(dataUrl)
-        .then((r) => r.blob())
-        .then((b) => handleImagePick(new File([b], "photo.jpg", { type: b.type || "image/jpeg" })))
-        .catch(() => {});
-    } else if (q) {
-      send(q);
-    }
+    seedChat({ q, photo }, { send, setInput, handleImagePick });
   }, [historyLoaded, send, setInput, handleImagePick]);
 
   function leave() {

@@ -1,10 +1,12 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import { RotateCcw, X, Headset, Maximize2 } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useChatSession } from "@/lib/use-chat-session";
+import { useQuickChat } from "@/lib/quickchat-context";
+import { seedChat } from "@/lib/chat-handoff";
 import ChatConversation from "@/components/chat/ChatConversation";
 import ChatMascot, { chatMood } from "@/components/chat/ChatMascot";
 
@@ -31,6 +33,23 @@ export default function QuickChatPanel({
   // active: true — this component only exists while the panel is open.
   const session = useChatSession({ active: true, viewingSlug });
   const { messages, reset, hasProfile, escalating, setNoteOpen, loading } = session;
+  const { handoff, clearHandoff } = useQuickChat();
+  const { send, setInput, handleImagePick, historyLoaded } = session;
+
+  // A question typed somewhere else on the page — the hero band's search box
+  // today — arrives here as a handoff rather than as a route change.
+  //
+  // It waits for the stored history so it lands after the conversation so
+  // far rather than ahead of it. Each handoff is played once: the id is
+  // recorded before anything is sent, so a second run of this effect (React
+  // in development mounts every component twice) cannot ask it again.
+  const played = useRef<number | null>(null);
+  useEffect(() => {
+    if (!historyLoaded || !handoff || played.current === handoff.id) return;
+    played.current = handoff.id;
+    seedChat(handoff, { send, setInput, handleImagePick });
+    clearHandoff(handoff.id);
+  }, [historyLoaded, handoff, clearHandoff, send, setInput, handleImagePick]);
 
   return (
     <div

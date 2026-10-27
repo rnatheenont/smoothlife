@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ImagePlus, Loader2, Sparkles } from "lucide-react";
 import { HaloField } from "@/components/Halo";
 import QuestionSuggestions from "@/components/home/QuestionSuggestions";
@@ -12,6 +11,7 @@ import { useLiteProducts } from "@/lib/use-lite-products";
 import { interestsFromProducts, pickSuggestions } from "@/lib/chat-suggestions";
 import { resizeForUpload } from "@/lib/image-utils";
 import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
+import { useQuickChat } from "@/lib/quickchat-context";
 import SkyClouds from "@/components/SkyClouds";
 import SmoothieRig from "@/components/mascot/SmoothieRig";
 
@@ -19,9 +19,11 @@ import SmoothieRig from "@/components/mascot/SmoothieRig";
 //
 // The campaign artwork still runs directly underneath; this sits above it
 // because the one thing this shop has that a marketplace does not is somebody
-// to ask. Typing here hands the question straight to the full-screen chat,
-// so the first message is the shopper's own words rather than a greeting they
-// have to reply to.
+// to ask. Typing here opens the chat panel in the corner with the question
+// already asked, so the first message is the shopper's own words rather than
+// a greeting they have to reply to — and the storefront stays on screen
+// behind it. It used to navigate to /chat, which answered one question by
+// taking away everything the question was about.
 //
 // The wordmark behind it is decoration, drawn once at a size that runs off
 // both edges and clipped by the band. It is aria-hidden and unselectable: a
@@ -68,7 +70,7 @@ export default function SmoothieHeroBand() {
   const [uploading, setUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
+  const { openWith } = useQuickChat();
   const { t, lang } = useLang();
   const { slugs: recentSlugs } = useRecentlyViewed();
 
@@ -132,11 +134,10 @@ export default function SmoothieHeroBand() {
   }, [lang, seen, seed]);
 
   function go(text: string, photo = false) {
-    const params = new URLSearchParams();
-    if (text) params.set("q", text);
-    if (photo) params.set("photo", "1");
-    const qs = params.toString();
-    router.push(qs ? `/chat?${qs}` : "/chat");
+    // Cleared straight away: the question has moved into the conversation,
+    // and leaving it sitting in the box invites sending it a second time.
+    openWith({ q: text, photo });
+    setQ("");
   }
 
   function submit(e: React.FormEvent) {
@@ -158,6 +159,10 @@ export default function SmoothieHeroBand() {
       const resized = await resizeForUpload(file);
       sessionStorage.setItem(HERO_PHOTO_KEY, resized.dataUrl);
       go(q.trim(), true);
+      // The page used to navigate away at this point, so the spinner left
+      // with it. It stays now, and a button that spins forever reads as a
+      // stuck upload rather than a finished one.
+      setUploading(false);
     } catch {
       setUploading(false);
       setPhotoError(t("ไม่สามารถอ่านรูปนี้ได้ ลองใหม่อีกครั้ง", "Couldn't read that photo, please try again."));
