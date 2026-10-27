@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkAdminPassword, createAdminToken, adminCookieOptions, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyPassword } from "@/lib/password";
+import { clientIp, isRateLimited, isRateLimitedShared } from "@/lib/rate-limit";
 
 type AdminUserRow = {
   id: string;
@@ -10,6 +11,9 @@ type AdminUserRow = {
   role_key: string;
   status: "active" | "suspended";
 };
+
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const TOO_MANY = { ok: false, error: "พยายามเข้าสู่ระบบบ่อยเกินไป ลองใหม่อีกครั้งใน 15 นาที" };
 
 // Two ways in, both landing on the same cookie (see admin-auth.ts):
 //   { password }         — the original shared password, kept working
@@ -23,6 +27,27 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const password = typeof body?.password === "string" ? body.password : "";
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+
+  // Three layers, cheapest first.
+  //
+  // The in-memory one runs before any round trip and is the only layer left
+  // standing when Supabase is unreachable — isRateLimitedShared fails open by
+  // design, which is the right call for a shopping endpoint and the wrong one
+  // for the door to the admin panel. Its real allowance is per warm instance,
+  // so it sits looser than the durable limit it backs up rather than
+  // second-guessing it.
+  const ip = clientIp(req);
+  if (isRateLimited(`admin-login-mem:${ip}`, 10, LOGIN_WINDOW_MS)) {
+    return NextResponse.json(TOO_MANY, { status: 429 });
+  }
+  if (await isRateLimitedShared(`admin-login-ip:${ip}`, 5, LOGIN_WINDOW_MS)) {
+    return NextResponse.json(TOO_MANY, { status: 429 });
+  }
+  // Per account as well as per IP. One source walking through addresses is
+  // caught above; many addresses walking through one account is caught here.
+  if (email && (await isRateLimitedShared(`admin-login-user:${email}`, 5, LOGIN_WINDOW_MS))) {
+    return NextResponse.json(TOO_MANY, { status: 429 });
+  }
 
   if (email) {
     if (!supabaseConfigured()) {

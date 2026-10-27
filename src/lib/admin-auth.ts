@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHash, createHmac, timingSafeEqual } from "crypto";
 
 // Gates the internal /admin/* panel. Two kinds of session share one cookie
 // and one token shape now:
@@ -62,9 +62,11 @@ export function getAdminSession(token: string | undefined | null): AdminSession 
 export function checkAdminPassword(password: string): boolean {
   const secret = process.env.ADMIN_PANEL_SECRET || "";
   if (!secret) return false;
-  const a = Buffer.from(password);
-  const b = Buffer.from(secret);
-  if (a.length !== b.length) return false;
+  // Compare digests, not the raw strings. Comparing the strings has to bail
+  // out when the lengths differ, and that early return times differently —
+  // enough to read the secret's length off the response.
+  const a = createHash("sha256").update(password).digest();
+  const b = createHash("sha256").update(secret).digest();
   return timingSafeEqual(a, b);
 }
 

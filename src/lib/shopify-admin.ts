@@ -891,22 +891,6 @@ export async function getLiveHeroBanners(): Promise<LiveHeroBanner[] | null> {
   }
 }
 
-// TEMPORARY — for diagnosing why production falls back to the static
-// banners despite valid credentials. Remove this and its route once fixed.
-export async function getLiveHeroBannersDebug(): Promise<{
-  configured: boolean;
-  result?: LiveHeroBanner[] | null;
-  error?: string;
-}> {
-  if (!shopifyAdminConfigured()) return { configured: false };
-  try {
-    const result = await getLiveHeroBannersUnsafe();
-    return { configured: true, result };
-  } catch (err) {
-    return { configured: true, error: err instanceof Error ? `${err.name}: ${err.message}` : String(err) };
-  }
-}
-
 // Creates a brand-new Shopify customer for someone who registered on our
 // site but has no existing purchase history there, so Shopify stays the
 // complete customer list regardless of where an account originated. Needs
