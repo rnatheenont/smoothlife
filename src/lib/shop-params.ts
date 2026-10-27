@@ -48,6 +48,15 @@ export type FilterCounts = {
 export const PAGE_SIZE = 24;
 
 /** The star thresholds the filter offers, in the order it shows them. */
+/** How the grid can be ordered. The labels are what the toolbar shows. */
+export const SORTS: { value: string; label: string }[] = [
+  { value: "", label: "แนะนำ" },
+  { value: "bestseller", label: "ขายดี" },
+  { value: "price-asc", label: "ราคาต่ำ–สูง" },
+  { value: "price-desc", label: "ราคาสูง–ต่ำ" },
+  { value: "rating", label: "คะแนนสูงสุด" },
+];
+
 export const RATING_STEPS = [4.5, 4, 3.5] as const;
 
 export function multi(value: string | undefined): string[] {

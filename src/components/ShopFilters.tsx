@@ -5,8 +5,9 @@ import { concerns } from "@/data/categories";
 import type { BrandOption } from "@/lib/brand-options";
 import { multi, PROMO_FILTERS, RATING_STEPS, type FilterCounts, ShopSearchParams } from "@/lib/shop-params";
 import { SlidersHorizontal, Check, X, ChevronDown, Search, Star } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import clsx from "clsx";
+import Dropdown from "@/components/shop/Dropdown";
 
 // Fewer than this and there's nothing to collapse — the toggle would just
 // be a "show more" button that reveals one extra row.
@@ -36,18 +37,11 @@ function OptionCount({ n }: { n: number }) {
  *
  * The column these came from is gone: five stacked groups took a 224px
  * gutter off every screen for controls most shoppers touch once, and the
- * grid is what they came for. As a row above the grid the same five read as
- * one line of choices, and the page is as wide as the products.
+ * grid is what they came for. On the toolbar the same five read as one line
+ * of choices, and the page is as wide as the products.
  *
- * Written by hand rather than on a popover library, because the one
- * behaviour that matters here is the one a library fights: the panel has to
- * stay open while you tick things. Brands and promos are multi-select and
- * every tick navigates — a panel that dismisses itself on the first one
- * makes picking three brands three round trips. Everything inside the
- * wrapper below counts as "inside", so a tick is never an outside press.
- *
- * The count sits on the pill rather than inside the panel, because a closed
- * panel still has to say whether it is doing anything.
+ * The shell — the pill, the panel, closing on an outside press or Escape —
+ * is shared with the sort menu beside it; see components/shop/Dropdown.
  */
 function FilterMenu({
   label,
@@ -65,67 +59,19 @@ function FilterMenu({
   openMenu: string | null;
   setOpenMenu: (next: (prev: string | null) => string | null) => void;
 }) {
-  const open = openMenu === label;
-  const wrap = useRef<HTMLDivElement>(null);
-
-  // Pointerdown, not click: it runs before the next pill's click, so pressing
-  // a neighbour closes this one and opens that one in a single press. On
-  // click they would race, and the late close would shut the menu that had
-  // just opened.
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: PointerEvent) => {
-      if (!wrap.current?.contains(e.target as Node)) setOpenMenu(() => null);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenMenu(() => null);
-    };
-    document.addEventListener("pointerdown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open, setOpenMenu]);
-
   return (
-    <div ref={wrap} className="relative">
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-haspopup="true"
-        onClick={() => setOpenMenu((prev) => (prev === label ? null : label))}
-        className={clsx(
-          "flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-4 text-sm transition-colors",
-          count > 0
-            ? "border-brand-emerald bg-brand-gradient-soft font-semibold text-brand-800"
-            : "border-surface-line font-medium text-slate-600 hover:bg-surface-soft",
-        )}
-      >
-        {label}
-        {count > 0 && (
-          <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-gradient px-1 text-[10px] font-bold text-white">
-            {count}
-          </span>
-        )}
-        <ChevronDown
-          size={14}
-          aria-hidden="true"
-          className={clsx("text-slate-400 transition-transform", open && "rotate-180")}
-        />
-      </button>
-      {open && (
-        // Anchored to the pill and capped to the window: the brand panel is
-        // the widest of them and the last pill sits well into the row.
-        <div
-          role="group"
-          aria-label={label}
-          className="absolute left-0 top-full z-40 mt-2 max-w-[calc(100vw-2rem)] rounded-xl2 border border-surface-line bg-white p-3 shadow-card"
-        >
-          {children}
-        </div>
-      )}
-    </div>
+    <Dropdown
+      label={label}
+      count={count}
+      open={openMenu === label}
+      onToggle={() => setOpenMenu((prev) => (prev === label ? null : label))}
+      // Only clears the row's value while this menu is still the open one.
+      // Pressing a neighbour closes this one after that one has opened, and
+      // an unconditional clear would shut the menu that had just opened.
+      onClose={() => setOpenMenu((prev) => (prev === label ? null : prev))}
+    >
+      {children}
+    </Dropdown>
   );
 }
 
@@ -651,7 +597,7 @@ export default function ShopFilters({
       {/* Desktop: the same filters as a row above the grid. The phone keeps
           its sheet — a row of five menus is a sidebar again on a 375px
           screen, only sideways. */}
-      <div className="mb-5 hidden flex-wrap items-center gap-2 lg:flex">
+      <div className="hidden flex-wrap items-center gap-2 lg:flex">
         <FilterMenu
           label="แบรนด์"
           openMenu={openMenu}

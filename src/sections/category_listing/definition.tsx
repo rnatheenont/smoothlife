@@ -1,6 +1,7 @@
 import { z } from "zod";
 import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
+import SortMenu from "@/components/shop/SortMenu";
 import SortSelect from "@/components/SortSelect";
 import { categories } from "@/data/categories";
 import { toCardData, type ProductCardData } from "@/data/card";
@@ -52,17 +53,21 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
   return (
     <section className="container-page pb-8 md:pb-10">
       <div className="flex flex-col gap-6">
-        <ShopFilters
-          current={data.params}
-          houseBrands={data.house}
-          otherBrands={data.other}
-          mobileExtra={<SortSelect current={data.params} />}
-        />
         <div className="flex-1">
-          {/* The sort control appears twice on this page and never at the same
-              time: here from lg, and inside the filter drawer below it. */}
-          <div className="mb-4 hidden items-center justify-end lg:flex">
-            <SortSelect current={data.params} />
+          {/* One toolbar, the same as /shop: filters on the left, ordering
+              on the right. The sort appears twice on this page and never at
+              the same time — here from lg, and inside the filter drawer on
+              a phone. */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <ShopFilters
+              current={data.params}
+              houseBrands={data.house}
+              otherBrands={data.other}
+              mobileExtra={<SortSelect current={data.params} />}
+            />
+            <div className="hidden lg:flex">
+              <SortMenu current={data.params} />
+            </div>
           </div>
           {data.cards.length === 0 ? (
             <div className="py-20 text-center text-slate-500">{settings.emptyText}</div>

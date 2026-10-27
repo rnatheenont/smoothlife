@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ArrowUpDown, ChevronDown } from "lucide-react";
 import { ShopSearchParams } from "@/lib/shop-params";
-import { SORTS } from "@/components/shop/SortChips";
+import { SORTS } from "@/lib/shop-params";
 
 export default function SortSelect({ current }: { current: ShopSearchParams }) {
   const router = useRouter();
@@ -20,8 +20,8 @@ export default function SortSelect({ current }: { current: ShopSearchParams }) {
 
   // Kept as a native <select> on purpose: on a phone this opens the OS
   // picker, which is reachable, scrollable with one thumb and already
-  // translated. Desktop gets SortChips instead, where there is room to show
-  // the five options rather than hide them.
+  // translated. Desktop gets SortMenu instead — the same five options in a
+  // dropdown on the toolbar, beside the filters.
   return (
     <div className="relative">
       <ArrowUpDown

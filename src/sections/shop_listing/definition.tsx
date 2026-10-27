@@ -3,7 +3,7 @@ import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
 import ActiveFilterChips from "@/components/shop/ActiveFilterChips";
 import SortSelect from "@/components/SortSelect";
-import SortChips from "@/components/shop/SortChips";
+import SortMenu from "@/components/shop/SortMenu";
 import Pagination from "@/components/Pagination";
 import CategoryCircles from "@/components/shop/CategoryCircles";
 import ViewToggle from "@/components/shop/ViewToggle";
@@ -87,26 +87,29 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
       <CategoryCircles current={data.params} />
 
       <div className="flex flex-col gap-6">
-        <ShopFilters
-          houseBrands={data.house}
-          otherBrands={data.other}
-          current={data.params}
-          counts={data.counts}
-          resultCount={data.total}
-          mobileExtra={<SortSelect current={data.params} />}
-        />
-
         <div className="min-w-0 flex-1">
-          <div className="mb-4 flex items-center justify-between gap-3">
+          {/* One toolbar: what narrows the list on the left, how it is
+              ordered on the right. */}
+          <div className="mb-4 flex flex-col gap-3">
             <h2 className="text-base font-bold text-brand-ink md:text-lg">
               {data.heading}{" "}
               <span className="text-sm font-medium text-slate-500">
                 {data.total.toLocaleString("th-TH")} รายการ
               </span>
             </h2>
-            <div className="hidden items-center gap-3 lg:flex">
-              <SortChips current={data.params} />
-              <ViewToggle current={data.params} />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <ShopFilters
+                houseBrands={data.house}
+                otherBrands={data.other}
+                current={data.params}
+                counts={data.counts}
+                resultCount={data.total}
+                mobileExtra={<SortSelect current={data.params} />}
+              />
+              <div className="hidden items-center gap-2 lg:flex">
+                <SortMenu current={data.params} />
+                <ViewToggle current={data.params} />
+              </div>
             </div>
           </div>
 

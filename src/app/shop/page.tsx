@@ -4,7 +4,7 @@ import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
 import ActiveFilterChips from "@/components/shop/ActiveFilterChips";
 import SortSelect from "@/components/SortSelect";
-import SortChips from "@/components/shop/SortChips";
+import SortMenu from "@/components/shop/SortMenu";
 import Pagination from "@/components/Pagination";
 import ShopHero from "@/components/shop/ShopHero";
 import CategoryCircles from "@/components/shop/CategoryCircles";
@@ -48,24 +48,29 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
         <CategoryCircles current={searchParams} />
 
         <div className="flex flex-col gap-6">
-          <ShopFilters
-            houseBrands={brandOptions().house}
-            otherBrands={brandOptions().other}
-            current={searchParams}
-            counts={counts}
-            resultCount={allItems.length}
-            mobileExtra={<SortSelect current={searchParams} />}
-          />
-
           <div className="min-w-0 flex-1">
-            <div className="mb-4 flex items-center justify-between gap-3">
+            {/* One toolbar: what narrows the list on the left, how it is
+                ordered on the right. The filters had a row of their own
+                above the count, and two rows of controls for one list is
+                one row too many. */}
+            <div className="mb-4 flex flex-col gap-3">
               <h2 className="text-base font-bold text-brand-ink md:text-lg">
                 {activeCategory ? activeCategory.nameTh : "สินค้าทั้งหมด"}{" "}
                 <span className="text-sm font-medium text-slate-500">{allItems.length.toLocaleString("th-TH")} รายการ</span>
               </h2>
-              <div className="hidden items-center gap-3 lg:flex">
-                <SortChips current={searchParams} />
-                <ViewToggle current={searchParams} />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <ShopFilters
+                  houseBrands={brandOptions().house}
+                  otherBrands={brandOptions().other}
+                  current={searchParams}
+                  counts={counts}
+                  resultCount={allItems.length}
+                  mobileExtra={<SortSelect current={searchParams} />}
+                />
+                <div className="hidden items-center gap-2 lg:flex">
+                  <SortMenu current={searchParams} />
+                  <ViewToggle current={searchParams} />
+                </div>
               </div>
             </div>
 

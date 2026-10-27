@@ -6,6 +6,7 @@ import { categories} from "@/data/categories";
 import { categoryImage } from "@/lib/category-image";
 import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
+import SortMenu from "@/components/shop/SortMenu";
 import CategoryChips from "@/components/CategoryChips";
 import SortSelect from "@/components/SortSelect";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -102,15 +103,19 @@ async function CategoryPageWritten({
       )}
 
       <div className="flex flex-col gap-6">
-        <ShopFilters
-          current={current}
-          houseBrands={brandOptions().house}
-          otherBrands={brandOptions().other}
-          mobileExtra={<SortSelect current={current} />}
-        />
         <div className="flex-1">
-          <div className="hidden lg:flex items-center justify-end mb-4">
-            <SortSelect current={current} />
+          {/* One toolbar, the same as /shop: filters on the left, ordering
+              on the right. */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <ShopFilters
+              current={current}
+              houseBrands={brandOptions().house}
+              otherBrands={brandOptions().other}
+              mobileExtra={<SortSelect current={current} />}
+            />
+            <div className="hidden lg:flex">
+              <SortMenu current={current} />
+            </div>
           </div>
           {items.length === 0 ? (
             <div className="text-center py-20 text-slate-500">ไม่พบสินค้าในหมวดนี้</div>
