@@ -571,6 +571,10 @@ export default function AdminFreeGiftsPage() {
   // the row, and re-asking would imply the answer could be changed.
   const [step, setStep] = useState<0 | 1 | 2>(1);
   const [showSubConditions, setShowSubConditions] = useState(false);
+  /** The card the campaign was started from. A label, not a stored property:
+   *  the header saying "สร้าง: ยิ่งซื้อยิ่งลด (ตามจำนวน)" is the difference
+   *  between knowing which form you are in and guessing from the toggles. */
+  const [presetTitle, setPresetTitle] = useState<string | null>(null);
   // The shelf is already loaded for the pickers; the preview borrows it to
   // turn the variant ids an edited promo arrives with into names.
   const { gifts: shelf } = useGiftShelf();
@@ -606,11 +610,21 @@ export default function AdminFreeGiftsPage() {
     setShowAdvanced(false);
     setStep(0);
     setShowSubConditions(false);
+    setPresetTitle(null);
     setShowForm(true);
   }
 
   function startFromPreset(preset: (typeof CAMPAIGN_PRESETS)[number]) {
-    setForm({ ...EMPTY_FORM, ...preset.preset });
+    const { tiers, ...rest } = preset.preset;
+    setForm({
+      ...EMPTY_FORM,
+      ...rest,
+      // The tiers come as bare numbers; the form rows carry gift lists too.
+      tiers: tiers
+        ? tiers.map((t) => ({ ...EMPTY_TIER_ROW, ...t }))
+        : [{ ...EMPTY_TIER_ROW }],
+    });
+    setPresetTitle(preset.title);
     setShowSubConditions(Boolean(preset.openSubConditions));
     setStep(1);
   }
@@ -724,6 +738,7 @@ export default function AdminFreeGiftsPage() {
     setShowAdvanced(false);
     setStep(1);
     setShowSubConditions(false);
+    setPresetTitle(null);
     setShowForm(true);
   }
 
@@ -1147,7 +1162,11 @@ export default function AdminFreeGiftsPage() {
                     <ChevronDown size={16} className="rotate-90" />
                   </button>
                 )}
-                {editingId ? "แก้ไขโปรโมชั่น" : step === 0 ? "เลือกประเภทแคมเปญ" : "สร้างโปรโมชั่นใหม่"}
+                {editingId
+                  ? "แก้ไขโปรโมชั่น"
+                  : step === 0
+                    ? "เลือกประเภทแคมเปญ"
+                    : (presetTitle ?? "สร้างโปรโมชั่นใหม่")}
               </h2>
               <button onClick={() => setShowForm(false)} aria-label="ปิด">
                 <X size={18} />
@@ -1428,12 +1447,12 @@ export default function AdminFreeGiftsPage() {
 
                 {form.kind === "spend" ? (
                   <AdminField
-                    label="ยอดขั้นต่ำ (บาท)"
+                    label={form.triggerType === "quantity" ? "จำนวนขั้นต่ำ (ชิ้น)" : "ยอดขั้นต่ำ (บาท)"}
                     type="number"
                     inputMode="numeric"
                     value={form.minSubtotal}
                     onChange={(v) => setForm({ ...form, minSubtotal: v })}
-                    placeholder="เช่น 990"
+                    placeholder={form.triggerType === "quantity" ? "เช่น 3" : "เช่น 990"}
                     isRequired
                   />
                 ) : form.kind === "bxgy" ? (
@@ -1616,7 +1635,9 @@ export default function AdminFreeGiftsPage() {
                             )}
                           </div>
                           <AdminField
-                            label={`ยอดขั้นต่ำของระดับที่ ${i + 1} (บาท)`}
+                            label={`${
+                              form.triggerType === "quantity" ? "จำนวนขั้นต่ำ" : "ยอดขั้นต่ำ"
+                            }ของระดับที่ ${i + 1} (${form.triggerType === "quantity" ? "ชิ้น" : "บาท"})`}
                             type="number"
                             inputMode="numeric"
                             value={tier.minSubtotal}
@@ -1625,7 +1646,11 @@ export default function AdminFreeGiftsPage() {
                               next[i] = { ...next[i], minSubtotal: v };
                               setForm({ ...form, tiers: next });
                             }}
-                            placeholder="ยอดขั้นต่ำของระดับนี้ (บาท)"
+                            placeholder={
+                            form.triggerType === "quantity"
+                              ? "จำนวนชิ้นขั้นต่ำของระดับนี้"
+                              : "ยอดขั้นต่ำของระดับนี้ (บาท)"
+                          }
                             isRequired
                           />
                           <DiscountTypeField
