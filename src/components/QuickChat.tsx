@@ -149,6 +149,36 @@ export default function QuickChat() {
   const DRAG_THRESHOLD = 6;
   const EDGE_MARGIN = 8;
 
+  // Tucked out of the way while the shopper is scrolling down a page.
+  //
+  // On a phone this thing sits in the bottom-right corner, and so does the
+  // add-to-cart button of every card in the right-hand column — 64px of
+  // launcher over a 40px button, in exactly the same strip of screen. There
+  // is no arrangement of the two that avoids it: at 375px the corner and
+  // the card's right edge are the same place.
+  //
+  // So it yields. Scrolling down is somebody going past things, which is
+  // when a floating button is only in the way; scrolling up is somebody
+  // coming back to something, which is when they might want it. Same rule
+  // and the same thresholds as the header's own collapse, so the page has
+  // one idiom for "get out of the way" rather than two.
+  const [tucked, setTucked] = useState(false);
+  const lastScrollY = useRef(0);
+  useEffect(() => {
+    function onScroll() {
+      const y = window.scrollY;
+      // Wide screens have room for both; the header does not collapse there
+      // either.
+      setTucked(window.innerWidth < 1024 && y > lastScrollY.current && y > 80);
+      lastScrollY.current = y;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  // Never while it is being used, dragged, or saying hello — a thing that
+  // slides away mid-sentence reads as broken, not as tactful.
+  const away = tucked && !open && !isDragging && !welcome;
+
   // Reads the container's actual current position/size instead of
   // hardcoding its CSS anchor offsets (right-4/right-5, bottom-[...], the
   // button's own responsive h-16/h-24 size) — those went stale the moment
@@ -275,13 +305,21 @@ export default function QuickChat() {
         className="fixed bottom-[var(--qc-bottom)] lg:bottom-3 right-4 lg:right-5 z-80 inline-flex"
         style={{
             "--qc-bottom": `calc(${launcherBottom}px + env(safe-area-inset-bottom))`,
-            transform: `translate(${dragPos.x}px, ${dragPos.y}px)`,
+            // Composed with the drag offset rather than fighting it: 88px is
+            // the launcher at its widest plus the right-4 anchor, so it
+            // clears the edge whatever the shopper has dragged it to.
+            transform: `translate(${dragPos.x + (away ? 88 : 0)}px, ${dragPos.y}px)`,
+            // Out of the way means out of the way: a button parked off the
+            // edge must not still be catching taps meant for the card under
+            // where it used to be.
+            pointerEvents: away ? "none" : undefined,
+            opacity: away ? 0 : 1,
             // bottom has to ride along in here. An inline transition replaces
             // the class one outright, so the transition-[bottom] utility this
             // element used to carry never actually ran.
             transition: isDragging
               ? "none"
-              : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), bottom 0.2s",
+              : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), bottom 0.2s, opacity 0.2s",
           } as CSSProperties}
       >
         <button
