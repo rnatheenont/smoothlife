@@ -476,7 +476,6 @@ export default function CartView() {
             </section>
           )}
 
-          <CouponPicker />
 
           {bundleSuggestions.length > 0 && (
             <div className="mt-2">
@@ -498,6 +497,64 @@ export default function CartView() {
             it was the message repeated, not reinforced. It still runs on the
             product pages, where there is nothing else saying it. */}
         <div className="flex flex-col gap-4 h-fit lg:sticky lg:top-[152px]">
+          {/* Ordered the way the decision is made, not the way the
+              numbers are computed: what this basket earns, then the code
+              that changes it, then the total it all comes to. The summary
+              carries the checkout button, so it sits last — the thing you
+              press is under the things you might still change. */}
+          <div className="rounded-xl2 border border-amber-200 bg-amber-50/60 p-5">
+            <h3 className="font-bold text-brand-ink flex items-center gap-2 text-sm">
+              <Award size={16} className="text-amber-500" />
+              {t("คะแนนที่จะได้รับ", "Points you'll earn")}
+            </h3>
+            <p className="text-3xl font-extrabold brand-text-gradient mt-2">
+              +{totals.points.toLocaleString()}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              {lang === "en"
+                ? `1 point per ฿1 spent, calculated on ${formatTHB(totals.netSubtotal)} after discount.`
+                : `รับ 1 คะแนนต่อทุก 1 บาท คำนวณจากยอด ${formatTHB(totals.netSubtotal)} หลังหักส่วนลด`}
+            </p>
+
+            {user ? (
+              <div className="mt-4 border-t border-amber-200 pt-3">
+                <div className="flex justify-between text-xs text-slate-600 mb-1.5">
+                  <span>
+                    {lang === "en"
+                      ? `${totals.currentPoints.toLocaleString()} → ${(totals.currentPoints + totals.points).toLocaleString()} points`
+                      : `${totals.currentPoints.toLocaleString()} → ${(totals.currentPoints + totals.points).toLocaleString()} คะแนน`}
+                  </span>
+                  <span className="font-semibold text-brand-dark">{totals.progressAfter.current}</span>
+                </div>
+                <div className="h-2 rounded-full bg-white overflow-hidden">
+                  <div
+                    className="h-full bg-brand-gradient transition"
+                    style={{ width: `${totals.progressAfter.percent}%` }}
+                  />
+                </div>
+                {totals.progressAfter.next && (
+                  <p className="text-[11px] text-slate-500 mt-1.5">
+                    {lang === "en"
+                      ? `Spend ${formatTHB(totals.progressAfter.remaining)} more (12mo) to reach ${totals.progressAfter.next}`
+                      : `ซื้อเพิ่มอีก ${formatTHB(totals.progressAfter.remaining)} (รอบ 12 เดือน) ถึงระดับ ${totals.progressAfter.next}`}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openLogin("/cart")}
+                // The dialog rather than the page: nobody clicking this has
+                // finished with their cart.
+                className="mt-4 grid h-11 w-full place-items-center rounded-full border border-amber-300 bg-white text-xs font-semibold text-brand-dark"
+              >
+                {t("เข้าสู่ระบบเพื่อสะสมคะแนน", "Sign in to collect points")}
+              </button>
+            )}
+          </div>
+
+          <CouponPicker />
+
           <div className="rounded-2xl bg-white p-5 shadow-card">
             <h2 className="font-bold text-brand-ink mb-4">{t("สรุปคำสั่งซื้อ", "Order summary")}</h2>
             <div className="flex justify-between text-sm text-slate-600 mb-2">
@@ -555,57 +612,6 @@ export default function CartView() {
             >
               {user ? t("ดำเนินการชำระเงิน", "Proceed to checkout") : t("เข้าสู่ระบบเพื่อสั่งซื้อ", "Sign in to order")}
             </Button>
-          </div>
-
-          <div className="rounded-xl2 border border-amber-200 bg-amber-50/60 p-5">
-            <h3 className="font-bold text-brand-ink flex items-center gap-2 text-sm">
-              <Award size={16} className="text-amber-500" />
-              {t("คะแนนที่จะได้รับ", "Points you'll earn")}
-            </h3>
-            <p className="text-3xl font-extrabold brand-text-gradient mt-2">
-              +{totals.points.toLocaleString()}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              {lang === "en"
-                ? `1 point per ฿1 spent, calculated on ${formatTHB(totals.netSubtotal)} after discount.`
-                : `รับ 1 คะแนนต่อทุก 1 บาท คำนวณจากยอด ${formatTHB(totals.netSubtotal)} หลังหักส่วนลด`}
-            </p>
-
-            {user ? (
-              <div className="mt-4 border-t border-amber-200 pt-3">
-                <div className="flex justify-between text-xs text-slate-600 mb-1.5">
-                  <span>
-                    {lang === "en"
-                      ? `${totals.currentPoints.toLocaleString()} → ${(totals.currentPoints + totals.points).toLocaleString()} points`
-                      : `${totals.currentPoints.toLocaleString()} → ${(totals.currentPoints + totals.points).toLocaleString()} คะแนน`}
-                  </span>
-                  <span className="font-semibold text-brand-dark">{totals.progressAfter.current}</span>
-                </div>
-                <div className="h-2 rounded-full bg-white overflow-hidden">
-                  <div
-                    className="h-full bg-brand-gradient transition"
-                    style={{ width: `${totals.progressAfter.percent}%` }}
-                  />
-                </div>
-                {totals.progressAfter.next && (
-                  <p className="text-[11px] text-slate-500 mt-1.5">
-                    {lang === "en"
-                      ? `Spend ${formatTHB(totals.progressAfter.remaining)} more (12mo) to reach ${totals.progressAfter.next}`
-                      : `ซื้อเพิ่มอีก ${formatTHB(totals.progressAfter.remaining)} (รอบ 12 เดือน) ถึงระดับ ${totals.progressAfter.next}`}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => openLogin("/cart")}
-                // The dialog rather than the page: nobody clicking this has
-                // finished with their cart.
-                className="mt-4 grid h-11 w-full place-items-center rounded-full border border-amber-300 bg-white text-xs font-semibold text-brand-dark"
-              >
-                {t("เข้าสู่ระบบเพื่อสะสมคะแนน", "Sign in to collect points")}
-              </button>
-            )}
           </div>
         </div>
       </div>
