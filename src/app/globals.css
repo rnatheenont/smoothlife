@@ -288,6 +288,28 @@
   --app-header-h: 0px;
 }
 
+/* From 1200px up, the page stops keeping empty bands at its sides.
+   
+   The cap was there to stop a line of text running the width of a monitor,
+   which is the right instinct for an article and the wrong one for a shop:
+   what sits in these pages is a grid of product cards, a header and a hero,
+   and all three were being asked to leave two hundred pixels of nothing on
+   each side of a wide screen while the hero behind them ran edge to edge.
+   
+   What bounds the content now is the gutter alone — clamp() above, which
+   has reached its 56px ceiling long before this breakpoint. Anything here
+   that does need a reading measure sets its own; this is the page, not a
+   column of prose.
+   
+   1200 because that is the width the request named. Below it the cap never
+   bound anything anyway — a window narrower than the old 1600 was already
+   its own limit. */
+@media (min-width: 1200px) {
+  :root {
+    --page-max: none;
+  }
+}
+
 .container-page {
   max-width: var(--page-max);
   margin-left: auto;
