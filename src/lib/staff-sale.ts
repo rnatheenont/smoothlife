@@ -369,9 +369,17 @@ export function parseItemInput(body: unknown): { input: ItemInput } | { error: s
  * Rounding down to the baht and then to the nearest 5 or 10 is what the
  * team does by hand — 590 at 40% is 354, which nobody prints; 350 is.
  */
-export function discountedPrice(regular: number, percent: number, roundTo: 1 | 5 | 10): number {
+export type StaffRoundTo = 0 | 1 | 5 | 10;
+
+export function discountedPrice(regular: number, percent: number, roundTo: StaffRoundTo): number {
   const raw = regular * (1 - percent / 100);
   if (raw <= 0) return 0;
+  // 0 means leave it alone, so the discount is exactly the one that was
+  // asked for. Rounding to the nearest 5 turns "60% off" into anything from
+  // 60% to 64% depending on the price, which is how one round ended up
+  // showing -60%, -63% and -62% side by side on the same screen.
+  // Two decimals only to keep binary floating point from writing 37.600000000000001.
+  if (roundTo === 0) return Math.round(raw * 100) / 100;
   const floored = Math.floor(raw / roundTo) * roundTo;
   // Never round a price down to nothing: a 10-baht sachet at 90% off is 1.
   return floored > 0 ? floored : Math.max(1, Math.floor(raw));

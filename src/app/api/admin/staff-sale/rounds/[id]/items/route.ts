@@ -4,6 +4,7 @@ import { auditStaffSale, badRequest, guard } from "@/lib/staff-sale-admin";
 import {
   ITEM_COLUMNS,
   discountedPrice,
+  type StaffRoundTo,
   parseItemInput,
   type StaffRoundItem,
 } from "@/lib/staff-sale";
@@ -122,7 +123,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!Number.isFinite(percent) || percent <= 0 || percent >= 100) {
       return badRequest("ส่วนลดต้องอยู่ระหว่าง 1–99%");
     }
-    if (roundTo !== 1 && roundTo !== 5 && roundTo !== 10) return badRequest("การปัดเศษไม่ถูกต้อง");
+    // 0 = ไม่ปัด.
+    if (roundTo !== 0 && roundTo !== 1 && roundTo !== 5 && roundTo !== 10) {
+      return badRequest("การปัดเศษไม่ถูกต้อง");
+    }
 
     const items = await supabaseRest<StaffRoundItem[]>(
       `staff_round_items?round_id=eq.${pgValue(id)}&select=id,variant_id,regular_price,staff_price&limit=2000`,
@@ -132,7 +136,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const skipped: string[] = [];
     const updates = items
       .map((i) => {
-        const price = discountedPrice(Number(i.regular_price), percent, roundTo as 1 | 5 | 10);
+        const price = discountedPrice(Number(i.regular_price), percent, roundTo as StaffRoundTo);
         // A row whose regular price is 0 has nothing to discount — a free
         // gift variant, or a product the catalogue has no price for yet.
         if (price <= 0 || Number(i.regular_price) <= 0) {

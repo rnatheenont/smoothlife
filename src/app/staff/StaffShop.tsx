@@ -856,9 +856,8 @@ export default function StaffShop() {
                     ordinary cart and carries a wishlist heart, neither of
                     which belongs on a staff round — so this follows its
                     shape instead: square photo edge to edge, brand over
-                    name, price with the struck-through retail beside it and
-                    the red discount chip next to the number it is a
-                    percentage of. */}
+                    name, and the price with the struck-through retail
+                    beside it. No discount chip: see the note on the price. */}
                 {/* The shop's own grid shape, stopping at four. It used to
                     reach five, on the reasoning that these cards carry no
                     rating and no sold count and so could take the ~170px that
@@ -894,10 +893,6 @@ export default function StaffShop() {
                           item.per_person_limit !== shop.round.max_per_item
                         ? `ไม่เกิน ${item.per_person_limit} ชิ้น`
                         : null;
-                    const off =
-                      item.regular_price > 0
-                        ? Math.round((1 - item.staff_price / item.regular_price) * 100)
-                        : 0;
                     // Only worth showing options when there is a choice, and
                     // only when they have names: a product with one variant
                     // calls it "Default Title", which is not an option, it
@@ -1003,14 +998,17 @@ export default function StaffShop() {
                             </span>
                             {item.regular_price > item.staff_price && (
                               <span className="flex flex-wrap items-center gap-1.5">
+                                {/* The retail price, struck through — and
+                                    not the percentage off it. Staff prices
+                                    are set per product and the figure moves
+                                    with every reprice; a chip reading -63%
+                                    beside one product and -60% beside the
+                                    next invites the question of why, which
+                                    is a conversation about margins nobody
+                                    wanted to have on a shopping page. */}
                                 <span className="text-[11px] tabular-nums text-slate-500 line-through">
                                   {formatTHB(item.regular_price)}
                                 </span>
-                                {off > 0 && (
-                                  <span className="rounded-full bg-sale px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                                    -{off}%
-                                  </span>
-                                )}
                               </span>
                             )}
 

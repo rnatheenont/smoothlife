@@ -6,7 +6,7 @@ import { Button } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import AdminField from "@/components/admin/AdminField";
 import { Panel, adminTable } from "@/components/admin/layout-kit";
-import { discountedPrice, type StaffRoundItem } from "@/lib/staff-sale";
+import { discountedPrice, type StaffRoundItem, type StaffRoundTo } from "@/lib/staff-sale";
 import type { CollectionSummary, PickerProduct } from "./types";
 
 // The price list of one round: what is on sale, for how much, and how many.
@@ -49,7 +49,7 @@ export default function ItemsTab({
   const [chosen, setChosen] = useState<Record<string, PickerProduct["variants"][number] & { slug: string }>>({});
   const [searching, setSearching] = useState(false);
   const [percent, setPercent] = useState("40");
-  const [roundTo, setRoundTo] = useState<"1" | "5" | "10">("5");
+  const [roundTo, setRoundTo] = useState<"0" | "1" | "5" | "10">("0");
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [copyFrom, setCopyFrom] = useState("");
   // Narrows what is already on screen. The box above it goes to the server
@@ -100,7 +100,7 @@ export default function ItemsTab({
     // case — "add these forty products at 40% off" — is one trip, and every
     // row can still be corrected afterwards.
     const pct = Number(percent);
-    const rt = Number(roundTo) as 1 | 5 | 10;
+    const rt = Number(roundTo) as StaffRoundTo;
     const body = {
       items: picked.map((v) => ({
         variant_id: v.variant_id,
@@ -157,7 +157,9 @@ export default function ItemsTab({
     }
     if (
       !confirm(
-        `ตั้งราคาพนักงานทุกรายการเป็นส่วนลด ${pct}% จากราคาปกติ (ปัดลงเป็นหลัก ${roundTo} บาท)?\nราคาที่แก้ไว้เองจะถูกเขียนทับ`,
+        `ตั้งราคาพนักงานทุกรายการเป็นส่วนลด ${pct}% จากราคาปกติ (${
+          roundTo === "0" ? "ไม่ปัดเศษ" : `ปัดลงเป็นหลัก ${roundTo} บาท`
+        })?\nราคาที่แก้ไว้เองจะถูกเขียนทับ`,
       )
     ) {
       return;
@@ -284,10 +286,14 @@ export default function ItemsTab({
               />
               <select
                 value={roundTo}
-                onChange={(e) => setRoundTo(e.target.value as "1" | "5" | "10")}
+                onChange={(e) => setRoundTo(e.target.value as "0" | "1" | "5" | "10")}
                 aria-label="ปัดเศษ"
                 className="rounded bg-transparent text-[12px] text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-800/25"
               >
+                {/* First, because it is the only setting where the discount
+                    comes out exactly as typed. Rounding to 5 turns 60% off
+                    into 60–64% depending on the price. */}
+                <option value="0">ไม่ปัด</option>
                 <option value="1">ปัดเป็นบาท</option>
                 <option value="5">ปัดเป็น 5</option>
                 <option value="10">ปัดเป็น 10</option>
