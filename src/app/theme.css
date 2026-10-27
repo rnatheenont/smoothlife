@@ -153,6 +153,23 @@
   --shadow-overlay: 0 8px 24px rgba(16, 35, 28, 0.1);
   --shadow-cardHover:
     0 0 0 1px rgba(16, 35, 28, 0.09), 0 10px 28px -10px rgba(16, 35, 28, 0.18);
+
+  /* 1.5 — shadow-product: the product card alone.
+     shadow-card is shared by 160-odd things, most of which are panels sitting
+     flush on a page and want to stay flush, so lifting that token would have
+     raised the whole interface to raise one card. A shelf of products is the
+     one place where each tile is a separate object you reach for, and at a
+     hairline and 1px they read as regions of the page instead.
+     Two shadows, not one bigger one: a tight contact shadow directly under
+     the card so it touches the page, and a wide, light ambient one so the
+     lift is felt rather than drawn. The hairline stays — on a white shelf
+     the shadow alone leaves the top edge undefined. */
+  --shadow-product:
+    0 0 0 1px rgba(16, 35, 28, 0.06), 0 2px 4px -1px rgba(16, 35, 28, 0.06),
+    0 8px 16px -8px rgba(16, 35, 28, 0.1);
+  --shadow-productHover:
+    0 0 0 1px rgba(16, 35, 28, 0.08), 0 4px 8px -2px rgba(16, 35, 28, 0.07),
+    0 16px 32px -12px rgba(16, 35, 28, 0.18);
   --shadow-layer-xs:
     0 3px 3px -1.5px rgba(15, 23, 42, 0.04),
     0 1px 1px -0.5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);

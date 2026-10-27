@@ -129,8 +129,8 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
   // are enough to read as one object — true when a card sits on a canvas of a
   // different colour, and not true here: these are white cards inside a white
   // merchandising band, so without the ring they dissolved into it and there
-  // was no telling where one product ended. shadow-card is a hairline and a
-  // breath of shadow, which is one treatment, not a border and a shadow both.
+  // was no telling where one product ended. shadow-product is a hairline and
+  // a lift, which is one treatment, not a border and a shadow both.
   return (
     // Two boxes, because the ring has to live outside the one that clips. The
     // card crops its own photo and its own corners with overflow-hidden,
@@ -146,7 +146,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
           The md:rounded-xl2 that was here is gone rather than converted:
           --radius-xl2 is 1rem and the base class is rounded-[16px], so it had
           been setting 16px to 16px since the day it was written. */}
-      <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 hover:shadow-cardHover">
+      <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-product transition-shadow duration-200 hover:shadow-productHover">
         {/* The photo fills the square edge to edge, in its own colours. The
             mist well with multiply blending tinted every packshot green-grey
             and shrank it inside padding. No zoom on hover — the card lifting

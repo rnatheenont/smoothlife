@@ -922,7 +922,7 @@ export default function StaffShop() {
                         style={{ padding: RIM }}
                       >
                         <HaloRing radius="rounded-[17.5px]" />
-                        <article className="relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 hover:shadow-cardHover">
+                        <article className="relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-product transition-shadow duration-200 hover:shadow-productHover">
                         <div className="relative aspect-square overflow-hidden bg-white">
                           {item.image && (
                             <Image
