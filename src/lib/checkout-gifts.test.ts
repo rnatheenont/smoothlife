@@ -492,3 +492,70 @@ test("both cart rules have to hold, not either", () => {
   const three: CartLine[] = [{ ...basket[0], qty: 3 }];
   assert.equal(giftLinesFrom([both], three, NONE, NOW, noCatalogue).length, 1);
 });
+
+// When a campaign runs. One pair of dates could only say "from here to
+// there"; a campaign over two weekends needs to say it twice.
+
+test("a campaign with no schedule runs", () => {
+  assert.equal(giftLinesFrom([spendPromo({ minSubtotal: 1000 })], basket, NONE, NOW, noCatalogue).length, 1);
+});
+
+test("the single start and expiry still work", () => {
+  const future = spendPromo({ minSubtotal: 1000, starts: "2026-12-01T00:00:00Z" });
+  assert.deepEqual(giftLinesFrom([future], basket, NONE, NOW, noCatalogue), []);
+  const past = spendPromo({ minSubtotal: 1000, expires: "2026-10-01T00:00:00Z" });
+  assert.deepEqual(giftLinesFrom([past], basket, NONE, NOW, noCatalogue), []);
+});
+
+test("several windows are ORs, not one long range", () => {
+  // NOW is 26 Oct. The campaign runs the 20th-22nd and the 25th-28th; the
+  // gap between them is not a time it runs, which a single pair cannot say.
+  const twoWeekends = spendPromo({
+    minSubtotal: 1000,
+    windows: [
+      { starts: "2026-10-20T00:00:00Z", ends: "2026-10-22T23:59:00Z" },
+      { starts: "2026-10-25T00:00:00Z", ends: "2026-10-28T23:59:00Z" },
+    ],
+  });
+  assert.equal(giftLinesFrom([twoWeekends], basket, NONE, NOW, noCatalogue).length, 1);
+
+  const bothPast = spendPromo({
+    minSubtotal: 1000,
+    windows: [
+      { starts: "2026-10-01T00:00:00Z", ends: "2026-10-05T00:00:00Z" },
+      { starts: "2026-10-10T00:00:00Z", ends: "2026-10-15T00:00:00Z" },
+    ],
+  });
+  assert.deepEqual(giftLinesFrom([bothPast], basket, NONE, NOW, noCatalogue), []);
+});
+
+test("the gap between two windows is closed", () => {
+  const paused = spendPromo({
+    minSubtotal: 1000,
+    windows: [
+      { starts: "2026-10-01T00:00:00Z", ends: "2026-10-20T00:00:00Z" },
+      { starts: "2026-11-01T00:00:00Z", ends: "2026-11-20T00:00:00Z" },
+    ],
+  });
+  // 26 Oct falls in the pause, which a single 1 Oct – 20 Nov pair would have
+  // treated as running.
+  assert.deepEqual(giftLinesFrom([paused], basket, NONE, NOW, noCatalogue), []);
+});
+
+test("a window open at one end has no bound there", () => {
+  const openEnded = spendPromo({ minSubtotal: 1000, windows: [{ starts: "2026-10-01T00:00:00Z" }] });
+  assert.equal(giftLinesFrom([openEnded], basket, NONE, NOW, noCatalogue).length, 1);
+  const alwaysUntil = spendPromo({ minSubtotal: 1000, windows: [{ ends: "2026-11-01T00:00:00Z" }] });
+  assert.equal(giftLinesFrom([alwaysUntil], basket, NONE, NOW, noCatalogue).length, 1);
+});
+
+test("windows replace the single pair rather than adding to it", () => {
+  // The pair says expired; the window says running. The window is the one
+  // the operator edited, so it wins.
+  const promo = spendPromo({
+    minSubtotal: 1000,
+    expires: "2026-10-01T00:00:00Z",
+    windows: [{ starts: "2026-10-25T00:00:00Z", ends: "2026-10-28T00:00:00Z" }],
+  });
+  assert.equal(giftLinesFrom([promo], basket, NONE, NOW, noCatalogue).length, 1);
+});

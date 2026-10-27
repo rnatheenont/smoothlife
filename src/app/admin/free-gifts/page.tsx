@@ -91,6 +91,8 @@ type FormState = {
   widgetStyle: Record<string, unknown>;
   /** Whether reaching a higher rung replaces the lower ones or adds to them. */
   tierMode: "cumulative" | "highest";
+  /** Run windows, as datetime-local strings. */
+  windows: { starts: string; ends: string }[];
 };
 
 const EMPTY_TIER_ROW: TierFormRow = {
@@ -128,6 +130,7 @@ const EMPTY_FORM: FormState = {
   minQty: "",
   widgetStyle: {},
   tierMode: "highest",
+  windows: [{ starts: "", ends: "" }],
 };
 
 /** What the API is told about one chosen gift. The name and picture are for
@@ -526,6 +529,23 @@ function GiftListField({
   );
 }
 
+/** An ISO instant as a <input type="datetime-local"> value, in the browser's
+ *  own timezone — which for this shop is the shop's. */
+function toLocalInput(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** And back. An empty box means "no bound", not "the epoch". */
+function fromLocalInput(value: string): string | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+}
+
 function slugify(s: string) {
   return s
     .toLowerCase()
@@ -686,6 +706,9 @@ export default function AdminFreeGiftsPage() {
         minQty: form.minQty ? Number(form.minQty) : null,
         widgetStyle: Object.keys(form.widgetStyle).length > 0 ? form.widgetStyle : null,
         tierMode: form.tierMode,
+        windows: form.windows
+          .map((w) => ({ starts: fromLocalInput(w.starts), ends: fromLocalInput(w.ends) }))
+          .filter((w) => w.starts || w.ends),
       };
       const url = editingId
         ? `/api/admin/free-gifts/${editingId}`
@@ -745,6 +768,12 @@ export default function AdminFreeGiftsPage() {
       minQty: p.minQty != null ? String(p.minQty) : "",
       widgetStyle: p.widgetStyle ?? {},
       tierMode: p.tierMode === "cumulative" ? "cumulative" : "highest",
+      // A campaign written before windows existed has one, made from its
+      // single start and expiry — editing it must not silently drop them.
+      windows: (p.windows?.length
+        ? p.windows
+        : [{ starts: p.starts, ends: p.expires }]
+      ).map((w) => ({ starts: toLocalInput(w.starts), ends: toLocalInput(w.ends) })),
     });
     setFormError("");
     setShowAdvanced(false);
@@ -1267,6 +1296,70 @@ export default function AdminFreeGiftsPage() {
                         กลับไปใช้ค่าตั้งต้นของร้าน
                       </button>
                     )}
+                  </div>
+
+                  <div>
+                    <p className="mb-1 text-xs font-bold text-brand-ink">ช่วงเวลาที่แคมเปญทำงาน</p>
+                    <p className="mb-2 text-[11px] text-slate-500">
+                      ใส่ได้หลายช่วง — แคมเปญจะทำงานเมื่ออยู่ในช่วงใดช่วงหนึ่ง เว้นว่างไว้ = ไม่จำกัด
+                    </p>
+                    <div className="space-y-2">
+                      {form.windows.map((w, i) => (
+                        <div key={i} className="rounded-lg border border-surface-line p-2">
+                          <div className="mb-1 flex items-center justify-between">
+                            <span className="text-[11px] font-semibold text-brand-ink">ช่วงที่ {i + 1}</span>
+                            {form.windows.length > 1 && (
+                              <button
+                                type="button"
+                                aria-label={`ลบช่วงที่ ${i + 1}`}
+                                onClick={() =>
+                                  setForm({ ...form, windows: form.windows.filter((_, idx) => idx !== i) })
+                                }
+                              >
+                                <X size={13} className="text-slate-400" />
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <label className="block">
+                              <span className="mb-1 block text-[10px] text-slate-400">เริ่ม</span>
+                              <input
+                                type="datetime-local"
+                                value={w.starts}
+                                onChange={(e) => {
+                                  const windows = [...form.windows];
+                                  windows[i] = { ...windows[i], starts: e.target.value };
+                                  setForm({ ...form, windows });
+                                }}
+                                className="w-full rounded-lg border border-surface-line bg-white px-2 py-2 text-xs text-brand-ink"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="mb-1 block text-[10px] text-slate-400">สิ้นสุด</span>
+                              <input
+                                type="datetime-local"
+                                value={w.ends}
+                                onChange={(e) => {
+                                  const windows = [...form.windows];
+                                  windows[i] = { ...windows[i], ends: e.target.value };
+                                  setForm({ ...form, windows });
+                                }}
+                                className="w-full rounded-lg border border-surface-line bg-white px-2 py-2 text-xs text-brand-ink"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({ ...form, windows: [...form.windows, { starts: "", ends: "" }] })
+                        }
+                        className="flex items-center gap-1 text-xs font-semibold text-brand-800"
+                      >
+                        <Plus size={13} /> เพิ่มช่วงเวลา
+                      </button>
+                    </div>
                   </div>
 
                   <div>
@@ -1872,18 +1965,7 @@ export default function AdminFreeGiftsPage() {
                       onChange={(v) => setForm({ ...form, slug: slugify(v) })}
                       isDisabled={Boolean(editingId)}
                     />
-                    <AdminField
-                      label="วันเริ่ม (ไม่บังคับ)"
-                      type="date"
-                      value={form.starts}
-                      onChange={(v) => setForm({ ...form, starts: v })}
-                    />
-                    <AdminField
-                      label="วันหมดอายุ (ไม่บังคับ)"
-                      type="date"
-                      value={form.expires}
-                      onChange={(v) => setForm({ ...form, expires: v })}
-                    />
+
                   </div>
                 )}
               </div>

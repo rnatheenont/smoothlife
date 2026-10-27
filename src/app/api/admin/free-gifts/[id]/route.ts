@@ -55,8 +55,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     patch.gift_variant_id = promoGifts.gifts[0].variant_id ?? null;
     patch.gift_qty = promoGifts.gifts[0].qty ?? 1;
   }
-  if (typeof body.starts === "string" || body.starts === null) patch.starts_at = body.starts || null;
-  if (typeof body.expires === "string" || body.expires === null) patch.expires_at = body.expires || null;
+  // starts_at/expires_at are written by campaignSettings below, from the
+  // first run window, so they are not accepted separately here.
   if (Array.isArray(body.tiers)) {
     type TierBody = {
       minSubtotal: number;

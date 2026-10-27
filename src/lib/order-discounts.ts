@@ -2,6 +2,7 @@ import {
   evaluateActiveFreeGifts,
   triggerAmount,
   qualifyingLines,
+  promoIsLive,
   type FreeGiftPromo,
   type PromoCustomer,
 } from "../data/free-gifts.ts";
@@ -64,10 +65,7 @@ export function orderDiscountFrom(
 ): OrderDiscount | null {
   const promos = all.filter(
     (p) =>
-      p.rewardType === "order_discount" &&
-      p.displayOnly === false &&
-      !(p.starts && new Date(p.starts).getTime() > now) &&
-      !(p.expires && new Date(p.expires).getTime() < now),
+      p.rewardType === "order_discount" && p.displayOnly === false && promoIsLive(p, now),
   );
   if (promos.length === 0) return null;
 

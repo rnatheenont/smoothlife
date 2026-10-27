@@ -1,6 +1,7 @@
 import {
   evaluateActiveFreeGifts,
   giftsOf,
+  promoIsLive,
   type FreeGiftPromo,
   type PromoCustomer,
 } from "../data/free-gifts.ts";
@@ -80,8 +81,8 @@ export function giftLinesFrom(
     // row that does not say is a row written before anyone had to choose.
     // Giving a gift away on a guess is the expensive direction to be wrong in.
     .filter((p) => p.displayOnly === false)
-    .filter((p) => !(p.starts && new Date(p.starts).getTime() > now))
-    .filter((p) => !(p.expires && new Date(p.expires).getTime() < now));
+    // One run window or several — promoIsLive is the only place that knows.
+    .filter((p) => promoIsLive(p, now));
   if (promos.length === 0) return [];
 
   // A promo whose gift ran out is not granted: an order carrying a line the

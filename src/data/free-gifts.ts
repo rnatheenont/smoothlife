@@ -167,7 +167,38 @@ export type FreeGiftPromo = {
    * the same.
    */
   widgetStyle?: Record<string, unknown>;
+  /**
+   * When the campaign runs, as windows.
+   *
+   * One `starts`/`expires` pair cannot say "these two weekends" or "every
+   * day except Wednesday", so those campaigns were being run by somebody
+   * switching them on and off by hand. Undefined keeps the single pair,
+   * which is what every campaign written before this used.
+   */
+  windows?: { starts?: string; ends?: string }[];
 };
+
+/**
+ * Whether the campaign is inside one of its run windows.
+ *
+ * The single start/expiry pair is the one-window case, kept as the fallback
+ * so nothing written before this changes behaviour. A campaign with windows
+ * is running when now is inside any of them — a list of windows is a list of
+ * ORs, not a range from the first to the last.
+ */
+export function promoIsLive(
+  promo: Pick<FreeGiftPromo, "starts" | "expires" | "windows">,
+  now: number,
+): boolean {
+  const windows = promo.windows?.length
+    ? promo.windows
+    : [{ starts: promo.starts, ends: promo.expires }];
+  return windows.some((w) => {
+    if (w.starts && new Date(w.starts).getTime() > now) return false;
+    if (w.ends && new Date(w.ends).getTime() < now) return false;
+    return true;
+  });
+}
 
 /** What the rules need to know about the shopper. Undefined is a guest, or
  *  a page that has not loaded the account yet — a campaign that targets a
@@ -214,6 +245,7 @@ export type FreeGiftPromoRow = {
   first_order_only: boolean | null;
   min_qty: number | null;
   widget_style: Record<string, unknown> | null;
+  schedule: { starts?: string; ends?: string }[] | null;
   discount_type: "free" | "percentage" | "fixed" | null;
   discount_value: number | string | null;
   excluded_product_slugs: string[] | null;
@@ -225,7 +257,7 @@ export type FreeGiftPromoRow = {
 // Shared SELECT column list — used by both the public /api/free-gifts route
 // and the admin CRUD routes so they never silently drift out of sync.
 export const FREE_GIFT_COLUMNS =
-  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,trigger_type,excluded_product_slugs,scope_brands,scope_categories,max_gifts,gift_choice,discount_type,discount_value,reward_type,customer_tiers,first_order_only,min_qty,widget_style,created_at,updated_at";
+  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,trigger_type,excluded_product_slugs,scope_brands,scope_categories,max_gifts,gift_choice,discount_type,discount_value,reward_type,customer_tiers,first_order_only,min_qty,widget_style,schedule,created_at,updated_at";
 
 const toItems = (rows: FreeGiftItemRow[] | null | undefined): FreeGiftItem[] | undefined => {
   const list = (rows ?? [])
@@ -320,6 +352,7 @@ export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
     firstOrderOnly: row.first_order_only === true,
     minQty: row.min_qty ?? undefined,
     widgetStyle: row.widget_style ?? undefined,
+    windows: row.schedule?.length ? row.schedule : undefined,
   };
 }
 
@@ -421,12 +454,15 @@ export function evaluateFreeGift(
     };
   }
   // A campaign can be written today and start on a date, rather than waiting
-  // for somebody to remember to switch it on at nine in the morning.
-  if (promo.starts && new Date(promo.starts).getTime() > Date.now()) {
-    return { promo, eligible: false, reasonTh: "ยังไม่ถึงวันเริ่มโปรโมชั่น", reasonEn: "This promotion has not started yet" };
-  }
-  if (promo.expires && new Date(promo.expires).getTime() < Date.now()) {
-    return { promo, eligible: false, reasonTh: "โปรโมชั่นนี้หมดอายุแล้ว", reasonEn: "This promotion has ended" };
+  // for somebody to remember to switch it on at nine in the morning — and it
+  // can have more than one run window.
+  if (!promoIsLive(promo, Date.now())) {
+    const notYet = (promo.windows?.length ? promo.windows : [{ starts: promo.starts }]).every(
+      (w) => w.starts && new Date(w.starts).getTime() > Date.now(),
+    );
+    return notYet
+      ? { promo, eligible: false, reasonTh: "ยังไม่ถึงวันเริ่มโปรโมชั่น", reasonEn: "This promotion has not started yet" }
+      : { promo, eligible: false, reasonTh: "ยังไม่อยู่ในช่วงเวลาของโปรโมชั่น", reasonEn: "This promotion is not running right now" };
   }
   // Promising a gift the shop has run out of is worse than not promising one.
   if (promo.giftStock !== undefined && promo.giftStock !== null && promo.giftStock <= 0) {

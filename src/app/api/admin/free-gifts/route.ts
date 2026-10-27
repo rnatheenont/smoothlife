@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ ok: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
 
-  const { slug, titleTh, titleEn, kind, buyProductSlugs, buyQty, minSubtotal, giftProductSlug, giftVariantId, giftQty, gifts, starts, expires, tiers } = body;
+  const { slug, titleTh, titleEn, kind, buyProductSlugs, buyQty, minSubtotal, giftProductSlug, giftVariantId, giftQty, gifts, tiers } = body;
 
   // Every condition can hand over several things. The single-gift columns are
   // still written alongside, holding the first one, so anything still reading
@@ -116,8 +116,8 @@ export async function POST(req: NextRequest) {
         gifts: promoGifts?.ok ? promoGifts.gifts : null,
         tiers: kind === "tiered" ? tierGifts : null,
         shopify_discount_id: null,
-        starts_at: starts || null,
-        expires_at: expires || null,
+        // campaignSettings owns starts_at/expires_at now: it keeps them in
+        // step with the first run window.
         ...campaignSettings(body),
       }),
     });

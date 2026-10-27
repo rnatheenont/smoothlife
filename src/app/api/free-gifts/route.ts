@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
-import { FreeGiftPromoRow, giftsOf, rowToPromo, FREE_GIFT_COLUMNS } from "@/data/free-gifts";
+import { FreeGiftPromoRow, giftsOf, promoIsLive, rowToPromo, FREE_GIFT_COLUMNS } from "@/data/free-gifts";
 import { freeGiftProducts } from "@/lib/shopify-admin";
 
 // What the storefront is allowed to promise.
@@ -62,8 +62,9 @@ export async function GET() {
         };
       })
       .filter((p) => {
-        if (p.starts && new Date(p.starts).getTime() > now) return false;
-        if (p.expires && new Date(p.expires).getTime() < now) return false;
+        // A campaign can have several run windows; this is the one place
+        // that decides whether now is inside any of them.
+        if (!promoIsLive(p, now)) return false;
         // null means we could not ask Shopify; the promo stands rather than
         // vanishing from the shop because one API call timed out. A promo
         // handing over several things survives as long as one of them is

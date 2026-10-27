@@ -20,6 +20,9 @@ export type CampaignSettings = {
   min_qty: number | null;
   widget_style: Record<string, unknown> | null;
   tier_mode: "cumulative" | "highest";
+  schedule: { starts?: string; ends?: string }[] | null;
+  starts_at: string | null;
+  expires_at: string | null;
 };
 
 const strings = (v: unknown): string[] =>
@@ -34,6 +37,18 @@ export function campaignSettings(body: Record<string, unknown>): CampaignSetting
   const value = Number.isFinite(rawValue) ? Math.max(0, rawValue) : 0;
   const maxGifts = Number(body.maxGifts);
   const minQty = Number(body.minQty);
+
+  // Run windows. A window with neither end is not a window, and a date the
+  // browser could not parse is not one either — both are dropped rather than
+  // stored as a bound nobody can reason about.
+  const iso = (v: unknown) => {
+    if (typeof v !== "string" || !v) return undefined;
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+  };
+  const windows = (Array.isArray(body.windows) ? body.windows : [])
+    .map((w) => ({ starts: iso((w as { starts?: unknown })?.starts), ends: iso((w as { ends?: unknown })?.ends) }))
+    .filter((w) => w.starts || w.ends);
 
   return {
     trigger_type: body.triggerType === "quantity" ? "quantity" : "cart-value",
@@ -59,5 +74,11 @@ export function campaignSettings(body: Record<string, unknown>): CampaignSetting
     // everything below it gives away far more than the operator read on the
     // screen, and nothing in the form used to say which it was.
     tier_mode: body.tierMode === "cumulative" ? "cumulative" : "highest",
+    schedule: windows.length > 0 ? windows : null,
+    // The first window is mirrored into the old pair, because reports, the
+    // admin list and anything else reading those columns should not start
+    // disagreeing with the campaign the moment a second window is added.
+    starts_at: windows[0]?.starts ?? null,
+    expires_at: windows[0]?.ends ?? null,
   };
 }
