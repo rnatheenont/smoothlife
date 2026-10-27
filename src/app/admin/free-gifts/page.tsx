@@ -30,6 +30,7 @@ import GiftStockPanel from "./GiftStockPanel";
 import { Button } from "@heroui/react";
 import AdminField from "@/components/admin/AdminField";
 import { CAMPAIGN_PRESETS } from "@/lib/campaign-types";
+import GiftWidgetStyleEditor from "@/components/admin/GiftWidgetStyleEditor";
 
 type AdminPromo = FreeGiftPromo & { id: string };
 
@@ -85,6 +86,9 @@ type FormState = {
   customerTiers: string[];
   firstOrderOnly: boolean;
   minQty: string;
+  /** This campaign's own widget look. Empty object = follow the shop-wide
+   *  default, which is what every campaign does until somebody changes one. */
+  widgetStyle: Record<string, unknown>;
 };
 
 const EMPTY_TIER_ROW: TierFormRow = {
@@ -120,6 +124,7 @@ const EMPTY_FORM: FormState = {
   customerTiers: [],
   firstOrderOnly: false,
   minQty: "",
+  widgetStyle: {},
 };
 
 /** What the API is told about one chosen gift. The name and picture are for
@@ -676,6 +681,7 @@ export default function AdminFreeGiftsPage() {
         customerTiers: form.customerTiers,
         firstOrderOnly: form.firstOrderOnly,
         minQty: form.minQty ? Number(form.minQty) : null,
+        widgetStyle: Object.keys(form.widgetStyle).length > 0 ? form.widgetStyle : null,
       };
       const url = editingId
         ? `/api/admin/free-gifts/${editingId}`
@@ -733,6 +739,7 @@ export default function AdminFreeGiftsPage() {
       customerTiers: p.customerTiers ?? [],
       firstOrderOnly: p.firstOrderOnly === true,
       minQty: p.minQty != null ? String(p.minQty) : "",
+      widgetStyle: p.widgetStyle ?? {},
     });
     setFormError("");
     setShowAdvanced(false);
@@ -1236,6 +1243,27 @@ export default function AdminFreeGiftsPage() {
                 <>
                   {/* Step 2, laid out like the app's "Display setting": where
                       it shows, and who puts the reward in the cart. */}
+                  <div>
+                    <p className="mb-2 text-xs font-bold text-brand-ink">หน้าตาของแคมเปญนี้</p>
+                    <p className="mb-2 text-[11px] text-slate-500">
+                      ปรับเฉพาะแคมเปญนี้ ไม่กระทบตัวอื่น — ไม่แตะเลยจะใช้ค่าตั้งต้นของร้านที่หน้า
+                      “กล่องโปรโมชั่นหน้าเว็บ”
+                    </p>
+                    <GiftWidgetStyleEditor
+                      config={form.widgetStyle}
+                      onChange={(widgetStyle) => setForm({ ...form, widgetStyle })}
+                    />
+                    {Object.keys(form.widgetStyle).length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, widgetStyle: {} })}
+                        className="mt-2 text-[11px] font-semibold text-slate-400 hover:text-brand-ink"
+                      >
+                        กลับไปใช้ค่าตั้งต้นของร้าน
+                      </button>
+                    )}
+                  </div>
+
                   <div>
                     <p className="mb-2 text-xs font-bold text-brand-ink">ตำแหน่งที่แสดง</p>
                     <p className="rounded-lg bg-surface-soft p-3 text-[11px] leading-relaxed text-slate-500">

@@ -403,12 +403,19 @@ export default function WidgetsPanel() {
             <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
               {/* The milestone bar is the one widget the shop restyles rather
                   than re-words, so it gets the style editor the app on
-                  Shopify has instead of a list of text fields. */}
+                  Shopify has instead of a list of text fields. What is set
+                  here is the default every campaign starts from; a campaign
+                  can carry its own look instead, set in its own form. */}
               {w.key === "milestone_bar" ? (
+                <>
+                <p className="mb-2 text-[11px] text-slate-400">
+                  ค่าตั้งต้นของทุกแคมเปญ — แคมเปญที่ตั้งหน้าตาเองไว้จะใช้ของตัวเองแทน
+                </p>
                 <GiftWidgetStyleEditor
                   config={styleDrafts[w.key] ?? w.config}
                   onChange={(next) => setStyleDrafts((prev) => ({ ...prev, [w.key]: next }))}
                 />
+                </>
               ) : fieldsFor(w).length === 0 ? (
                 <p className="text-[11px] text-slate-400">
                   widget นี้ไม่มีตัวเลือกให้ปรับแต่ง

@@ -18,6 +18,7 @@ export type CampaignSettings = {
   customer_tiers: string[];
   first_order_only: boolean;
   min_qty: number | null;
+  widget_style: Record<string, unknown> | null;
 };
 
 const strings = (v: unknown): string[] =>
@@ -46,5 +47,11 @@ export function campaignSettings(body: Record<string, unknown>): CampaignSetting
     customer_tiers: strings(body.customerTiers),
     first_order_only: body.firstOrderOnly === true,
     min_qty: Number.isInteger(minQty) && minQty >= 1 && minQty <= 999 ? minQty : null,
+    // An object or nothing. Null is "follow the shop default", which is not
+    // the same as an empty object meaning "override with nothing".
+    widget_style:
+      body.widgetStyle && typeof body.widgetStyle === "object" && !Array.isArray(body.widgetStyle)
+        ? (body.widgetStyle as Record<string, unknown>)
+        : null,
   };
 }

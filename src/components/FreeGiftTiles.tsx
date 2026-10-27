@@ -7,6 +7,7 @@ import { useWidgetSettings } from "@/lib/use-widget-settings";
 import { useLang } from "@/lib/lang-context";
 import { availableGiftFaces, type GiftFace } from "@/lib/gift-faces";
 import { giftWidgetStyle } from "@/lib/gift-widget-style";
+import type { FreeGiftPromo } from "@/data/free-gifts";
 
 // The gift, as a thing you get.
 //
@@ -17,27 +18,34 @@ import { giftWidgetStyle } from "@/lib/gift-widget-style";
 // the right shape in the cart, where several promos at different distances
 // have to be compared; here there is one thing to say.
 
-/** The gifts this product can earn, deduplicated across promos. */
-function facesFor(
-  evals: { promo: { kind: string; tiers?: unknown[] }; unlockedTiers?: { tierIndex: number }[] }[],
+/** The gifts this product can earn, grouped by the campaign offering them.
+ *
+ *  Grouped rather than pooled, because each campaign now carries its own
+ *  look: a flat list has nothing to hang a style on. Deduplication is still
+ *  across the whole page — the same gift from two campaigns is one gift to
+ *  the shopper, and it is shown under the first that offers it. */
+function faceGroups(
+  evals: { promo: FreeGiftPromo }[],
   productBySlug: (slug: string) => { name: string; image: string } | undefined,
-): GiftFace[] {
+): { promo: FreeGiftPromo; faces: GiftFace[] }[] {
   const seen = new Set<string>();
-  const out: GiftFace[] = [];
+  const groups: { promo: FreeGiftPromo; faces: GiftFace[] }[] = [];
   for (const ev of evals) {
     // A ladder is shown by its first rung: the one this product can reach
     // without knowing what else is in the basket.
-    const promo = ev.promo as { kind: string; tiers?: unknown[] };
+    const promo = ev.promo;
     const source = (promo.kind === "tiered" ? (promo.tiers?.[0] ?? promo) : promo) as Parameters<
       typeof availableGiftFaces
     >[0];
+    const faces: GiftFace[] = [];
     for (const face of availableGiftFaces(source, productBySlug)) {
       if (!face.title || seen.has(face.key)) continue;
       seen.add(face.key);
-      out.push(face);
+      faces.push(face);
     }
+    if (faces.length > 0) groups.push({ promo, faces });
   }
-  return out;
+  return groups;
 }
 
 export default function FreeGiftTiles({ scopedToSlug }: { scopedToSlug?: string } = {}) {
@@ -47,17 +55,26 @@ export default function FreeGiftTiles({ scopedToSlug }: { scopedToSlug?: string 
   const { t } = useLang();
 
   if (!settings.milestone_bar.enabled) return null;
-  const faces = facesFor(evals, productBySlug);
-  if (faces.length === 0) return null;
+  const groups = faceGroups(evals, productBySlug);
+  if (groups.length === 0) return null;
 
-  // Whatever the shop set in the widget editor. An untouched widget gives
-  // back the defaults, which are the numbers this was drawn with before the
-  // editor existed — so nothing moves until somebody moves it.
-  const style = giftWidgetStyle(settings.milestone_bar.config);
+  // The shop-wide default, for campaigns nobody has restyled. An untouched
+  // widget gives back the numbers this was drawn with before the editor
+  // existed, so nothing moves until somebody moves it.
+  const shopDefault = settings.milestone_bar.config;
 
   return (
-    <ul className="grid grid-cols-2 sm:grid-cols-3" style={{ gap: style.gap }}>
-      {faces.map((face) => (
+    <>
+      {groups.map(({ promo, faces }) => {
+        // The campaign's own look if it has one, the shop's otherwise.
+        const style = giftWidgetStyle(promo.widgetStyle ?? shopDefault);
+        return (
+          <ul
+            key={promo.slug}
+            className="grid grid-cols-2 sm:grid-cols-3 [&+&]:mt-2"
+            style={{ gap: style.gap }}
+          >
+            {faces.map((face) => (
         <li
           key={face.key}
           style={{ borderRadius: style.radius }}
@@ -82,8 +99,11 @@ export default function FreeGiftTiles({ scopedToSlug }: { scopedToSlug?: string 
               {face.qty > 1 && <span className="font-normal text-slate-500"> × {face.qty}</span>}
             </span>
           </span>
-        </li>
-      ))}
-    </ul>
+              </li>
+            ))}
+          </ul>
+        );
+      })}
+    </>
   );
 }

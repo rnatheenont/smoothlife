@@ -158,6 +158,15 @@ export type FreeGiftPromo = {
   /** A second cart rule, joined with AND: this many qualifying items on top
    *  of whatever the main trigger asks for. */
   minQty?: number;
+  /**
+   * How this campaign's widget looks.
+   *
+   * Undefined follows the shop-wide default on the milestone_bar widget row.
+   * A campaign that has been restyled carries its own, because a quiet
+   * evergreen giveaway and a loud seven-day campaign have no reason to look
+   * the same.
+   */
+  widgetStyle?: Record<string, unknown>;
 };
 
 /** What the rules need to know about the shopper. Undefined is a guest, or
@@ -204,6 +213,7 @@ export type FreeGiftPromoRow = {
   customer_tiers: string[] | null;
   first_order_only: boolean | null;
   min_qty: number | null;
+  widget_style: Record<string, unknown> | null;
   discount_type: "free" | "percentage" | "fixed" | null;
   discount_value: number | string | null;
   excluded_product_slugs: string[] | null;
@@ -215,7 +225,7 @@ export type FreeGiftPromoRow = {
 // Shared SELECT column list — used by both the public /api/free-gifts route
 // and the admin CRUD routes so they never silently drift out of sync.
 export const FREE_GIFT_COLUMNS =
-  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,trigger_type,excluded_product_slugs,scope_brands,scope_categories,max_gifts,gift_choice,discount_type,discount_value,reward_type,customer_tiers,first_order_only,min_qty,created_at,updated_at";
+  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,gifts,tier_mode,trigger_type,excluded_product_slugs,scope_brands,scope_categories,max_gifts,gift_choice,discount_type,discount_value,reward_type,customer_tiers,first_order_only,min_qty,widget_style,created_at,updated_at";
 
 const toItems = (rows: FreeGiftItemRow[] | null | undefined): FreeGiftItem[] | undefined => {
   const list = (rows ?? [])
@@ -309,6 +319,7 @@ export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
     customerTiers: row.customer_tiers?.length ? row.customer_tiers : undefined,
     firstOrderOnly: row.first_order_only === true,
     minQty: row.min_qty ?? undefined,
+    widgetStyle: row.widget_style ?? undefined,
   };
 }
 
