@@ -119,8 +119,38 @@ export async function POST(req: NextRequest) {
         resp_desc: `${callback.respDesc} · staff_confirm_payment: ${confirmed?.reason ?? "failed"}`,
       }),
     }).catch(() => {});
+
+    // The belt to the RPC's braces. staff_confirm_payment flags the order
+    // itself on every refusal it knows of, but a reason added to it later —
+    // or one raised before it ever reads the order, as 'unknown_reference'
+    // is — would reach the console as nothing at all, because that list is
+    // filtered on this flag. So it is set again here from the transaction's
+    // own order id, which is known even when the reference is not.
+    //
+    // Not swallowed like the calls around it: every other failure in this
+    // branch costs a retry, and this one costs a payment nobody is looking
+    // for. If it ever fires, the log line is the last trace there is.
+    const flagged = await supabaseRest(`staff_orders?id=eq.${pgValue(orderId)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({ needs_refund: true }),
+    }).then(
+      () => true,
+      (err) => {
+        console.error("[webhooks/2c2p-staff] could not flag for refund", {
+          invoice: callback.invoiceNo,
+          orderId,
+          err,
+        });
+        return false;
+      },
+    );
+
     await releaseStock(tx.cart_token).catch(() => {});
-    return NextResponse.json({ ok: true, result: confirmed?.reason ?? "confirm failed" }, { status: 200 });
+    return NextResponse.json(
+      { ok: true, result: confirmed?.reason ?? "confirm failed", flagged },
+      { status: 200 },
+    );
   }
 
   await confirmStock(tx.cart_token).catch(() => {});
