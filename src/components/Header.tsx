@@ -26,6 +26,7 @@ import {
   Tag,
   Percent,
   Users,
+  ShoppingBag,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart, useWishlist } from "@/lib/cart-context";
@@ -36,6 +37,8 @@ import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 import LanguageSwitch from "@/components/LanguageSwitch";
 import NotificationBell from "@/components/NotificationBell";
 import HeaderSearch from "@/components/HeaderSearch";
+import Countdown from "@/components/staff/Countdown";
+import { useStaffAccess } from "@/lib/use-staff-access";
 import { Avatar, Button } from "@/components/ui";
 import BrandLogo from "@/components/BrandLogo";
 import { formatTHB } from "@/lib/format";
@@ -70,6 +73,9 @@ export default function Header({
   const [scrolled, setScrolled] = useState(false);
   const lastScrollY = useRef(0);
   const { user } = useAuth();
+  // The employee shop, only for accounts it is open to — not part of the
+  // editable link lists, because who sees it is a per-account answer.
+  const staff = useStaffAccess(Boolean(user));
   const { open: openLogin } = useLoginModal();
   const { slugs: wishlistSlugs } = useWishlist();
   const { count } = useCart();
@@ -349,6 +355,18 @@ export default function Header({
               </Link>
             )
           )}
+          {staff.available && (
+            <Link href="/staff" className="flex items-center gap-2 transition-colors hover:text-brand-800">
+              <ShoppingBag size={15} className="text-brand-800" />
+              {t("ร้านพนักงาน", "Staff Store")}
+              {staff.ends_at && (
+                <Countdown
+                  to={staff.ends_at}
+                  className="whitespace-nowrap rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-800"
+                />
+              )}
+            </Link>
+          )}
           {/* Support, not shopping — so it sits apart from the five above
               rather than sixth and seventh in the same run. */}
           <div className="ml-auto flex items-center gap-8">
@@ -425,6 +443,27 @@ export default function Header({
               <MobileShopMenu menu={menu} onNavigate={() => setOpen(false)} />
 
               <div className="flex flex-col gap-0.5">
+                {/* First, not tenth: it is the one entry here with a closing date. */}
+                {staff.available && (
+                  <Link
+                    href="/staff"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm font-medium text-slate-700 hover:bg-surface-soft transition-colors"
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">
+                      <ShoppingBag size={15} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block">{t("ร้านพนักงาน", "Staff Store")}</span>
+                      {staff.ends_at && (
+                        <Countdown
+                          to={staff.ends_at}
+                          className="block whitespace-nowrap text-xs font-semibold text-brand-800"
+                        />
+                      )}
+                    </span>
+                  </Link>
+                )}
                 {navLinks.map((l) => {
                   const Icon = navIcon(l.icon);
                   return (

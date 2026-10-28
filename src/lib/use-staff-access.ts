@@ -14,10 +14,14 @@ export type StaffAccess = {
   ends_at?: string;
 };
 
-export function useStaffAccess(): StaffAccess {
+// `enabled` lets the header skip the request for a signed-out visitor — it
+// renders on every page, and the answer for them is always false. Flipping it
+// back on (sign in, or a different account) asks again.
+export function useStaffAccess(enabled = true): StaffAccess {
   const [access, setAccess] = useState<StaffAccess>({ available: false });
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     fetch("/api/staff/access")
       .then((r) => r.json())
@@ -36,8 +40,11 @@ export function useStaffAccess(): StaffAccess {
       .catch(() => {});
     return () => {
       cancelled = true;
+      // So the next account to sign in does not inherit this one's answer
+      // while its own request is in flight.
+      setAccess({ available: false });
     };
-  }, []);
+  }, [enabled]);
 
-  return access;
+  return enabled ? access : { available: false };
 }
