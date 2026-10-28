@@ -43,6 +43,11 @@ function canvasTexture(w: number, h: number, draw: (c: CanvasRenderingContext2D)
   return tex;
 }
 
+/** How big the backdrop is cut, in scene units. Wider than the frame at
+ *  this distance, so whatever is on it is cropped rather than letterboxed. */
+const SKY_W = 110;
+const SKY_H = 62;
+
 /** The sky itself: one unlit plane a long way back, and the only thing in
  *  the scene that is allowed to be bright without a light on it. */
 export function skyBackdrop(): THREE.Mesh {
@@ -57,7 +62,7 @@ export function skyBackdrop(): THREE.Mesh {
     ctx.fillRect(0, 0, 16, 512);
   });
   const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(110, 62),
+    new THREE.PlaneGeometry(SKY_W, SKY_H),
     new THREE.MeshBasicMaterial({ map: tex, fog: false, depthWrite: false }),
   );
   mesh.position.set(0, 2, -42);
@@ -304,6 +309,13 @@ export function winterNight(): { group: THREE.Group; aurora: THREE.Group } {
       const mat = sky.material as THREE.MeshBasicMaterial;
       mat.map = tex;
       mat.needsUpdate = true;
+      // The plane was cut for the painted sky's proportions. Squeezed to
+      // the picture's instead, so the artwork is not stretched to fit a
+      // shape that was never about it.
+      const image = tex.image as { width: number; height: number } | undefined;
+      if (image?.width && image.height) {
+        sky.scale.y = SKY_W / (image.width / image.height) / SKY_H;
+      }
       // The picture already has all of this in it.
       for (const built of [aurora, ridge, ground, trees]) built.visible = false;
     },
