@@ -1,19 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import { ArrowLeft, Play, RotateCcw, SkipForward, Sparkles, TriangleAlert } from "lucide-react";
 import { Button, Spinner } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import LuckyDrawStage from "@/components/admin/lucky-draw/LuckyDrawStage";
-import { BAND_COLOR } from "@/components/admin/lucky-draw/faces";
+import { ACCENT } from "@/components/admin/lucky-draw/faces";
 import {
-  BANDS,
   LUCKY_FAN_PRIZES,
   drawLuckyFan,
-  splitIntoBands,
-  type BandKey,
   type Entrant,
   type Winner,
 } from "@/lib/lucky-draw";
@@ -79,8 +76,6 @@ export default function LuckyDrawPreviewPage() {
       cancelled = true;
     };
   }, []);
-
-  const bands = useMemo(() => splitIntoBands(pool ?? []), [pool]);
 
   const roll = useCallback(() => {
     if (!pool?.length) return;
@@ -164,6 +159,12 @@ export default function LuckyDrawPreviewPage() {
 
       {pool !== null && pool.length > 0 && (
         <>
+          {/* The machine on the left, the list it is filling on the right.
+              They are read against each other — a name lands and you look to
+              see where it went — and stacking them put the list under the
+              fold for the whole of the draw. */}
+          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="flex min-w-0 flex-col gap-3">
           <div className="relative overflow-hidden rounded-xl2 bg-[#05060b] shadow-card">
             <LuckyDrawStage
               pool={pool}
@@ -184,12 +185,6 @@ export default function LuckyDrawPreviewPage() {
                     </p>
                     <p className="truncate text-2xl font-extrabold text-white md:text-4xl">
                       {nowShowing.name || "(ไม่มีชื่อ)"}
-                    </p>
-                    <p
-                      className="mt-0.5 text-[13px] font-semibold"
-                      style={{ color: BAND_COLOR[nowShowing.band] }}
-                    >
-                      {BANDS.find((b) => b.key === nowShowing.band)?.label}
                     </p>
                   </>
                 ) : (
@@ -236,10 +231,18 @@ export default function LuckyDrawPreviewPage() {
             </span>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-            <div className="rounded-xl2 bg-white p-4 shadow-card">
-              <p className="mb-3 text-sm font-bold text-brand-ink">ผู้โชคดี</p>
-              <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            </div>
+
+            {/* Sticks while the stage scrolls past on a short window, and
+                scrolls inside itself rather than running the page long. */}
+            <div className="rounded-xl2 bg-white p-4 shadow-card lg:sticky lg:top-4">
+              <div className="mb-3 flex items-baseline justify-between gap-2">
+                <p className="text-sm font-bold text-brand-ink">ผู้โชคดี</p>
+                <p className="text-[11px] text-slate-400">
+                  {revealed} / {LUCKY_FAN_PRIZES}
+                </p>
+              </div>
+              <ol className="flex max-h-[62vh] flex-col gap-1.5 overflow-y-auto pr-1">
                 {Array.from({ length: LUCKY_FAN_PRIZES }, (_, i) => {
                   const w = i < revealed ? winners[i] : null;
                   return (
@@ -252,16 +255,14 @@ export default function LuckyDrawPreviewPage() {
                     >
                       <span
                         className="grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white"
-                        style={{ background: w ? BAND_COLOR[w.band] : "#cbd5e1" }}
+                        style={{ background: w ? ACCENT : "#cbd5e1" }}
                       >
                         {i + 1}
                       </span>
                       {w ? (
-                        <>
-                          <span className="min-w-0 flex-1 truncate font-semibold text-brand-ink">
-                            {w.name || "(ไม่มีชื่อ)"}
-                          </span>
-                        </>
+                        <span className="min-w-0 flex-1 truncate font-semibold text-brand-ink">
+                          {w.name || "(ไม่มีชื่อ)"}
+                        </span>
                       ) : (
                         <span className="text-slate-300">รอจับ</span>
                       )}
@@ -269,36 +270,6 @@ export default function LuckyDrawPreviewPage() {
                   );
                 })}
               </ol>
-            </div>
-
-            <div className="rounded-xl2 bg-white p-4 shadow-card">
-              <p className="mb-3 text-sm font-bold text-brand-ink">กติกาการจับ</p>
-              <ul className="flex flex-col gap-3">
-                {BANDS.map((band) => {
-                  const people = bands[band.key as BandKey];
-                  const got = winners.slice(0, revealed).filter((w) => w.band === band.key).length;
-                  return (
-                    <li key={band.key} className="flex items-start gap-2.5">
-                      <span
-                        className="mt-1 size-2.5 shrink-0 rounded-full"
-                        style={{ background: BAND_COLOR[band.key] }}
-                      />
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-brand-ink">{band.label}</p>
-                        <p className="text-[11px] text-slate-500">
-                          {band.range} · {people.length} คน →{" "}
-                          {band.seats === null ? "ได้ทุกคน" : `เลือก ${band.seats} คน`}
-                        </p>
-                        <p className="text-[11px] text-slate-400">จับแล้ว {got}</p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-              <p className="mt-3 border-t border-slate-100 pt-3 text-[11px] leading-relaxed text-slate-400">
-                ในแต่ละกลุ่มจับแบบถ่วงน้ำหนักตามจำนวนสิทธิ์ · คนหนึ่งได้รางวัลเดียว · ถ้ากลุ่มไหนคนไม่พอ
-                ที่นั่งจะตกไปกลุ่มถัดไป เพื่อให้ครบ {LUCKY_FAN_PRIZES} รางวัลตามที่ประกาศไว้
-              </p>
             </div>
           </div>
         </>

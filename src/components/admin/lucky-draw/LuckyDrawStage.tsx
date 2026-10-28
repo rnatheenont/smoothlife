@@ -2,9 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import type { BandKey, Entrant, Winner } from "@/lib/lucky-draw";
+import type { Entrant, Winner } from "@/lib/lucky-draw";
 import {
-  BAND_COLOR,
+  ACCENT,
   DRUM_RADIUS,
   FACE_COUNT,
   FACE_HEIGHT,
@@ -59,6 +59,9 @@ type Scene = {
   spinTo: number;
   rot: number;
   revealAt: number;
+  /** Has a name landed yet. Before the first one the drum drifts; after it
+   *  the drum holds, because the winner has to still be on it. */
+  landedOnce: boolean;
   onLanded: (() => void) | null;
   raf: number;
   reduced: boolean;
@@ -195,7 +198,7 @@ export default function LuckyDrawStage({
         transparent: true,
       }),
     );
-    glow.scale.set(16, 16, 1);
+    glow.scale.set(12, 12, 1);
     glow.position.set(0, 0, -2.2);
     scene.add(glow);
 
@@ -208,7 +211,7 @@ export default function LuckyDrawStage({
         transparent: true,
       }),
     );
-    flash.scale.set(22, 22, 1);
+    flash.scale.set(17, 17, 1);
     flash.position.set(0, 0, 2.6);
     scene.add(flash);
 
@@ -269,6 +272,7 @@ export default function LuckyDrawStage({
       spinTo: 0,
       rot: FRONT,
       revealAt: 0,
+      landedOnce: false,
       onLanded: null,
       raf: 0,
       reduced,
@@ -285,10 +289,7 @@ export default function LuckyDrawStage({
       const picks = shuffled(people);
       s.faces.forEach((f, i) => {
         const p = picks[i % picks.length];
-        paintFace(f.canvas, {
-          name: p.name ?? "(ไม่มีชื่อ)",
-          band: (p.entries >= 10 ? "gold" : p.entries >= 6 ? "silver" : "open") as BandKey,
-        });
+        paintFace(f.canvas, { name: p.name ?? "(ไม่มีชื่อ)" });
         f.texture.needsUpdate = true;
       });
     };
@@ -314,8 +315,16 @@ export default function LuckyDrawStage({
       s.stars.rotation.x += dt * 0.004;
       for (const rim of s.rims) rim.rotation.z += dt * 0.25;
 
-      if (s.phase === "idle") {
-        // Breathing, not still: a stopped machine looks broken.
+      if (s.phase !== "spinning" && s.landedOnce) {
+        // Held on the winner, with just enough movement to look alive.
+        // It used to go back to drifting a second and a half after landing,
+        // which slid the name that had just been drawn off the front of the
+        // drum while everyone was still reading it.
+        s.rot = s.spinTo + Math.sin(now / 1500) * 0.008;
+        if (s.phase === "reveal" && now - s.revealAt > REVEAL_MS) s.phase = "idle";
+      } else if (s.phase === "idle") {
+        // Before the first name: turning, because a stopped machine looks
+        // broken.
         s.rot += dt * 0.16;
       } else if (s.phase === "spinning") {
         const t = Math.min((now - s.spinStart) / (s.reduced ? 900 : SPIN_MS), 1);
@@ -328,6 +337,7 @@ export default function LuckyDrawStage({
         if (t >= 1) {
           s.rot = s.spinTo;
           s.phase = "reveal";
+          s.landedOnce = true;
           s.revealAt = now;
           s.flash.material.opacity = 0.85;
           if (confCount > 0) {
@@ -355,9 +365,6 @@ export default function LuckyDrawStage({
           s.onLanded?.();
           s.onLanded = null;
         }
-      } else if (s.phase === "reveal") {
-        s.rot += dt * 0.04;
-        if (now - s.revealAt > REVEAL_MS) s.phase = "idle";
       }
 
       s.drum.rotation.x = s.rot;
@@ -369,7 +376,7 @@ export default function LuckyDrawStage({
       }
       const pulse = s.phase === "reveal" ? 0.75 : 0.4;
       s.glow.material.opacity += (pulse - s.glow.material.opacity) * Math.min(1, dt * 4);
-      const breathe = 16 + Math.sin(now / 900) * 0.5 + (s.phase === "reveal" ? 3 : 0);
+      const breathe = 12 + Math.sin(now / 900) * 0.4 + (s.phase === "reveal" ? 2.4 : 0);
       s.glow.scale.set(breathe, breathe, 1);
 
       if (confCount > 0 && s.confettiLife.t < 1) {
@@ -423,21 +430,17 @@ export default function LuckyDrawStage({
 
     const others = shuffled(pool.filter((p) => p.userId !== target.userId));
     s.faces.forEach((f, i) => {
-      const content =
+      const p: Entrant | undefined = others[(i - 1) % Math.max(1, others.length)];
+      paintFace(
+        f.canvas,
         i === 0
-          ? { name: target.name ?? "(ไม่มีชื่อ)", band: target.band, winner: true }
-          : (() => {
-              const p: Entrant | undefined = others[(i - 1) % Math.max(1, others.length)];
-              return {
-                name: p?.name ?? "(ไม่มีชื่อ)",
-                band: ((p?.entries ?? 1) >= 10 ? "gold" : (p?.entries ?? 1) >= 6 ? "silver" : "open") as BandKey,
-              };
-            })();
-      paintFace(f.canvas, content);
+          ? { name: target.name ?? "(ไม่มีชื่อ)", winner: true }
+          : { name: p?.name ?? "(ไม่มีชื่อ)" },
+      );
       f.texture.needsUpdate = true;
       const mat = f.mesh.material as THREE.MeshStandardMaterial;
       mat.emissiveIntensity = i === 0 ? 0.9 : 0.3;
-      mat.emissive.set(i === 0 ? BAND_COLOR[target.band] : "#000000");
+      mat.emissive.set(i === 0 ? ACCENT : "#000000");
     });
 
     // Face zero sits at angle 0, so it is at the front when the drum has

@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import type { BandKey } from "@/lib/lucky-draw";
 
 // The drum's faces: a name painted on a canvas, one canvas per face.
 //
@@ -11,29 +10,30 @@ import type { BandKey } from "@/lib/lucky-draw";
 // rather than a texture offset.
 
 export const FACE_COUNT = 18;
-export const DRUM_RADIUS = 3.25;
-export const FACE_WIDTH = 7.6;
+// The drum sits in a column now rather than across the page, and at the old
+// size it ran into both edges of its own frame — a machine with no room
+// around it reads as a cropped photograph of one.
+export const DRUM_RADIUS = 2.45;
+export const FACE_WIDTH = 5.9;
 /** A hair over the exact chord, so neighbours meet instead of showing a seam. */
 export const FACE_HEIGHT = 2 * DRUM_RADIUS * Math.tan(Math.PI / FACE_COUNT) * 1.04;
 
 const TEX_W = 1024;
 const TEX_H = 256;
 
-export const BAND_COLOR: Record<BandKey, string> = {
-  gold: "#f5c451",
-  silver: "#9fd8ff",
-  open: "#c7a6ff",
-};
-
-const BAND_LABEL: Record<BandKey, string> = {
-  gold: "แฟนตัวจริง",
-  silver: "แฟนตัวยง",
-  open: "สายเปย์หน้าใหม่",
-};
+/**
+ * One colour for everybody.
+ *
+ * The panels were lit in three colours for the three bands, which turned the
+ * band into something the room could read off the screen — a colour saying
+ * how much this person spent, next to their name. The bands decide which bag
+ * a name is drawn from and that is the end of their business; on the stage
+ * every winner looks like every other winner.
+ */
+export const ACCENT = "#f5c451";
 
 export type FaceContent = {
   name: string;
-  band: BandKey;
   /** The one the drum is going to stop on. Painted brighter. */
   winner?: boolean;
 };
@@ -51,7 +51,7 @@ function fitFont(ctx: CanvasRenderingContext2D, text: string, max: number) {
 export function paintFace(canvas: HTMLCanvasElement, face: FaceContent) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
-  const accent = BAND_COLOR[face.band];
+  const accent = ACCENT;
 
   ctx.clearRect(0, 0, TEX_W, TEX_H);
 
@@ -79,25 +79,16 @@ export function paintFace(canvas: HTMLCanvasElement, face: FaceContent) {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
+  // The name and nothing else.
   const name = face.name || "(ไม่มีชื่อ)";
-  fitFont(ctx, name, TEX_W - 260);
+  fitFont(ctx, name, TEX_W - 180);
   if (face.winner) {
     ctx.shadowColor = accent;
     ctx.shadowBlur = 34;
   }
   ctx.fillStyle = face.winner ? "#fff8e6" : "#e8eaf2";
-  ctx.fillText(name, TEX_W / 2, TEX_H / 2 - 14);
+  ctx.fillText(name, TEX_W / 2, TEX_H / 2);
   ctx.shadowBlur = 0;
-
-  ctx.font = '600 38px "IBM Plex Sans Thai", "Noto Sans Thai", "Sarabun", sans-serif';
-  ctx.fillStyle = accent;
-  ctx.globalAlpha = face.winner ? 1 : 0.6;
-  // The band, not the count. How many receipts somebody sent in is their
-  // business and the room's — it decides which band they are drawn from and
-  // then has no further part to play, and a number beside a name on a screen
-  // being filmed is a number everyone else in the room can read too.
-  ctx.fillText(BAND_LABEL[face.band], TEX_W / 2, TEX_H / 2 + 62);
-  ctx.globalAlpha = 1;
 }
 
 export function makeFaceCanvas(): HTMLCanvasElement {
