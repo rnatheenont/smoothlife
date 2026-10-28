@@ -765,7 +765,14 @@ export default function StaffShop() {
               // Still sticky, and now offset from the header by the same
               // 1rem the sidebar card uses — a rounded card jammed against
               // the bar above it looks like it failed to stop.
-              <div className="scrollbar-none sticky top-[calc(var(--app-header-h,0px)+1rem)] z-30 mb-5 space-y-3 rounded-xl2 bg-white/95 p-3 ring-1 ring-surface-line backdrop-blur-sm transition-[top] duration-300">
+              // brand-50 with a brand-200 edge: the same pair the staff
+              // entry in the header wears. This card and that button are the
+              // two things on screen that belong to the staff round rather
+              // than to the shop, and now they say so in the same colour.
+              //
+              // /95 rather than flat, because it is sticky over a moving
+              // grid — the blur underneath needs something to blur.
+              <div className="scrollbar-none sticky top-[calc(var(--app-header-h,0px)+1rem)] z-30 mb-5 space-y-3 rounded-xl2 bg-brand-50/95 p-3 ring-1 ring-brand-200 backdrop-blur-sm transition-[top] duration-300">
                 {/* Search first, because it is the shortest route to one
                     known product, and the tabs are for browsing. */}
                 <div className="flex gap-2">
