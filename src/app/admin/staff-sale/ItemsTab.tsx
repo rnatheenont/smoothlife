@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { Check, Copy, Percent, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
-import { Button } from "@heroui/react";
+import { Button, Switch } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import AdminField from "@/components/admin/AdminField";
 import { Panel, adminTable } from "@/components/admin/layout-kit";
@@ -419,7 +419,7 @@ export default function ItemsTab({
     if (
       next &&
       !confirm(
-        "ตั้งให้สินค้านี้ใช้วงเงินทั้งหมด?\nซื้อได้ 1 ชิ้นต่อออเดอร์ และต้องซื้อเดี่ยว พนักงานจ่ายเต็มราคาพนักงาน (เกินวงเงินได้) แล้ววงเงินที่เหลือในรอบนี้หมดทันที",
+        "ให้สินค้านี้ซื้อเกินวงเงินได้?\n\n• พนักงานจ่ายเต็มราคาพนักงาน แม้เกินวงเงิน\n• ซื้อได้ 1 ชิ้น และต้องซื้อเดี่ยว (ใส่สินค้าอื่นในตะกร้าไม่ได้)\n• ซื้อแล้ววงเงินที่เหลือในรอบนี้หมดทันที",
       )
     ) {
       return;
@@ -622,20 +622,26 @@ export default function ItemsTab({
                 <th>ราคาพนักงาน</th>
                 <th>ส่วนลด</th>
                 <th>ขาย/จอง</th>
+                {/* Two plain on/off questions, each under its own heading,
+                    in place of two text buttons that read as labels. */}
+                <th>เปิดขาย</th>
+                <th title="ซื้อได้แม้ราคาเกินวงเงิน แต่ซื้อเดี่ยว 1 ชิ้น และใช้วงเงินที่เหลือทั้งหมด">
+                  ซื้อเกินวงเงินได้
+                </th>
                 <th />
               </tr>
             </thead>
             <tbody>
               {items.length === 0 && (
                 <tr>
-                  <td className={adminTable.muted} colSpan={7}>
+                  <td className={adminTable.muted} colSpan={9}>
                     ยังไม่มีสินค้าในรอบนี้ — กด “เพิ่มสินค้า” หรือคัดลอกจากรอบก่อนด้านล่าง
                   </td>
                 </tr>
               )}
               {items.length > 0 && shown.length === 0 && (
                 <tr>
-                  <td className={adminTable.muted} colSpan={7}>
+                  <td className={adminTable.muted} colSpan={9}>
                     ไม่พบสินค้าที่ตรงกับ “{rowQuery.trim()}” ในรอบนี้
                   </td>
                 </tr>
@@ -687,7 +693,7 @@ export default function ItemsTab({
                             {item.product_slug} · {item.variant_id.split("/").pop()}
                           </p>
                           {!item.enabled && <Badge tone="neutral">ปิดการขายรายการนี้</Badge>}
-                          {item.fills_allowance && <Badge tone="warning">ใช้วงเงินทั้งหมด · ซื้อเดี่ยว</Badge>}
+                          {item.fills_allowance && <Badge tone="warning">ซื้อเกินวงเงินได้ · ซื้อเดี่ยว 1 ชิ้น</Badge>}
                         </div>
                       </div>
                     </td>
@@ -752,6 +758,30 @@ export default function ItemsTab({
                       {item.sold_qty}/{item.reserved_qty}
                     </td>
                     <td className={adminTable.cell}>
+                      <Switch
+                        size="sm"
+                        isSelected={item.enabled}
+                        onChange={() => toggle(item)}
+                        aria-label={`เปิดขาย ${item.name ?? item.product_slug}`}
+                      >
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                      </Switch>
+                    </td>
+                    <td className={adminTable.cell}>
+                      <Switch
+                        size="sm"
+                        isSelected={item.fills_allowance}
+                        onChange={() => toggleCap(item)}
+                        aria-label={`ซื้อเกินวงเงินได้ ${item.name ?? item.product_slug}`}
+                      >
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                      </Switch>
+                    </td>
+                    <td className={adminTable.cell}>
                       <div className="flex justify-end gap-1.5">
                         {dirty && (
                           <Button
@@ -763,12 +793,6 @@ export default function ItemsTab({
                             บันทึก
                           </Button>
                         )}
-                        <Button size="sm" variant="ghost" onPress={() => toggle(item)}>
-                          {item.enabled ? "ปิดขาย" : "เปิดขาย"}
-                        </Button>
-                        <Button size="sm" variant="ghost" onPress={() => toggleCap(item)}>
-                          {item.fills_allowance ? "ยกเลิกใช้วงเงินทั้งหมด" : "ใช้วงเงินทั้งหมด"}
-                        </Button>
                         {item.sold_qty === 0 && item.reserved_qty === 0 && (
                           <Button size="sm" variant="ghost" onPress={() => remove(item)}>
                             <Trash2 className="h-3.5 w-3.5 text-rose-600" aria-hidden />
