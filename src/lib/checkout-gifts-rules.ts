@@ -148,7 +148,10 @@ export function giftLinesFrom(
   };
 
   const out: CheckoutGiftLine[] = [];
-  for (const evaluated of evaluateActiveFreeGifts(promos, lines, customer)) {
+  // The same `now` the filter above used. Without it this read the wall
+  // clock and could disagree with the line before it about whether a
+  // campaign was running.
+  for (const evaluated of evaluateActiveFreeGifts(promos, lines, customer, now)) {
     if (!evaluated.eligible) continue;
     const { promo, unlockedTiers } = evaluated;
 

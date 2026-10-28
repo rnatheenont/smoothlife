@@ -429,6 +429,18 @@ export function evaluateFreeGift(
   promo: FreeGiftPromo,
   lines: CartLine[],
   customer?: PromoCustomer,
+  /**
+   * The moment this decision is being made for.
+   *
+   * It used to read `Date.now()` twice, inside, while the one caller that
+   * matters — giftLinesFrom, which decides what goes on a paid order — is
+   * handed an explicit `now` and filters by it. Two clocks for one decision:
+   * the pass said a campaign was running and the check a line later said it
+   * was not, so a `now` passed in was quietly ignored. The failure showed up
+   * as a window ending at midnight behaving differently from the same window
+   * read a moment earlier.
+   */
+  now: number = Date.now(),
 ): FreeGiftEval {
   if (!promo.active) return { promo, eligible: false, reasonTh: "", reasonEn: "" };
 
@@ -456,9 +468,9 @@ export function evaluateFreeGift(
   // A campaign can be written today and start on a date, rather than waiting
   // for somebody to remember to switch it on at nine in the morning — and it
   // can have more than one run window.
-  if (!promoIsLive(promo, Date.now())) {
+  if (!promoIsLive(promo, now)) {
     const notYet = (promo.windows?.length ? promo.windows : [{ starts: promo.starts }]).every(
-      (w) => w.starts && new Date(w.starts).getTime() > Date.now(),
+      (w) => w.starts && new Date(w.starts).getTime() > now,
     );
     return notYet
       ? { promo, eligible: false, reasonTh: "ยังไม่ถึงวันเริ่มโปรโมชั่น", reasonEn: "This promotion has not started yet" }
@@ -570,6 +582,7 @@ export function evaluateActiveFreeGifts(
   promos: FreeGiftPromo[],
   lines: CartLine[],
   customer?: PromoCustomer,
+  now: number = Date.now(),
 ): FreeGiftEval[] {
-  return promos.filter((p) => p.active).map((p) => evaluateFreeGift(p, lines, customer));
+  return promos.filter((p) => p.active).map((p) => evaluateFreeGift(p, lines, customer, now));
 }

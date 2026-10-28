@@ -559,3 +559,20 @@ test("windows replace the single pair rather than adding to it", () => {
   });
   assert.equal(giftLinesFrom([promo], basket, NONE, NOW, noCatalogue).length, 1);
 });
+
+// The bug this pins: evaluateFreeGift read the wall clock while
+// giftLinesFrom filtered by the `now` it was handed, so one decision was
+// made against two different times. It went unnoticed until a window whose
+// end had just passed in real time was still running at the test's `now` —
+// the suite started failing on the day the date rolled over, not on the day
+// the code changed.
+//
+// This window closed before any real run of this test: if the wall clock
+// ever gets a vote again, this goes back to 0.
+test("the handed-in clock decides, not the wall clock", () => {
+  const closedInRealTime = spendPromo({
+    minSubtotal: 1000,
+    windows: [{ starts: "2026-10-20T00:00:00Z", ends: "2026-10-27T00:00:00Z" }],
+  });
+  assert.equal(giftLinesFrom([closedInRealTime], basket, NONE, NOW, noCatalogue).length, 1);
+});
