@@ -74,9 +74,60 @@ export async function POST(req: NextRequest) {
 
   const tx = claimed?.[0];
   if (!tx) {
-    // Either a repeat of something already handled, or an invoice that is
+    // Usually a repeat of something already handled, or an invoice that is
     // not a staff payment. Both are "nothing to do", and both have to be a
     // 200 or 2C2P keeps asking.
+    //
+    // But money can arrive here too. Cancelling an order closes its payment
+    // row, and closing it is what stops the claim above from matching — yet
+    // the cancel never voids the payment link at 2C2P, so the page sitting
+    // in somebody's open tab is still payable afterwards. The branch that
+    // flags an unfulfillable payment is further down, past a claim that in
+    // that case can never match, so a successful callback would leave by
+    // this door with a console.warn and nothing else.
+    if (success) {
+      const closed = await supabaseRest<{ staff_order_id: string | null }[]>(
+        `payment_transactions?invoice_no=eq.${pgValue(callback.invoiceNo)}` +
+          `&staff_order_id=not.is.null&select=staff_order_id&limit=1`,
+      ).catch(() => [] as { staff_order_id: string | null }[]);
+      const closedOrderId = closed?.[0]?.staff_order_id;
+      if (closedOrderId) {
+        const rows = await supabaseRest<{ status: string; note: string | null }[]>(
+          `staff_orders?id=eq.${pgValue(closedOrderId)}&select=status,note`,
+        ).catch(() => [] as { status: string; note: string | null }[]);
+        const order = rows?.[0];
+        // Not 'paid': that is the ordinary repeat, already settled.
+        if (order && order.status !== "paid") {
+          const mark = "จ่ายเงินเข้ามาหลังปิดรายการชำระเงินแล้ว — ส่งของไม่ได้ ต้องคืนเงิน";
+          console.error("[webhooks/2c2p-staff] paid after the payment row was closed", {
+            invoice: callback.invoiceNo,
+            orderId: closedOrderId,
+            orderStatus: order.status,
+          });
+          await supabaseRest(`staff_orders?id=eq.${pgValue(closedOrderId)}`, {
+            method: "PATCH",
+            returning: false,
+            // 2C2P delivers the same callback more than once and this branch
+            // has no claim to make one of them the winner, so the note is
+            // written only when it is not already there.
+            body: JSON.stringify({
+              needs_refund: true,
+              note: order.note?.includes(mark)
+                ? order.note
+                : [order.note, mark].filter(Boolean).join(" · "),
+            }),
+          }).catch((err) => {
+            console.error("[webhooks/2c2p-staff] could not flag for refund", {
+              invoice: callback.invoiceNo,
+              orderId: closedOrderId,
+              err,
+            });
+          });
+          return NextResponse.json({ ok: true, result: "paid_after_close" }, { status: 200 });
+        }
+      }
+    }
+
     console.warn("[webhooks/2c2p-staff] nothing pending for invoice", callback.invoiceNo);
     return NextResponse.json({ ok: true, skipped: "not pending" }, { status: 200 });
   }

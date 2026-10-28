@@ -33,17 +33,40 @@ export async function POST(req: NextRequest) {
   // The allowance and the quota are back; the Shopify hold should go too.
   // After the RPC rather than before: if the cancel is refused, the hold
   // still belongs to a live order.
+  //
+  // The lookup is for the cart token and nothing else. Closing the payment
+  // row used to be nested inside it, so a lookup that failed — or came back
+  // empty for a reason nobody had thought of — left the row open and said
+  // nothing, and an open row is not cosmetic: it is what the 2C2P webhook
+  // matches on. Seen in the wild on 28 Oct 2026. The PATCH matches on the
+  // order id and the status itself, so it never needed the lookup.
+  //
+  // Nothing here is swallowed any more. The employee's cancel has already
+  // happened in the database and the response stays ok either way — what
+  // changes is that a failure leaves a line with the order id in it rather
+  // than no trace at all.
   const tx = await supabaseRest<{ cart_token: string }[]>(
     `payment_transactions?staff_order_id=eq.${pgValue(id)}&status=eq.pending&select=cart_token&limit=1`,
-  ).catch(() => []);
-  if (tx?.[0]) {
-    await releaseStock(tx[0].cart_token).catch(() => {});
-    await supabaseRest(`payment_transactions?staff_order_id=eq.${pgValue(id)}&status=eq.pending`, {
-      method: "PATCH",
-      returning: false,
-      body: JSON.stringify({ status: "failed", resp_desc: "cancelled by the employee" }),
-    }).catch(() => {});
+  ).catch((err) => {
+    console.error("[staff/orders/cancel] could not read the payment row", { id, err });
+    return [] as { cart_token: string }[];
+  });
+
+  // No row is ordinary: an order cancelled before it ever reached payment
+  // has nothing to release.
+  if (tx?.[0]?.cart_token) {
+    await releaseStock(tx[0].cart_token).catch((err) => {
+      console.error("[staff/orders/cancel] could not release the Shopify hold", { id, err });
+    });
   }
+
+  await supabaseRest(`payment_transactions?staff_order_id=eq.${pgValue(id)}&status=eq.pending`, {
+    method: "PATCH",
+    returning: false,
+    body: JSON.stringify({ status: "failed", resp_desc: "cancelled by the employee" }),
+  }).catch((err) => {
+    console.error("[staff/orders/cancel] could not close the payment row", { id, err });
+  });
 
   return NextResponse.json({ ok: true });
 }
