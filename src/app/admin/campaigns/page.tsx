@@ -63,15 +63,15 @@ type Fan = {
  * sorting by สิทธิ์ in a spreadsheet re-orders ties arbitrarily and the
  * order on screen is the order the list was drawn in.
  */
-function downloadFanCsv(rows: Fan[], campaignName: string | null) {
+function downloadFanCsv(rows: (Fan & { rank: number })[], campaignName: string | null) {
   const stamp = new Date().toISOString().slice(0, 10);
   const csv = csvDocument(
-    ["ลำดับ", "ลูกค้า", "เบอร์โทร", "อีเมล", "รหัสผู้ใช้", "สิทธิ์"],
-    rows.map((f, i) => [
-      i + 1,
+    ["ลำดับ", "ลูกค้า", "อีเมล", "เบอร์โทร", "รหัสผู้ใช้", "สิทธิ์"],
+    rows.map((f) => [
+      f.rank,
       f.customer ?? "",
-      f.phone ?? "",
       f.email ?? "",
+      f.phone ?? "",
       f.userId,
       f.entries,
     ]),
@@ -207,7 +207,11 @@ export default function Page() {
   const vipShown =
     data?.vipBuyers.filter((v) => hit(v.customer, v.email, v.orderName)) ?? [];
   const fanShown =
-    data?.luckyFan.filter((f) => hit(f.customer, f.phone, f.email, f.userId)) ?? [];
+    data?.luckyFan.filter((f) => hit(f.customer, f.email, f.phone, f.userId)) ?? [];
+  // Position in the full list, so a search for one person still says where
+  // they stand. Numbering the filtered rows instead would put "1" beside
+  // whoever happened to match first.
+  const fanRank = new Map((data?.luckyFan ?? []).map((f, i) => [f.userId, i + 1]));
 
   // "" for the first campaign keeps the URL clean and the server defaulting.
   const campaignQuery = campaign
@@ -1064,7 +1068,12 @@ export default function Page() {
                 <button
                   type="button"
                   disabled={fanShown.length === 0}
-                  onClick={() => downloadFanCsv(fanShown, campaignName)}
+                  onClick={() =>
+                    downloadFanCsv(
+                      fanShown.map((f) => ({ ...f, rank: fanRank.get(f.userId) ?? 0 })),
+                      campaignName,
+                    )
+                  }
                   className={`${pill} ml-auto disabled:opacity-40`}
                 >
                   <Download size={14} aria-hidden />
@@ -1087,11 +1096,14 @@ export default function Page() {
                   >
                     <span className="min-w-0">
                       <span className="block text-[13px] text-brand-ink">
+                        <span className="me-1.5 font-mono tabular-nums text-slate-400">
+                          {fanRank.get(f.userId)}.
+                        </span>
                         {f.customer ?? f.userId.slice(0, 8)}
                       </span>
-                      {(f.phone || f.email) && (
+                      {(f.email || f.phone) && (
                         <span className="mt-0.5 block break-words text-[12px] text-slate-500">
-                          {[f.phone, f.email].filter(Boolean).join(" · ")}
+                          {[f.email, f.phone].filter(Boolean).join(" · ")}
                         </span>
                       )}
                     </span>
@@ -1108,22 +1120,24 @@ export default function Page() {
                 <table className={adminTable.table}>
                   <thead className={adminTable.thead}>
                     <tr>
+                      <th className="w-14">ลำดับ</th>
                       <th>ลูกค้า</th>
-                      <th className="w-44">เบอร์โทร</th>
                       <th>อีเมล</th>
+                      <th className="w-36">เบอร์โทร</th>
                       <th className="w-20">สิทธิ์</th>
                     </tr>
                   </thead>
                   <tbody>
                     {fanShown.map((f) => (
                       <tr key={f.userId} className={adminTable.row}>
+                        <td className={adminTable.mono}>{fanRank.get(f.userId)}</td>
                         <td className={adminTable.cell}>
                           {f.customer ?? f.userId.slice(0, 8)}
                         </td>
-                        <td className={adminTable.mono}>{f.phone ?? "—"}</td>
                         <td className={adminTable.cell}>
                           <span className="break-all">{f.email ?? "—"}</span>
                         </td>
+                        <td className={adminTable.mono}>{f.phone ?? "—"}</td>
                         <td className={adminTable.mono}>{f.entries}</td>
                       </tr>
                     ))}
