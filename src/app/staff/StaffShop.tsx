@@ -23,7 +23,7 @@ import Countdown from "@/components/staff/Countdown";
 import { flyToCart } from "@/lib/fly-to-cart";
 import { HaloRing, RIM } from "@/components/Halo";
 import { formatTHB } from "@/lib/format";
-import { shopifyImage } from "@/lib/shopify-image";
+import { shopifyImage, shopifySquare, shopifySquareSrcSet } from "@/lib/shopify-image";
 import type { StaffShopVariant } from "@/lib/staff-sale";
 
 // The employee shop, all of its states.
@@ -920,12 +920,23 @@ export default function StaffShop() {
                         <article className="relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-product transition-shadow duration-200 hover:shadow-productHover">
                         <div className="relative aspect-square overflow-hidden bg-white">
                           {item.image && (
-                            <Image
-                              src={shopifyImage(item.image, 560)}
+                            /* Square crops and a real srcset, the same as the
+                               storefront card — and for the same reason: with
+                               images.unoptimized on, next/image ships one
+                               source and drops `sizes`, so a 560px file was
+                               being decoded for a slot drawn at 163px. A
+                               round holds 387 products; that is how a phone
+                               runs out of memory scrolling a staff sale.
+                               See lib/shopify-image. */
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              src={shopifySquare(item.image, 480)}
+                              srcSet={shopifySquareSrcSet(item.image)}
+                              sizes="(max-width: 768px) 50vw, (max-width: 1536px) 25vw, 20vw"
                               alt={product.name}
-                              fill
-                              sizes="(max-width: 768px) 50vw, 25vw"
-                              className={`object-cover ${soldOut ? "opacity-60 grayscale" : ""}`}
+                              loading="lazy"
+                              decoding="async"
+                              className={`absolute inset-0 h-full w-full object-cover ${soldOut ? "opacity-60 grayscale" : ""}`}
                             />
                           )}
                           {soldOut && (

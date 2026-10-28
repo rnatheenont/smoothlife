@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { Brand } from "@/data/types";
@@ -122,7 +123,19 @@ export default function BrandCircleRow({
                     // padding baked in, so the circle shows about 70% of the
                     // box rather than the whole thing shrunk into the middle.
                     <span className="relative block h-[70%] w-[70%]">
-                      <Image src={b.image} alt="" fill sizes="116px" className="object-contain" />
+                      {/* 240px: the circle is 88px on a phone and the logo
+                          fills 70% of it, so 62px drawn — 240 covers a 2x
+                          screen twice over. The collection images are
+                          1200x1200, and `sizes` does nothing here because
+                          images.unoptimized means next/image ships one
+                          source and no srcset: six of these came to 33 MB of
+                          decoded image on a phone. See lib/shopify-image. */}
+                      <Image
+                        src={shopifyImage(b.image, 240)}
+                        alt=""
+                        fill
+                        className="object-contain"
+                      />
                     </span>
                   ) : (
                     <span translate="no" className="px-2 text-center text-xs font-semibold text-slate-600">

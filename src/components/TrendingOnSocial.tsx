@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
+import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Play, Volume2, VolumeX, ShoppingCart, Check } from "lucide-react";
 import SocialBubbles from "@/components/home/SocialBubbles";
@@ -148,7 +149,8 @@ function ClipCard({
             so it stays put until the video can actually replace it. */}
         {clip.product?.image && !hasFrame && (
           <Image
-            src={clip.product.image}
+            // 640: this card is 320px at its widest, so it covers a 2x screen.
+            src={shopifyImage(clip.product.image, 640)}
             alt=""
             fill
             sizes="(min-width: 768px) 320px, 70vw"
@@ -187,7 +189,10 @@ function ClipCard({
           {clip.product ? (
             <>
               <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-surface-soft">
-                <Image src={clip.product.image} alt="" fill className="object-cover" />
+                {/* 96, for a 44px slot. The catalogue URL carries width=700
+                    and images.unoptimized means that is what ships — see
+                    lib/shopify-image. */}
+                <Image src={shopifyImage(clip.product.image, 96)} alt="" fill className="object-cover" />
               </div>
               <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-ink">{clip.product.name}</span>
             </>
