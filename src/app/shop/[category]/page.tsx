@@ -86,7 +86,7 @@ async function CategoryPageWritten({
       >
       </ShopHero>
 
-      <div className="container-page pt-3 pb-8 md:py-10">
+      <div className="container-page pt-5 pb-8 md:pt-8 md:pb-10">
       <div className="flex items-center gap-3 mb-4">
         <BackButton fallbackHref="/shop" />
         <Breadcrumb items={breadcrumbItems} />

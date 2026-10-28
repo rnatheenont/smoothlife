@@ -51,7 +51,11 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
   if (!data) return null;
 
   return (
-    <section className="container-page pb-8 md:pb-10">
+    // pt to match the shop's own listing. There was none: the category row
+    // that used to head this block carried its own mb-6, and when the row
+    // became a dropdown in the toolbar the gap went with it — leaving the
+    // filter pills sitting against the bottom edge of the banner.
+    <section className="container-page pt-5 pb-8 md:pt-8 md:pb-10">
       <div className="flex flex-col gap-6">
         <div className="flex-1">
           {/* One toolbar, the same as /shop: filters on the left, ordering
