@@ -112,14 +112,17 @@ export const RP_MARKUP = 1.1;
 /**
  * The RP a staff price is worked out from.
  *
- * The catalogue price is the RP with 10% on it, so the RP is that divided by
- * 1.1 — 418 is 380, 583 is 530. Checked against the round's own 387 rows
- * before this was written: dividing lands on a whole baht almost three times
- * as often as taking 10% off does, which is what you would expect if the
- * markup is what put the number there.
+ * The catalogue price is the RP with 10% on it, so dividing by 1.1 gets most
+ * of the way back — 418 is 380, 583 is 530, 329 is 299. Checked against the
+ * round's own 387 rows: dividing lands on a whole baht almost three times as
+ * often as taking 10% off does, which is what you would expect if the markup
+ * is what put the number there.
  *
- * It is only ever a starting figure. The moment an admin types an RP, that
- * is the RP, and this stops guessing for that row.
+ * Only most of the way, though. 390 divides to 354.55 and 1,260 to 1,145.45,
+ * because the marked-up price was rounded to something a shop can print
+ * before it was written down — and rounding is not a thing you can undo. So
+ * this is a starting figure and the admin types the real one, which is what
+ * the RP column is for. The moment they do, this stops guessing for that row.
  */
 export function rpOf(item: { regular_price: number | string; rp_price?: number | string | null }): number {
   const typed = item.rp_price == null || item.rp_price === "" ? null : Number(item.rp_price);

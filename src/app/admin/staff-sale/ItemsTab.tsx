@@ -101,6 +101,12 @@ export default function ItemsTab({
   // group. Thai collation, because half these names are Thai.
   const collator = new Intl.Collator("th", { numeric: true, sensitivity: "base" });
   const shown = [...matched].sort((a, b) => {
+    // A product that has left the catalogue has no name to sort by. It goes
+    // last rather than first: an empty brand sorts before every real one,
+    // which put the one broken row at the top of the list every time.
+    const aLost = a.name == null;
+    const bLost = b.name == null;
+    if (aLost !== bLost) return aLost ? 1 : -1;
     const byBrand = collator.compare(a.brand ?? "", b.brand ?? "");
     if (byBrand !== 0) return byBrand;
     const byName = collator.compare(a.name ?? a.product_slug, b.name ?? b.product_slug);
@@ -564,7 +570,11 @@ export default function ItemsTab({
                           }))
                         }
                         inputMode="decimal"
-                        placeholder={baht(derivedRp)}
+                        // "≈", and to the baht: dividing by 1.1 cannot undo
+                        // the rounding that produced the catalogue price, so
+                        // 354.55 would be four digits of false precision on
+                        // a number nobody has approved yet.
+                        placeholder={`≈ ${baht(Math.round(derivedRp))}`}
                         aria-label={`ราคา RP ของ ${item.name ?? item.product_slug}`}
                         className="w-full max-w-[120px] rounded-xl2 border border-slate-200 px-2 py-1 font-mono text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                       />
