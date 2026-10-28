@@ -410,6 +410,35 @@ export default function ItemsTab({
     else onReload();
   }
 
+  // In or out of the allowance. The employee pays the full staff price either
+  // way; out means buying it uses none of the allowance. Orders already held
+  // keep the amount they were charged, so flipping this mid-round is safe.
+  async function toggleCap(item: StaffRoundItemView) {
+    const next = item.counts_toward_cap === false;
+    if (
+      !next &&
+      !confirm(
+        "ไม่หักวงเงินสินค้านี้?\nพนักงานยังจ่ายเต็มราคาพนักงาน แต่ไม่ใช้วงเงินของรอบ (ยังติดลิมิตจำนวนและ 1 ออเดอร์ต่อรอบ)",
+      )
+    ) {
+      return;
+    }
+    onError(null);
+    const res = await fetch(`/api/admin/staff-sale/rounds/${roundId}/items`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: item.id,
+        staff_price: item.staff_price,
+        enabled: item.enabled,
+        counts_toward_cap: next,
+      }),
+    });
+    const json = await res.json();
+    if (!json.ok) onError(json.error ?? "เปลี่ยนการหักวงเงินไม่สำเร็จ");
+    else onReload();
+  }
+
   async function remove(item: StaffRoundItemView) {
     if (!confirm("เอาสินค้านี้ออกจากรอบ?")) return;
     onError(null);
@@ -657,6 +686,7 @@ export default function ItemsTab({
                             {item.product_slug} · {item.variant_id.split("/").pop()}
                           </p>
                           {!item.enabled && <Badge tone="neutral">ปิดการขายรายการนี้</Badge>}
+                          {item.counts_toward_cap === false && <Badge tone="warning">ไม่หักวงเงิน</Badge>}
                         </div>
                       </div>
                     </td>
@@ -734,6 +764,9 @@ export default function ItemsTab({
                         )}
                         <Button size="sm" variant="ghost" onPress={() => toggle(item)}>
                           {item.enabled ? "ปิดขาย" : "เปิดขาย"}
+                        </Button>
+                        <Button size="sm" variant="ghost" onPress={() => toggleCap(item)}>
+                          {item.counts_toward_cap === false ? "หักวงเงิน" : "ไม่หักวงเงิน"}
                         </Button>
                         {item.sold_qty === 0 && item.reserved_qty === 0 && (
                           <Button size="sm" variant="ghost" onPress={() => remove(item)}>

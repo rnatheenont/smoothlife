@@ -56,6 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         per_person_limit: i.per_person_limit,
         total_quota: i.total_quota,
         enabled: i.enabled,
+        counts_toward_cap: i.counts_toward_cap !== false,
         updated_at: new Date().toISOString(),
       }));
 
@@ -311,6 +312,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const parsed = parseItemInput({ ...before, ...body });
   if ("error" in parsed) return badRequest(parsed.error);
 
+  // Outside the allowance or not. Read only here, not in parseItemInput: the
+  // picker re-sends rows it already added, and a re-add must not quietly put
+  // an exempt line back under the allowance. Absent means "leave it".
+  if (body.counts_toward_cap !== undefined && typeof body.counts_toward_cap !== "boolean") {
+    return badRequest("ค่าหักวงเงินไม่ถูกต้อง");
+  }
+  const countsTowardCap =
+    typeof body.counts_toward_cap === "boolean" ? body.counts_toward_cap : before.counts_toward_cap !== false;
+
   // The quota cannot be set below what is already out of the door.
   const committed = Number(before.sold_qty) + Number(before.reserved_qty);
   if (parsed.input.total_quota !== null && parsed.input.total_quota < committed) {
@@ -325,6 +335,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       per_person_limit: parsed.input.per_person_limit,
       total_quota: parsed.input.total_quota,
       enabled: parsed.input.enabled,
+      counts_toward_cap: countsTowardCap,
       updated_at: new Date().toISOString(),
     }),
   });
@@ -336,6 +347,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     per_person_limit: { from: before.per_person_limit, to: parsed.input.per_person_limit },
     total_quota: { from: before.total_quota, to: parsed.input.total_quota },
     enabled: { from: before.enabled, to: parsed.input.enabled },
+    counts_toward_cap: { from: before.counts_toward_cap !== false, to: countsTowardCap },
   });
 
   return NextResponse.json({ ok: true });
