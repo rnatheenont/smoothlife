@@ -355,6 +355,17 @@ export default function StaffShop() {
     }, 0);
   }, [cart, shop]);
 
+  // The part of the cart that comes out of the allowance. An item outside the
+  // allowance is still in `subtotal` — it is paid for in full — but buying it
+  // uses none of the allowance, so every "over the limit" check reads this.
+  const capUsed = useMemo(() => {
+    if (!shop) return 0;
+    return Object.entries(cart).reduce((sum, [variantId, qty]) => {
+      const item = shop.items.find((i) => i.variant_id === variantId);
+      return sum + (item && item.counts_toward_cap ? item.staff_price * qty : 0);
+    }, 0);
+  }, [cart, shop]);
+
   const cartCount = Object.values(cart).reduce((n, q) => n + q, 0);
 
   /**
@@ -1199,6 +1210,11 @@ export default function StaffShop() {
                                 information — when this product allows fewer
                                 than the round does, and when the number has
                                 been reached. */}
+                            {!item.counts_toward_cap && (
+                              <span className="mt-1 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-800">
+                                ไม่หักวงเงิน
+                              </span>
+                            )}
                             {(soldOut || item.left !== null || item.mine > 0 || limitLine) && (
                               <p
                                 className={`mt-1 text-[11px] ${
@@ -1398,9 +1414,9 @@ export default function StaffShop() {
                   <span className="text-[18px] font-extrabold">฿{baht(subtotal)}</span>
                 </div>
 
-                {subtotal > shop.standing.left_thb && (
+                {capUsed > shop.standing.left_thb && (
                   <p className="mt-2 rounded-xl bg-rose-50 px-2.5 py-1.5 text-[12px] font-semibold text-rose-700">
-                    เกินวงเงินที่เหลือ ฿{baht(subtotal - shop.standing.left_thb)} — ลดจำนวนลงก่อน
+                    เกินวงเงินที่เหลือ ฿{baht(capUsed - shop.standing.left_thb)} — ลดจำนวนลงก่อน
                   </p>
                 )}
 
@@ -1421,7 +1437,7 @@ export default function StaffShop() {
                   disabled={
                     busy ||
                     Object.keys(cart).length === 0 ||
-                    subtotal > shop.standing.left_thb ||
+                    capUsed > shop.standing.left_thb ||
                     !shop.shipTo ||
                     !shop.shipTo.hasPhone
                   }
@@ -1671,16 +1687,16 @@ export default function StaffShop() {
                         of the same sentence. */}
                     <span
                       className={`mt-0.5 block text-[11px] leading-tight ${
-                        subtotal > shop.standing.left_thb
+                        capUsed > shop.standing.left_thb
                           ? "w-fit rounded-full bg-rose-500 px-1.5 py-0.5 font-semibold text-white"
                           : "text-white/70"
                       }`}
                     >
                       {cartCount === 0
                         ? `เลือกสินค้าได้ถึง ฿${baht(shop.standing.left_thb)}`
-                        : subtotal > shop.standing.left_thb
-                          ? `เกินวงเงิน ฿${baht(subtotal - shop.standing.left_thb)}`
-                          : `เหลืออีก ฿${baht(shop.standing.left_thb - subtotal)} · แตะเพื่อดูตะกร้า`}
+                        : capUsed > shop.standing.left_thb
+                          ? `เกินวงเงิน ฿${baht(capUsed - shop.standing.left_thb)}`
+                          : `เหลืออีก ฿${baht(shop.standing.left_thb - capUsed)} · แตะเพื่อดูตะกร้า`}
                     </span>
                   </span>
                 </button>
@@ -1691,7 +1707,7 @@ export default function StaffShop() {
                   disabled={
                     busy ||
                     cartCount === 0 ||
-                    subtotal > shop.standing.left_thb ||
+                    capUsed > shop.standing.left_thb ||
                     !shop.shipTo ||
                     !shop.shipTo.hasPhone
                   }

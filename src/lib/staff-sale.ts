@@ -36,6 +36,8 @@ export type StaffShopVariant = {
   mine: number;
   /** False when Shopify has none of this variant left. */
   in_stock: boolean;
+  /** False: paid in full, but not counted against the allowance. */
+  counts_toward_cap: boolean;
 };
 
 /**
@@ -100,11 +102,13 @@ export type StaffRoundItem = {
   sold_qty: number;
   reserved_qty: number;
   enabled: boolean;
+  /** False: paid at the staff price but not charged against the allowance. */
+  counts_toward_cap: boolean;
 };
 
 export const ITEM_COLUMNS =
   "id,round_id,variant_id,product_slug,collection_handle,regular_price,rp_price,staff_price," +
-  "per_person_limit,total_quota,sold_qty,reserved_qty,enabled";
+  "per_person_limit,total_quota,sold_qty,reserved_qty,enabled,counts_toward_cap";
 
 /** The markup sitting on top of RP in the catalogue price. */
 export const RP_MARKUP = 1.1;

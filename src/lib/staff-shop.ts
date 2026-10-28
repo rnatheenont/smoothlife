@@ -275,6 +275,7 @@ export async function staffShopItems(
       left: inStock ? (remaining.length ? Math.min(...remaining) : null) : 0,
       mine: held.get(i.variant_id) ?? 0,
       in_stock: inStock,
+      counts_toward_cap: i.counts_toward_cap !== false,
     });
   }
   return out;
