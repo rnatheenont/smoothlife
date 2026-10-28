@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   AlertTriangle,
   BadgeCheck,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Mail,
   Check,
@@ -85,6 +87,135 @@ const CATEGORY_TH = new Map(categories.map((c) => [c.slug as string, c.nameTh]))
  *  either shape, and extra spaces are not differences anybody meant. */
 function brandKey(brand: string): string {
   return brand.toLowerCase().replace(/[’']/g, "").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * The brand row, with a way to reach the end of it.
+ *
+ * Nine brands do not fit the card on a laptop, and the one that falls off
+ * the right edge is half-drawn rather than hidden — which reads as a broken
+ * tab, not as a row that keeps going. A mouse has no way to push it: the
+ * row scrolls, but only a trackpad swipe or a shift-wheel does that, and
+ * neither is something to expect of the person using it.
+ *
+ * The arrows appear only on the side there is something left to see, over a
+ * fade so the tabs passing under them look tucked away rather than cut. They
+ * sit outside the accessibility tree on purpose: every tab is a focusable
+ * button that the browser scrolls into view by itself, so a second set of
+ * controls would only be two more stops on the way to the grid.
+ */
+function BrandTabs({
+  tabs,
+  current,
+  onPick,
+}: {
+  tabs: { key: string; label: string; count: number }[];
+  current: string;
+  onPick: (key: string) => void;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [edge, setEdge] = useState({ left: false, right: false });
+
+  const measure = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    // A pixel of slack: scrollLeft is fractional once the page is zoomed or
+    // the display is not at 1x, so the exact comparison never comes true and
+    // the arrow stays lit over a row that has nowhere left to go.
+    const max = el.scrollWidth - el.clientWidth;
+    setEdge({ left: el.scrollLeft > 1, right: el.scrollLeft < max - 1 });
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    measure();
+    // Width is what decides whether the row overflows, so the card being
+    // resized has to be noticed; a changed tab list is caught by the dep,
+    // since the row itself keeps its size while its contents change.
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measure, tabs.length]);
+
+  const nudge = (dir: -1 | 1) => {
+    const el = ref.current;
+    if (!el) return;
+    // Not a whole width: leaving a tab of the old view on screen is what
+    // tells the eye the row moved rather than jumped somewhere else.
+    el.scrollBy({ left: dir * Math.round(el.clientWidth * 0.8), behavior: "smooth" });
+  };
+
+  const arrow =
+    "absolute top-1.5 z-10 grid h-8 w-8 place-items-center rounded-full bg-white text-brand-ink " +
+    "shadow-sm ring-1 ring-surface-line transition-colors hover:bg-surface-soft";
+  // h-11, not inset-y-0: the fade is the height of the tabs so that the
+  // row's own bottom rule runs under it unbroken.
+  const fade = "pointer-events-none absolute top-0 h-11 w-20";
+
+  return (
+    <div className="relative border-b border-surface-line">
+      <div
+        ref={ref}
+        onScroll={measure}
+        role="tablist"
+        aria-label="แบรนด์"
+        // No -mx bleed any more: inside a rounded card an overflow-x-auto
+        // child that runs to the edge draws its square corners straight
+        // through the curve.
+        className="scrollbar-none flex gap-1 overflow-x-auto"
+      >
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={current === t.key}
+            onClick={() => onPick(t.key)}
+            // h-11: these are how the round is filtered, and a 36px target
+            // is below what a thumb is asked to find.
+            className={`flex h-11 shrink-0 items-center whitespace-nowrap border-b-2 px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 ${
+              current === t.key
+                ? "border-brand-action font-bold text-brand-ink"
+                : "border-transparent font-medium text-slate-500 hover:text-brand-ink"
+            }`}
+          >
+            {t.label}
+            <span className="ml-1 text-xs text-slate-400">({t.count})</span>
+          </button>
+        ))}
+      </div>
+
+      {edge.left && (
+        <>
+          <div aria-hidden className={`${fade} left-0 bg-gradient-to-r from-white via-white to-transparent`} />
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            onClick={() => nudge(-1)}
+            className={`${arrow} left-0`}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        </>
+      )}
+
+      {edge.right && (
+        <>
+          <div aria-hidden className={`${fade} right-0 bg-gradient-to-l from-white via-white to-transparent`} />
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            onClick={() => nudge(1)}
+            className={`${arrow} right-0`}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -850,49 +981,23 @@ export default function StaffShop() {
                   )}
                 </div>
 
-                {/* One scrolling row rather than a wrapped block: six
-                    categories at 375px wrap into three lines of chips, which
-                    reads as a paragraph of buttons. */}
+                {/* Counted in products, because products are what the grid
+                    shows: three colours of one toothbrush are one card, and a
+                    tab promising 387 next to 240 cards is a tab that looks
+                    broken. */}
                 {!q && brands.length > 1 && (
-                  <div
-                    role="tablist"
-                    aria-label="แบรนด์"
-                    // No -mx bleed any more: inside a rounded card an
-                    // overflow-x-auto child that runs to the edge draws its
-                    // square corners straight through the curve.
-                    className="scrollbar-none flex gap-1 overflow-x-auto border-b border-surface-line"
-                  >
-                    {/* Counted in products, because products are what the
-                        grid shows: three colours of one toothbrush are one
-                        card, and a tab promising 387 next to 240 cards is a
-                        tab that looks broken. */}
-                    {(
-                      [["all", "ทั้งหมด", new Set(inCategory.map((i) => i.product_slug)).size]] as [
-                        string,
-                        string,
-                        number,
-                      ][]
-                    )
-                      .concat(brands.map((b) => [b.key, b.name, b.count]))
-                      .map(([key, label, count]) => (
-                        <button
-                          key={key}
-                          role="tab"
-                          aria-selected={brand === key}
-                          onClick={() => setBrand(key)}
-                          // h-11: these are how the round is filtered, and a
-                          // 36px target is below what a thumb is asked to find.
-                          className={`flex h-11 shrink-0 items-center whitespace-nowrap border-b-2 px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 ${
-                            brand === key
-                              ? "border-brand-action font-bold text-brand-ink"
-                              : "border-transparent font-medium text-slate-500 hover:text-brand-ink"
-                          }`}
-                        >
-                          {label}
-                          <span className="ml-1 text-xs text-slate-400">({count})</span>
-                        </button>
-                      ))}
-                  </div>
+                  <BrandTabs
+                    current={brand}
+                    onPick={setBrand}
+                    tabs={[
+                      {
+                        key: "all",
+                        label: "ทั้งหมด",
+                        count: new Set(inCategory.map((i) => i.product_slug)).size,
+                      },
+                      ...brands.map((b) => ({ key: b.key, label: b.name, count: b.count })),
+                    ]}
+                  />
                 )}
 
                 {q && (
