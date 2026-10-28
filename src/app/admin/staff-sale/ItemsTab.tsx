@@ -80,7 +80,7 @@ export default function ItemsTab({
   // "ortho 6580" finds the row that "ortho" and "6580" both appear in,
   // whichever order they were typed.
   const words = rowQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const shown =
+  const matched =
     words.length === 0
       ? items
       : items.filter((i) => {
@@ -90,6 +90,23 @@ export default function ItemsTab({
             .toLowerCase();
           return words.every((w) => hay.includes(w));
         });
+
+  // Ordered by what is on the screen, not by what is in the database.
+  //
+  // The rows arrive sorted by slug, which was fine while the slug was the
+  // only thing a row showed. Now that it shows a name, slug order reads as
+  // no order at all — "6580 Ortho Toothbrush" landing above "Smooth E"
+  // because its slug starts with a digit. Brand, then name, then size, so
+  // the five toothbrushes stay together and in a sensible order inside the
+  // group. Thai collation, because half these names are Thai.
+  const collator = new Intl.Collator("th", { numeric: true, sensitivity: "base" });
+  const shown = [...matched].sort((a, b) => {
+    const byBrand = collator.compare(a.brand ?? "", b.brand ?? "");
+    if (byBrand !== 0) return byBrand;
+    const byName = collator.compare(a.name ?? a.product_slug, b.name ?? b.product_slug);
+    if (byName !== 0) return byName;
+    return collator.compare(a.size ?? "", b.size ?? "");
+  });
 
   const loadCollections = useCallback(async () => {
     try {
@@ -437,7 +454,21 @@ export default function ItemsTab({
         )}
 
         <div className={`${adminTable.scroll} max-h-[560px]`}>
-          <table className={adminTable.table}>
+          <table className={`${adminTable.table} min-w-[940px] table-fixed`}>
+            {/* Fixed widths, because the browser's own sizing gave the
+                product column whatever the three price columns did not want
+                and then wrapped every name onto four lines. The product name
+                is the one thing here that benefits from room; the prices are
+                all four digits or fewer and never need more than their box. */}
+            <colgroup>
+              <col className="w-[34%]" />
+              <col className="w-[13%]" />
+              <col className="w-[13%]" />
+              <col className="w-[13%]" />
+              <col className="w-[9%]" />
+              <col className="w-[9%]" />
+              <col className="w-[9%]" />
+            </colgroup>
             <thead className={adminTable.thead}>
               <tr>
                 <th>สินค้า</th>
@@ -535,7 +566,7 @@ export default function ItemsTab({
                         inputMode="decimal"
                         placeholder={baht(derivedRp)}
                         aria-label={`ราคา RP ของ ${item.name ?? item.product_slug}`}
-                        className="w-24 rounded-xl2 border border-slate-200 px-2 py-1 font-mono text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                        className="w-full max-w-[120px] rounded-xl2 border border-slate-200 px-2 py-1 font-mono text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                       />
                     </td>
                     <td className={adminTable.mono}>{baht(item.regular_price)}</td>
@@ -553,7 +584,7 @@ export default function ItemsTab({
                         }
                         inputMode="decimal"
                         aria-label={`ราคาพนักงานของ ${item.name ?? item.product_slug}`}
-                        className="w-24 rounded-xl2 border border-slate-200 px-2 py-1 font-mono text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                        className="w-full max-w-[120px] rounded-xl2 border border-slate-200 px-2 py-1 font-mono text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                       />
                     </td>
                     <td className={adminTable.cell}>
