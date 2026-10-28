@@ -86,11 +86,15 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
   return (
     <div className="container-page py-5 md:py-8">
       {/* Phones and tablets only: the banner above carries this row from lg.
-          Here it is sticky under the app bar, which it can only be inside
-          the container it scrolls with. */}
-      <div className="lg:hidden">
-        <CategoryCircles current={data.params} />
-      </div>
+          The lg:hidden goes on the row itself rather than on a wrapper —
+          a wrapper is a box exactly the row's own height, and anything
+          positioned inside one has nowhere to travel. */}
+      <CategoryCircles current={data.params} className="lg:hidden" />
+      {/* The same row again, shrunk and pinned under the app bar, from the
+          moment the one above goes off the top. Every width: the banner's
+          copy scrolls away on desktop too, and 664 products is a long way to
+          come back from. */}
+      <CategoryCircles current={data.params} mode="overlay" />
       <div className="flex flex-col gap-6">
         <div className="min-w-0 flex-1">
           {/* One toolbar: what narrows the list on the left, how it is
