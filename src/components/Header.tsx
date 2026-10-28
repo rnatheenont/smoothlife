@@ -356,14 +356,20 @@ export default function Header({
             )
           )}
           {staff.available && (
-            <Link href="/staff" className="flex items-center gap-2 transition-colors hover:text-brand-800">
-              <ShoppingBag size={15} className="text-brand-800" />
+            // A button rather than another word in the row: this one is not
+            // a place everyone can go, it is a thing a few people are
+            // entitled to for a few more days. Reading like the links beside
+            // it made it the easiest item in the bar to miss.
+            <Link
+              href="/staff"
+              className="flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 font-semibold text-brand-800 transition-colors hover:border-brand-teal hover:bg-brand-100"
+            >
               {t("ร้านพนักงาน", "Staff Store")}
               {staff.ends_at && (
                 <Countdown
                   to={staff.ends_at}
                   daysOnly
-                  className="whitespace-nowrap rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-800"
+                  className="whitespace-nowrap rounded-full bg-white/80 px-2 py-0.5 text-xs font-semibold text-brand-800"
                 />
               )}
             </Link>

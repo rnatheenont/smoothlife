@@ -13,7 +13,6 @@ import {
   Plus,
   Search,
   ShieldCheck,
-  ShoppingBag,
   ShoppingCart,
   Wallet,
 } from "lucide-react";
@@ -504,12 +503,11 @@ export default function StaffShop() {
   return (
     <div className="container-page py-6 md:py-10">
       <header className="mb-6">
-        <h1 className="flex items-center gap-2 text-2xl font-bold md:text-3xl">
-          <ShoppingBag className="h-6 w-6 text-brand-700" aria-hidden />
-          {/* The shop's own gradient, the one on its buttons. A span rather
-              than the heading, because background-clip: text makes the box
-              it is on transparent — on the h1 that would take the icon's
-              line box with it. */}
+        <h1 className="text-2xl font-bold md:text-3xl">
+          {/* The shop's own gradient, the one on its buttons. Still a span
+              rather than the heading itself: background-clip: text makes the
+              box it sits on transparent, and the h1 is what the page layout
+              measures. */}
           <span className="brand-text-gradient">ร้านพนักงาน</span>
         </h1>
         {data.state === "shop" && (
