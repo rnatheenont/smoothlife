@@ -362,7 +362,12 @@ export default function Header({
             // it made it the easiest item in the bar to miss.
             <Link
               href="/staff"
-              className="flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 font-semibold text-brand-800 transition-colors hover:border-brand-teal hover:bg-brand-100"
+              // No colour and no weight of its own: the row sets text-sm
+              // font-medium text-slate-700 and every other item takes it. A
+              // pill that also shouts in green reads as an advert rather
+              // than as one of the places you can go — the border and the
+              // day count are enough to set it apart.
+              className="flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 transition-colors hover:border-brand-teal hover:bg-brand-100 hover:text-brand-800"
             >
               {t("ร้านพนักงาน", "Staff Store")}
               {staff.ends_at && (
