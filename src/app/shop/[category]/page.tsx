@@ -5,6 +5,8 @@ import { filterProducts } from "@/lib/filter-products";
 import { categories} from "@/data/categories";
 import { categoryImage } from "@/lib/category-image";
 import ProductCard from "@/components/ProductCard";
+import CategoryCircles from "@/components/shop/CategoryCircles";
+import ShopHero from "@/components/shop/ShopHero";
 import ShopFilters from "@/components/ShopFilters";
 import SortMenu from "@/components/shop/SortMenu";
 import CategoryChips from "@/components/CategoryChips";
@@ -73,19 +75,27 @@ async function CategoryPageWritten({
   const breadcrumbItems = [{ label: "หน้าแรก", href: "/" }, { label: "ช้อป", href: "/shop" }, { label: categoryInfo.nameTh }];
 
   return (
-    <div className="container-page pt-3 pb-8 md:py-10">
+    <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd(breadcrumbItems)) }} />
+      {/* The same banner /shop wears — see sections/category_header. A
+          category page is the shop with one filter already on, so arriving
+          here from ช้อป should not feel like arriving at a different site. */}
+      <ShopHero
+        title={categoryInfo.nameTh}
+        subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
+        count={items.length}
+      >
+        <CategoryCircles current={current} />
+      </ShopHero>
+
+      <div className="container-page pt-3 pb-8 md:py-10">
       <div className="flex items-center gap-3 mb-4">
         <BackButton fallbackHref="/shop" />
         <Breadcrumb items={breadcrumbItems} />
       </div>
-      <CategoryChips current={current} />
-      <div className="mb-6 flex items-end justify-between gap-3">
-        <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">{categoryInfo.nameTh}</h1>
-        <span className="text-xs md:text-sm font-medium text-brand-800 bg-brand-gradient-soft rounded-full px-3 py-1 shrink-0">
-          {items.length} รายการ
-        </span>
-      </div>
+      {/* Phones and tablets: the banner carries the row from lg. */}
+      <CategoryCircles current={current} className="lg:hidden" />
+      <CategoryCircles current={current} mode="overlay" />
       {ADVISOR_ENTRY[params.category] && (
         <Link
           href={ADVISOR_ENTRY[params.category].href}
@@ -120,7 +130,7 @@ async function CategoryPageWritten({
           {items.length === 0 ? (
             <div className="text-center py-20 text-slate-500">ไม่พบสินค้าในหมวดนี้</div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">
               {items.map((p) => (
                 <ProductCard key={p.slug} product={toCardData(p)} />
               ))}
@@ -128,7 +138,8 @@ async function CategoryPageWritten({
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

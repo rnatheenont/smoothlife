@@ -1,4 +1,6 @@
 import { z } from "zod";
+import CategoryCircles from "@/components/shop/CategoryCircles";
+import ShopHero from "@/components/shop/ShopHero";
 import { categories } from "@/data/categories";
 import { filterProducts, type ShopSearchParams } from "@/lib/filter-products";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
@@ -9,12 +11,18 @@ import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 // the filters the shopper has already applied, so ticking a brand changes it.
 // A number typed into a heading would be the size of the category on the day
 // somebody typed it.
+//
+// The same banner /shop wears, and not a smaller cousin of it. A category
+// page is the shop with one filter already on, so arriving at ดูแลเส้นผม
+// from ช้อป should not feel like arriving at a different site — same sky,
+// same heading weight, same row of categories to leave by.
 
 const schema = z.object({
   countSuffix: z.string().max(40).default(""),
+  subtitle: z.string().max(200).default("ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"),
 });
 
-type Data = { title: string; count: number };
+type Data = { title: string; count: number; params: ShopSearchParams };
 
 async function load(
   _settings: z.output<typeof schema>,
@@ -24,23 +32,19 @@ async function load(
   const c = categories.find((x) => x.slug === slug);
   if (!c) return null;
   const current = { ...(ctx.query ?? {}), category: c.slug } as ShopSearchParams;
-  return { title: c.nameTh, count: filterProducts(current).length };
+  return { title: c.nameTh, count: filterProducts(current).length, params: current };
 }
 
 function Component({ settings, data }: SectionProps<z.output<typeof schema>, Data | null>) {
   if (!data) return null;
 
+  // countSuffix stays in the schema and goes unread: the banner says
+  // "N รายการ" itself, and a document that still carries the old setting
+  // should keep validating rather than fail on a field nobody can see.
   return (
-    <section className="container-page">
-      <div className="mb-6 flex items-end justify-between gap-3">
-        <h1 className="text-2xl font-bold text-brand-ink md:text-3xl">{data.title}</h1>
-        {settings.countSuffix && (
-          <span className="shrink-0 rounded-full bg-brand-gradient-soft px-3 py-1 text-xs font-medium text-brand-800 md:text-sm">
-            {data.count} {settings.countSuffix}
-          </span>
-        )}
-      </div>
-    </section>
+    <ShopHero title={data.title} subtitle={settings.subtitle} count={data.count}>
+      <CategoryCircles current={data.params} />
+    </ShopHero>
   );
 }
 
