@@ -478,8 +478,8 @@ export default function ItemsTab({
             <thead className={adminTable.thead}>
               <tr>
                 <th>สินค้า</th>
-                <th>ราคา RP</th>
                 <th>ราคา RP +{Math.round((RP_MARKUP - 1) * 100)}%</th>
+                <th>ราคา RP</th>
                 <th>ราคาพนักงาน</th>
                 <th>ส่วนลด</th>
                 <th>ขาย/จอง</th>
@@ -551,12 +551,14 @@ export default function ItemsTab({
                         </div>
                       </div>
                     </td>
-                    {/* RP first: it is the number the staff price is worked
-                        out from, so it reads left to right in the order the
-                        arithmetic happens. Empty means nobody has typed one
-                        and the figure underneath is the catalogue price with
-                        the 10% taken back off — shown as a placeholder, so
-                        "derived" and "decided" never look the same. */}
+                    {/* The catalogue price first, then what is underneath
+                        it: the price list is read against the number the
+                        shop already sells at, and the RP is the step taken
+                        off it. Empty RP means nobody has typed one, and the
+                        placeholder is the catalogue price with the 10% taken
+                        back off — so "derived" and "decided" never look the
+                        same. */}
+                    <td className={adminTable.mono}>{baht(item.regular_price)}</td>
                     <td className={adminTable.cell}>
                       <input
                         value={d?.rp_price ?? (item.rp_price == null ? "" : String(item.rp_price))}
@@ -579,7 +581,6 @@ export default function ItemsTab({
                         className="w-full max-w-[120px] rounded-xl2 border border-slate-200 px-2 py-1 font-mono text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                       />
                     </td>
-                    <td className={adminTable.mono}>{baht(item.regular_price)}</td>
                     <td className={adminTable.cell}>
                       <input
                         value={d?.staff_price ?? String(item.staff_price)}
