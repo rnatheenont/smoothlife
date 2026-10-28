@@ -30,7 +30,16 @@ const TEX_H = 256;
  * a name is drawn from and that is the end of their business; on the stage
  * every winner looks like every other winner.
  */
-export const ACCENT = "#f5c451";
+export const ACCENT = "#c9b8ff";
+
+/**
+ * The same colour, for paper rather than for a lit panel.
+ *
+ * ACCENT is read off a screen that is almost black, where pale lavender is
+ * bright. On the white card beside the stage it is a tint, and white numerals
+ * sitting on it cannot be read at all.
+ */
+export const ACCENT_UI = "#6c5ce0";
 
 export type FaceContent = {
   name: string;
@@ -59,13 +68,13 @@ export function paintFace(canvas: HTMLCanvasElement, face: FaceContent) {
   // made of something under the spotlights rather than as a floating word.
   const plate = ctx.createLinearGradient(0, 0, 0, TEX_H);
   if (face.winner) {
-    plate.addColorStop(0, "#2a1d05");
-    plate.addColorStop(0.5, "#120c02");
-    plate.addColorStop(1, "#2a1d05");
+    plate.addColorStop(0, "#2b2360");
+    plate.addColorStop(0.5, "#140e33");
+    plate.addColorStop(1, "#2b2360");
   } else {
-    plate.addColorStop(0, "#15161d");
-    plate.addColorStop(0.5, "#0a0b10");
-    plate.addColorStop(1, "#15161d");
+    plate.addColorStop(0, "#171f3f");
+    plate.addColorStop(0.5, "#0a0f24");
+    plate.addColorStop(1, "#171f3f");
   }
   ctx.fillStyle = plate;
   ctx.fillRect(0, 0, TEX_W, TEX_H);
@@ -86,7 +95,7 @@ export function paintFace(canvas: HTMLCanvasElement, face: FaceContent) {
     ctx.shadowColor = accent;
     ctx.shadowBlur = 34;
   }
-  ctx.fillStyle = face.winner ? "#fff8e6" : "#e8eaf2";
+  ctx.fillStyle = face.winner ? "#ffffff" : "#dde4f5";
   ctx.fillText(name, TEX_W / 2, TEX_H / 2);
   ctx.shadowBlur = 0;
 }

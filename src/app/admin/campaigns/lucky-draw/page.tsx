@@ -7,7 +7,7 @@ import { ArrowLeft, Play, RotateCcw, SkipForward, Sparkles, TriangleAlert } from
 import { Button, Spinner } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import LuckyDrawStage from "@/components/admin/lucky-draw/LuckyDrawStage";
-import { ACCENT } from "@/components/admin/lucky-draw/faces";
+import { ACCENT_UI } from "@/components/admin/lucky-draw/faces";
 import {
   LUCKY_FAN_PRIZES,
   drawLuckyFan,
@@ -176,7 +176,7 @@ export default function LuckyDrawPreviewPage() {
             {/* The name is read off the DOM, not off the drum: the panel is a
                 texture on a curved-looking surface under coloured light, and
                 the person's own name should be crisp somewhere. */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 bg-gradient-to-t from-black/85 to-transparent p-4 md:p-6">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 bg-gradient-to-t from-[#0a0f24]/92 via-[#0a0f24]/55 to-transparent p-4 md:p-6">
               <div className="min-w-0">
                 {nowShowing && !spinning ? (
                   <>
@@ -255,7 +255,7 @@ export default function LuckyDrawPreviewPage() {
                     >
                       <span
                         className="grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white"
-                        style={{ background: w ? ACCENT : "#cbd5e1" }}
+                        style={{ background: w ? ACCENT_UI : "#cbd5e1" }}
                       >
                         {i + 1}
                       </span>

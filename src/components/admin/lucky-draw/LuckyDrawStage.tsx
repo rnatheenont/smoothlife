@@ -4,6 +4,17 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import type { Entrant, Winner } from "@/lib/lucky-draw";
 import {
+  WINTER,
+  auroraRibbons,
+  mountainRange,
+  pineForest,
+  skyBackdrop,
+  snowGround,
+  snowfall,
+  stepSnowfall,
+  type Snowfall,
+} from "./winter";
+import {
   ACCENT,
   DRUM_RADIUS,
   FACE_COUNT,
@@ -45,6 +56,8 @@ type Scene = {
   faces: { mesh: THREE.Mesh; canvas: HTMLCanvasElement; texture: THREE.CanvasTexture }[];
   rims: THREE.Mesh[];
   stars: THREE.Points;
+  snow: Snowfall;
+  aurora: THREE.Group;
   glow: THREE.Sprite;
   flash: THREE.Sprite;
   confetti: THREE.Points;
@@ -107,14 +120,22 @@ export default function LuckyDrawStage({
     if (!mount) return;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reducedMotionSnow = () => (reduced ? 160 : 700);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(mount.clientWidth, mount.clientHeight);
-    renderer.setClearColor(0x05060b, 1);
+    renderer.setClearColor(WINTER.skyTop, 1);
     mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x05060b, 14, 30);
+    // Fogged in the sky's own colour and only from well behind the drum, so
+    // the treeline recedes without the machine picking up a haze.
+    scene.fog = new THREE.Fog(new THREE.Color(WINTER.skyMid).getHex(), 24, 54);
+
+    // The night, back to front: sky, aurora, ridge, snow, trees.
+    const aurora = auroraRibbons();
+    scene.add(skyBackdrop(), aurora, mountainRange(), snowGround(), pineForest());
+    const snow = snowfall(reducedMotionSnow());
     const camera = new THREE.PerspectiveCamera(42, mount.clientWidth / mount.clientHeight, 0.1, 120);
     camera.position.set(0, 0.3, 13.4);
     camera.lookAt(0, 0, 0);
@@ -153,7 +174,7 @@ export default function LuckyDrawStage({
     // names through the near side's gaps.
     const core = new THREE.Mesh(
       new THREE.CylinderGeometry(DRUM_RADIUS * 0.97, DRUM_RADIUS * 0.97, FACE_WIDTH * 0.995, 48),
-      new THREE.MeshStandardMaterial({ color: 0x07080d, roughness: 0.9, metalness: 0.1 }),
+      new THREE.MeshStandardMaterial({ color: 0x0a1026, roughness: 0.9, metalness: 0.1 }),
     );
     core.rotation.z = Math.PI / 2;
     drum.add(core);
@@ -165,10 +186,12 @@ export default function LuckyDrawStage({
       const rim = new THREE.Mesh(
         new THREE.TorusGeometry(DRUM_RADIUS * 1.02, 0.17, 20, 72),
         new THREE.MeshStandardMaterial({
-          color: 0xd9a441,
-          roughness: 0.22,
+          // Polished ice rather than gold: the campaign's winter, and a warm
+          // metal in this sky reads as a prop from another set.
+          color: 0xe6edf8,
+          roughness: 0.18,
           metalness: 1,
-          emissive: new THREE.Color(0x3a2708),
+          emissive: new THREE.Color(0x1b2140),
         }),
       );
       rim.position.x = x;
@@ -179,11 +202,13 @@ export default function LuckyDrawStage({
     scene.add(drum);
 
     // --- light ----------------------------------------------------------
-    scene.add(new THREE.AmbientLight(0x6070a0, 0.55));
-    const key = new THREE.SpotLight(0xffd98a, 180, 26, 0.55, 0.55, 1.6);
-    key.position.set(-5.5, 6.5, 7.5);
-    const fill = new THREE.SpotLight(0x8ab6ff, 120, 26, 0.6, 0.6, 1.6);
-    fill.position.set(6, -4.5, 6.5);
+    scene.add(new THREE.AmbientLight(0x8a93c8, 0.7));
+    // Moonlight from the left, aurora from the upper right — the two light
+    // sources the artwork already has.
+    const key = new THREE.SpotLight(0xdfe7ff, 190, 30, 0.55, 0.55, 1.6);
+    key.position.set(-6, 6.5, 8);
+    const fill = new THREE.SpotLight(0x7ff0d0, 110, 30, 0.6, 0.6, 1.6);
+    fill.position.set(7, 5.5, 5.5);
     const rimLight = new THREE.DirectionalLight(0xffffff, 0.5);
     rimLight.position.set(0, 0, -8);
     scene.add(key, key.target, fill, fill.target, rimLight);
@@ -191,7 +216,7 @@ export default function LuckyDrawStage({
     // --- glow, flash, stars, confetti ------------------------------------
     const glow = new THREE.Sprite(
       new THREE.SpriteMaterial({
-        map: glowTexture("#ffc859"),
+        map: glowTexture(WINTER.glow),
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         opacity: 0.4,
@@ -231,7 +256,7 @@ export default function LuckyDrawStage({
       starGeo,
       new THREE.PointsMaterial({ color: 0x9fb4ff, size: 0.09, sizeAttenuation: true, transparent: true, opacity: 0.75 }),
     );
-    scene.add(stars);
+    scene.add(stars, snow.points);
 
     const confCount = reduced ? 0 : 420;
     const confPos = new Float32Array(Math.max(1, confCount) * 3);
@@ -259,6 +284,8 @@ export default function LuckyDrawStage({
       faces,
       rims,
       stars,
+      snow,
+      aurora,
       glow,
       flash,
       confetti,
@@ -313,6 +340,14 @@ export default function LuckyDrawStage({
 
       s.stars.rotation.y += dt * 0.012;
       s.stars.rotation.x += dt * 0.004;
+      stepSnowfall(s.snow, dt, now);
+      // The aurora breathes rather than loops: three ribbons on different
+      // periods never line up, so it does not read as an animation.
+      s.aurora.children.forEach((ribbon, i) => {
+        const mat = (ribbon as THREE.Mesh).material as THREE.MeshBasicMaterial;
+        mat.opacity = 0.3 + Math.sin(now / (3400 + i * 900) + i) * 0.16;
+        ribbon.position.x += Math.sin(now / (6000 + i * 1500)) * dt * 0.6;
+      });
       for (const rim of s.rims) rim.rotation.z += dt * 0.25;
 
       if (s.phase !== "spinning" && s.landedOnce) {
@@ -343,9 +378,11 @@ export default function LuckyDrawStage({
           if (confCount > 0) {
             const pos = s.confetti.geometry.getAttribute("position") as THREE.BufferAttribute;
             const col = s.confetti.geometry.getAttribute("color") as THREE.BufferAttribute;
-            const gold = new THREE.Color(0xffc24d);
-            const rose = new THREE.Color(0xff8fc7);
-            const sky = new THREE.Color(0x8fd4ff);
+            // Snow thrown up, not party confetti: white, ice and the
+            // aurora's own green.
+            const white = new THREE.Color(0xffffff);
+            const ice = new THREE.Color(0xc9dbff);
+            const mint = new THREE.Color(0x9ff0dc);
             for (let i = 0; i < confCount; i++) {
               pos.setXYZ(i, (Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 1.2, 3.4);
               const speed = 3.5 + Math.random() * 7;
@@ -354,7 +391,7 @@ export default function LuckyDrawStage({
               s.confettiVel[i * 3] = Math.cos(a) * speed;
               s.confettiVel[i * 3 + 1] = Math.sin(a) * speed * 0.8 + up * 4;
               s.confettiVel[i * 3 + 2] = (Math.random() - 0.3) * 3;
-              const c = i % 3 === 0 ? gold : i % 3 === 1 ? rose : sky;
+              const c = i % 3 === 0 ? white : i % 3 === 1 ? ice : mint;
               col.setXYZ(i, c.r, c.g, c.b);
             }
             pos.needsUpdate = true;
