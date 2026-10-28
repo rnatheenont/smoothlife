@@ -61,24 +61,6 @@ async function ConcernDetailWritten({ concern }: { concern: (typeof concerns)[nu
         </div>
       </div>
 
-      <div className="rounded-xl2 bg-brand-gradient-soft p-5 mb-8">
-        <h2 className="font-bold text-brand-ink mb-2">Routine แนะนำสำหรับปัญหานี้</h2>
-        <div className="grid sm:grid-cols-3 gap-3 text-sm text-slate-600">
-          <div className="rounded-lg bg-white p-3">
-            <span className="text-xs font-bold text-brand-800">ขั้นที่ 1</span>
-            <p className="mt-1">ทำความสะอาดผิวด้วยผลิตภัณฑ์อ่อนโยน</p>
-          </div>
-          <div className="rounded-lg bg-white p-3">
-            <span className="text-xs font-bold text-brand-800">ขั้นที่ 2</span>
-            <p className="mt-1">ใช้เซรั่มหรือทรีทเมนต์เฉพาะจุด</p>
-          </div>
-          <div className="rounded-lg bg-white p-3">
-            <span className="text-xs font-bold text-brand-800">ขั้นที่ 3</span>
-            <p className="mt-1">ปิดท้ายด้วยมอยส์เจอร์ไรเซอร์และกันแดด</p>
-          </div>
-        </div>
-      </div>
-
       <h2 className="font-bold text-brand-ink mb-4">สินค้าแนะนำ ({items.length})</h2>
       {items.length === 0 ? (
         <p className="text-slate-500 text-sm">เร็วๆ นี้จะมีสินค้าเพิ่มเติมสำหรับหมวดนี้</p>

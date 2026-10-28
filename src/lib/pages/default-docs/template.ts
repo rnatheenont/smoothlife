@@ -9,10 +9,10 @@ import { doc } from "./build.ts";
 // every concern page, every collection page, every category page. A mistake
 // here is not one page looking wrong, it is a section of the shop.
 //
-// Which is also the reason the first of them is the concern page: it is the
-// one with something genuinely worth editing on it (the recommended routine,
-// which today is three sentences hard-coded for every skin concern there is)
-// and the one with the fewest moving parts.
+// The first of them was the concern page, the one with the fewest moving
+// parts. Its recommended routine — three sentences, the same for every skin
+// concern — was taken off by request on 28 Oct 2026; the routine_steps section
+// still exists for anyone who wants to put a real one back in the editor.
 
 /** The item's own hub trail, as data only. None of these pages drew a visible
  *  breadcrumb row — they only declared the BreadcrumbList — so turning the row
@@ -23,18 +23,6 @@ const concern = (): PageDoc =>
   doc([
     trailData,
     { type: "entity_header", v: 1, settings: { height: "tall", showDescription: true } },
-    {
-      type: "routine_steps",
-      v: 1,
-      settings: {
-        heading: "Routine แนะนำสำหรับปัญหานี้",
-        steps: [
-          { label: "ขั้นที่ 1", body: "ทำความสะอาดผิวด้วยผลิตภัณฑ์อ่อนโยน" },
-          { label: "ขั้นที่ 2", body: "ใช้เซรั่มหรือทรีทเมนต์เฉพาะจุด" },
-          { label: "ขั้นที่ 3", body: "ปิดท้ายด้วยมอยส์เจอร์ไรเซอร์และกันแดด" },
-        ],
-      },
-    },
     {
       type: "concern_products",
       v: 1,
