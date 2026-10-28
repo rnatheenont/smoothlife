@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import Image from "next/image";
-import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { concerns, concernImage } from "@/data/categories";
+import { concerns, concernImage, concernImageSrcSet } from "@/data/categories";
 import { useInView, useTabVisible } from "@/lib/use-in-view";
 import ProductCard from "@/components/ProductCard";
 import type { ProductCardData } from "@/data/card";
@@ -163,15 +161,20 @@ export default function ConcernCoverflow({ byConcern }: { byConcern: Record<stri
               }}
               className="absolute left-1/2 top-1/2 block aspect-[6/5] w-[min(72vw,400px)] overflow-hidden rounded-[22px] bg-white shadow-card transition-[transform,opacity] duration-500 ease-out motion-reduce:transition-none md:w-[min(74vw,400px)]"
             >
-              {/* 560, not the 800 the catalogue URL carries: the tile is
-                  400px at its widest, and a phone draws it at about 270. The
-                  `sizes` below cannot help — images.unoptimized means one
-                  source and no srcset — so the width has to be chosen here. */}
-              <Image
-                src={shopifyImage(concernImage(c.slug), 560)}
+              {/* A plain img so srcset actually reaches the browser:
+                  images.unoptimized means next/image ships one source and
+                  drops `sizes`, and these six tiles were 800px each for a
+                  box drawn at 270 on a phone — 14.6 MB of decoded image on
+                  the busiest page of the site. See data/categories. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={concernImage(c.slug)}
+                srcSet={concernImageSrcSet(c.slug)}
+                sizes="(max-width: 768px) 72vw, 400px"
                 alt={c.nameTh}
-                fill
-                className="object-cover"
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover"
               />
               {/* What dims a side card. Inside the card, over the picture,
                   so the card itself never turns translucent. */}

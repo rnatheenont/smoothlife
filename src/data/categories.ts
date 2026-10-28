@@ -102,3 +102,22 @@ export const concerns: ConcernInfo[] = [
 export function concernImage(slug: Concern): string {
   return concerns.find((c) => c.slug === slug)?.image || "";
 }
+
+/**
+ * The same concern photo at three widths, for the browser to choose between.
+ *
+ * These are files in /public, not Shopify URLs, so nothing resizes them on
+ * request — the variants are generated next to the original and listed here.
+ * Squares at every width, like the original, so `object-cover` crops exactly
+ * the same way whichever one the browser takes and the picture never shifts.
+ *
+ * The 800px original stays: it is the hero on /concern/[slug] and the social
+ * share image, and both want the pixels. What it was not is six tiles on the
+ * home page at 2.4 MB of decoded image each.
+ */
+export function concernImageSrcSet(slug: Concern): string | undefined {
+  const base = concernImage(slug);
+  if (!base.endsWith(".jpg")) return undefined;
+  const stem = base.slice(0, -4);
+  return `${stem}-400.jpg 400w, ${stem}-560.jpg 560w, ${base} 800w`;
+}
