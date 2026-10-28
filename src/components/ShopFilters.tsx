@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { concerns } from "@/data/categories";
+import { categories, concerns } from "@/data/categories";
 import type { BrandOption } from "@/lib/brand-options";
 import { multi, PROMO_FILTERS, RATING_STEPS, type FilterCounts, ShopSearchParams } from "@/lib/shop-params";
 import { SlidersHorizontal, Check, X, ChevronDown, Search, Star } from "lucide-react";
@@ -441,6 +441,39 @@ export default function ShopFilters({
     </div>
   );
 
+  // Categories, as a menu rather than the row of circles that used to sit in
+  // the banner. The circles were seven targets across the top of every shop
+  // page, which is a lot of furniture for a choice most shoppers make once —
+  // and the other five ways of narrowing the list were already a row of
+  // pills ten pixels below them, saying the same kind of thing in a
+  // different shape.
+  //
+  // Single-select, unlike its neighbours: a product is in one category, so
+  // picking a second replaces the first rather than adding to it. "ทั้งหมด"
+  // is the way back out, which a pill with no options cannot be.
+  const categoryPanel = (
+    <div className="w-56">
+      <div className="flex flex-col gap-0.5">
+        {[{ slug: null as string | null, nameTh: "ทั้งหมด" }, ...categories].map((c) => {
+          const on = (current.category ?? null) === c.slug;
+          return (
+            <button
+              key={c.slug ?? "all"}
+              onClick={() => updateParam("category", c.slug)}
+              className={clsx(
+                "flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
+                on ? "bg-brand-gradient-soft font-semibold text-brand-800" : "text-slate-600 hover:bg-surface-soft",
+              )}
+            >
+              <span>{c.nameTh}</span>
+              {on && <Check size={14} className="shrink-0 text-brand-emerald" strokeWidth={3} />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   const concernPanel = (
     <div className="w-64">
       <div>
@@ -497,6 +530,30 @@ export default function ShopFilters({
 
   const mobileContent = (
     <div className="flex flex-col gap-7">
+      {/* First, and on the phone it has to be here at all: the circles that
+          used to carry the categories are gone, and this sheet is the only
+          thing a phone has. A category nobody can reach is a seventh of the
+          shop nobody can reach. */}
+      <div>
+        <h4 className="mb-3 text-xs font-bold text-slate-500">หมวดหมู่</h4>
+        <div className="flex flex-col rounded-xl border border-slate-200">
+          {[{ slug: null as string | null, nameTh: "ทั้งหมด" }, ...categories].map((c) => {
+            const on = (current.category ?? null) === c.slug;
+            return (
+              <button
+                key={c.slug ?? "all"}
+                onClick={() => updateParam("category", c.slug)}
+                className={`flex items-center justify-between border-b border-slate-50 px-3.5 py-3 text-left text-sm last:border-0 ${
+                  on ? "bg-brand-gradient-soft font-bold text-brand-800" : "text-brand-ink"
+                }`}
+              >
+                <span className="flex-1">{c.nameTh}</span>
+                {on && <Check size={16} className="shrink-0 text-brand-emerald" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div>
         <h4 className="text-xs font-bold text-slate-500 mb-3">แบรนด์ในเครือ · Life So Smooth</h4>
         <div className="flex flex-col rounded-xl border border-brand-emerald/30 mb-4">
@@ -598,6 +655,13 @@ export default function ShopFilters({
           its sheet — a row of five menus is a sidebar again on a 375px
           screen, only sideways. */}
       <div className="hidden flex-wrap items-center gap-2 lg:flex">
+        <FilterMenu
+          label="หมวดหมู่"
+          openMenu={openMenu}
+          setOpenMenu={setOpenMenu}
+          count={current.category ? 1 : 0}>
+          {categoryPanel}
+        </FilterMenu>
         <FilterMenu
           label="แบรนด์"
           openMenu={openMenu}

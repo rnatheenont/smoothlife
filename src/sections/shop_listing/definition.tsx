@@ -1,6 +1,5 @@
 import { z } from "zod";
 import ProductCard from "@/components/ProductCard";
-import CategoryCircles from "@/components/shop/CategoryCircles";
 import ShopFilters from "@/components/ShopFilters";
 import ActiveFilterChips from "@/components/shop/ActiveFilterChips";
 import SortSelect from "@/components/SortSelect";
@@ -29,8 +28,8 @@ import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 // one idea read top to bottom, and a page document that could drop the row
 // and keep the filters would be a shop you cannot leave a category from.
 //
-// The row was pinned under the app bar for a while and is not any more —
-// see the note in CategoryCircles.
+// The category row that used to head this page is gone: it is a dropdown in
+// the filter row now, beside the other five ways of narrowing the list.
 //
 // Locked and settingless: every number on this page is counted per request
 // against the filters already on, so there is nothing here to type in.
@@ -84,11 +83,6 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
 
   return (
     <div className="container-page py-5 md:py-8">
-      {/* Phones and tablets only: the banner above carries this row from lg.
-          The lg:hidden goes on the row itself rather than on a wrapper —
-          a wrapper is a box exactly the row's own height, and anything
-          positioned inside one has nowhere to travel. */}
-      <CategoryCircles current={data.params} className="lg:hidden" />
       <div className="flex flex-col gap-6">
         <div className="min-w-0 flex-1">
           {/* One toolbar: what narrows the list on the left, how it is

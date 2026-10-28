@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import SkyClouds from "@/components/SkyClouds";
 
 // The banner at the top of the shop: what you are looking at, how much of it
@@ -19,16 +18,12 @@ export default function ShopHero({
   title,
   subtitle,
   count,
-  children,
 }: {
   eyebrow?: string;
   title: string;
   subtitle: string;
   /** How many products the current filters leave, said under the heading. */
   count?: number;
-  /** The category row, which belongs inside the banner rather than under it
-   *  — from lg only; see where it is rendered. */
-  children?: ReactNode;
 }) {
   return (
     // The same sky the home page opens with. The banner used to be a flat
@@ -50,12 +45,6 @@ export default function ShopHero({
             {count.toLocaleString("th-TH")} รายการ
           </p>
         )}
-        {/* From lg only. Below that the same row is rendered under the
-            banner instead, because it pins there: it is `sticky` under the
-            app bar on a phone, and a sticky element cannot escape its
-            parent — this banner both ends early and clips its clouds with
-            overflow-hidden, either of which would kill the pinning. */}
-        {children && <div className="mt-5 hidden md:mt-6 lg:block">{children}</div>}
       </div>
     </section>
   );

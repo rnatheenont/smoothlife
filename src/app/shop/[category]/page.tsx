@@ -5,7 +5,6 @@ import { filterProducts } from "@/lib/filter-products";
 import { categories} from "@/data/categories";
 import { categoryImage } from "@/lib/category-image";
 import ProductCard from "@/components/ProductCard";
-import CategoryCircles from "@/components/shop/CategoryCircles";
 import ShopHero from "@/components/shop/ShopHero";
 import ShopFilters from "@/components/ShopFilters";
 import SortMenu from "@/components/shop/SortMenu";
@@ -85,7 +84,6 @@ async function CategoryPageWritten({
         subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
         count={items.length}
       >
-        <CategoryCircles current={current} />
       </ShopHero>
 
       <div className="container-page pt-3 pb-8 md:py-10">
@@ -93,8 +91,6 @@ async function CategoryPageWritten({
         <BackButton fallbackHref="/shop" />
         <Breadcrumb items={breadcrumbItems} />
       </div>
-      {/* Phones and tablets: the banner carries the row from lg. */}
-      <CategoryCircles current={current} className="lg:hidden" />
       {ADVISOR_ENTRY[params.category] && (
         <Link
           href={ADVISOR_ENTRY[params.category].href}

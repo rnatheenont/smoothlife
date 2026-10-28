@@ -1,5 +1,4 @@
 import { z } from "zod";
-import CategoryCircles from "@/components/shop/CategoryCircles";
 import ShopHero from "@/components/shop/ShopHero";
 import { categories } from "@/data/categories";
 import { filterProducts, type ShopSearchParams } from "@/lib/filter-products";
@@ -43,7 +42,6 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
   // should keep validating rather than fail on a field nobody can see.
   return (
     <ShopHero title={data.title} subtitle={settings.subtitle} count={data.count}>
-      <CategoryCircles current={data.params} />
     </ShopHero>
   );
 }

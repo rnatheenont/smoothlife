@@ -1,6 +1,5 @@
 import { z } from "zod";
 import ShopHero from "@/components/shop/ShopHero";
-import CategoryCircles from "@/components/shop/CategoryCircles";
 import { categories } from "@/data/categories";
 import { filterProducts } from "@/lib/filter-products";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
@@ -37,7 +36,6 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
       subtitle={settings.subtitle}
       count={count}
     >
-      <CategoryCircles current={query} />
     </ShopHero>
   );
 }

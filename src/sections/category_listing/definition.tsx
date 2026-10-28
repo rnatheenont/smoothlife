@@ -1,6 +1,5 @@
 import { z } from "zod";
 import ProductCard from "@/components/ProductCard";
-import CategoryCircles from "@/components/shop/CategoryCircles";
 import ShopFilters from "@/components/ShopFilters";
 import SortMenu from "@/components/shop/SortMenu";
 import SortSelect from "@/components/SortSelect";
@@ -53,9 +52,6 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
 
   return (
     <section className="container-page pb-8 md:pb-10">
-      {/* The banner above carries this row from lg; below that it belongs
-          here. The lg:hidden goes on the row itself, not on a wrapper. */}
-      <CategoryCircles current={data.params} className="lg:hidden" />
       <div className="flex flex-col gap-6">
         <div className="flex-1">
           {/* One toolbar, the same as /shop: filters on the left, ordering

@@ -8,7 +8,6 @@ import SortMenu from "@/components/shop/SortMenu";
 import Pagination from "@/components/Pagination";
 import InfiniteProducts from "@/components/shop/InfiniteProducts";
 import ShopHero from "@/components/shop/ShopHero";
-import CategoryCircles from "@/components/shop/CategoryCircles";
 import ViewToggle from "@/components/shop/ViewToggle";
 import ProductRow from "@/components/shop/ProductRow";
 import { pageMetadata } from "@/lib/site-pages";
@@ -44,14 +43,9 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
         subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
         count={allItems.length}
       >
-        <CategoryCircles current={searchParams} />
       </ShopHero>
 
       <div className="container-page py-5 md:py-8">
-        {/* Phones and tablets only — see the note in ShopHero. The
-            lg:hidden goes on the row itself, not on a wrapper: a wrapper is
-            a box exactly the row's own height. */}
-        <CategoryCircles current={searchParams} className="lg:hidden" />
 
         <div className="flex flex-col gap-6">
           <div className="min-w-0 flex-1">

@@ -738,7 +738,7 @@ export default function StaffShop() {
               // that decide what is on screen were the first things to scroll
               // off it. top-(--app-header-h) is the height the header reports
               // as it hides and comes back, so this follows it rather than
-              // guessing a number (see Header.tsx and CategoryCircles).
+              // guessing a number (see Header.tsx).
               <div className="scrollbar-none sticky top-(--app-header-h) z-30 -mx-4 mb-5 space-y-3 bg-white/95 px-4 py-3 backdrop-blur-sm transition-[top] duration-300 lg:-mx-2 lg:px-2">
                 {/* Search first, because it is the shortest route to one
                     known product, and the tabs are for browsing. */}
