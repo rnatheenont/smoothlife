@@ -394,10 +394,29 @@ export async function GET(req: NextRequest) {
   );
 
   // Lucky Fan draws from entries, not from people: more entries, more tickets.
-  const tickets = new Map<string, { name: string | null; entries: number }>();
+  //
+  // The name is the one the customer typed on the receipt form, not the one
+  // on their account. Half these accounts were made by an OTP at checkout
+  // and are called "สมาชิกใหม่" or a romanised spelling from Shopify; the
+  // name beside the prize should be the one the person wrote down when they
+  // entered. The latest receipt wins when somebody typed it more than once —
+  // a correction is worth more than the first attempt — and the account name
+  // is still there for the entries that left the field blank.
+  const tickets = new Map<
+    string,
+    { typed: string | null; typedAt: number; account: string | null; entries: number }
+  >();
   for (const r of approved) {
-    const cur = tickets.get(r.user_id) ?? { name: r.users?.display_name ?? null, entries: 0 };
+    const cur =
+      tickets.get(r.user_id) ?? { typed: null, typedAt: -1, account: null, entries: 0 };
     cur.entries += entriesOf(r);
+    cur.account ??= r.users?.display_name ?? null;
+    const typed = r.contact_name?.trim();
+    const at = Date.parse(r.created_at ?? "") || 0;
+    if (typed && at >= cur.typedAt) {
+      cur.typed = typed;
+      cur.typedAt = at;
+    }
     tickets.set(r.user_id, cur);
   }
 
@@ -470,7 +489,7 @@ export async function GET(req: NextRequest) {
         }));
       })(),
       luckyFan: [...tickets.entries()]
-        .map(([userId, t]) => ({ userId, customer: t.name, entries: t.entries }))
+        .map(([userId, t]) => ({ userId, customer: t.typed ?? t.account, entries: t.entries }))
         .sort((a, b) => b.entries - a.entries)
         .slice(0, 200),
     },
