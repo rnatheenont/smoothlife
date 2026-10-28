@@ -17,8 +17,19 @@ import { useEffect, useState } from "react";
  *
  * Units with a leading zero are dropped, so a thirty-minute payment window
  * reads "เหลือ 28 นาที 14 วิ" rather than "0 วัน 0 ชม. 28 นาที 14 วิ".
+ *
+ * `daysOnly` is for tight spots like the header: "เหลือ 17 วัน" while there
+ * is a day or more, and the full clock only on the last day.
  */
-export default function Countdown({ to, className }: { to: string; className?: string }) {
+export default function Countdown({
+  to,
+  className,
+  daysOnly = false,
+}: {
+  to: string;
+  className?: string;
+  daysOnly?: boolean;
+}) {
   const [left, setLeft] = useState<number | null>(null);
 
   useEffect(() => {
@@ -38,7 +49,7 @@ export default function Countdown({ to, className }: { to: string; className?: s
   const mins = Math.floor((total % 3_600) / 60);
   const secs = total % 60;
 
-  const parts = [
+  const parts = daysOnly && days > 0 ? [`${days} วัน`] : [
     days > 0 ? `${days} วัน` : null,
     days > 0 || hours > 0 ? `${hours} ชม.` : null,
     days > 0 || hours > 0 || mins > 0 ? `${mins} นาที` : null,

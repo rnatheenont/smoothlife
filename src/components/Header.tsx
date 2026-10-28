@@ -362,6 +362,7 @@ export default function Header({
               {staff.ends_at && (
                 <Countdown
                   to={staff.ends_at}
+                  daysOnly
                   className="whitespace-nowrap rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-800"
                 />
               )}
@@ -458,6 +459,7 @@ export default function Header({
                       {staff.ends_at && (
                         <Countdown
                           to={staff.ends_at}
+                          daysOnly
                           className="block whitespace-nowrap text-xs font-semibold text-brand-800"
                         />
                       )}
