@@ -410,8 +410,11 @@ export function parseItemInput(body: unknown): { input: ItemInput } | { error: s
       collection_handle:
         typeof b.collection_handle === "string" && b.collection_handle ? b.collection_handle : null,
       regular_price: Math.round(regular * 100) / 100,
-      rp_price: rpRaw === null ? null : Math.round(rpRaw * 100) / 100,
-      staff_price: Math.round(staff * 100) / 100,
+      // Both of these are prices somebody reads off a list, so one decimal —
+      // the same rule the bulk discount follows, applied wherever a row is
+      // written rather than only where it is calculated.
+      rp_price: rpRaw === null ? null : Math.round(rpRaw * 10) / 10,
+      staff_price: Math.round(staff * 10) / 10,
       per_person_limit: limit,
       total_quota: quota,
       enabled: b.enabled !== false,
@@ -434,8 +437,10 @@ export function discountedPrice(regular: number, percent: number, roundTo: Staff
   // asked for. Rounding to the nearest 5 turns "60% off" into anything from
   // 60% to 64% depending on the price, which is how one round ended up
   // showing -60%, -63% and -62% side by side on the same screen.
-  // Two decimals only to keep binary floating point from writing 37.600000000000001.
-  if (roundTo === 0) return Math.round(raw * 100) / 100;
+  // One decimal: 238.18 is not a price, it is the arithmetic showing through.
+  // "ไม่ปัด" means the discount lands where it lands, not that a price list
+  // carries satang nobody can pay in.
+  if (roundTo === 0) return Math.round(raw * 10) / 10;
   const floored = Math.floor(raw / roundTo) * roundTo;
   // Never round a price down to nothing: a 10-baht sachet at 90% off is 1.
   return floored > 0 ? floored : Math.max(1, Math.floor(raw));

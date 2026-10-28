@@ -18,7 +18,14 @@ import type { CollectionSummary, PickerProduct, StaffRoundItemView } from "./typ
 // already been quoted.
 
 const baht = (n: number) =>
-  n.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  n.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+
+/** What goes in a price box: one decimal at most, and no trailing ".0". */
+const dec1 = (n: number | string) => {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return String(n);
+  return String(Math.round(v * 10) / 10);
+};
 
 // Only the two editable prices. The per-person limit is set for the whole
 // round from the toolbar and the total quota is not edited here any more, so
@@ -292,7 +299,7 @@ export default function ItemsTab({
       body: JSON.stringify({
         id: item.id,
         rp_price: d?.rp_price ?? item.rp_price ?? "",
-        staff_price: d?.staff_price ?? item.staff_price,
+        staff_price: d?.staff_price ?? dec1(item.staff_price),
         // Left out on purpose: the route merges the row it already has, so
         // the limit and the quota keep whatever they hold rather than being
         // re-sent by a form that no longer shows them.
@@ -561,13 +568,13 @@ export default function ItemsTab({
                     <td className={adminTable.mono}>{baht(item.regular_price)}</td>
                     <td className={adminTable.cell}>
                       <input
-                        value={d?.rp_price ?? (item.rp_price == null ? "" : String(item.rp_price))}
+                        value={d?.rp_price ?? (item.rp_price == null ? "" : dec1(item.rp_price))}
                         onChange={(e) =>
                           setDrafts((cur) => ({
                             ...cur,
                             [item.id]: {
                               rp_price: e.target.value,
-                              staff_price: cur[item.id]?.staff_price ?? String(item.staff_price),
+                              staff_price: cur[item.id]?.staff_price ?? dec1(item.staff_price),
                             },
                           }))
                         }
@@ -583,12 +590,12 @@ export default function ItemsTab({
                     </td>
                     <td className={adminTable.cell}>
                       <input
-                        value={d?.staff_price ?? String(item.staff_price)}
+                        value={d?.staff_price ?? dec1(item.staff_price)}
                         onChange={(e) =>
                           setDrafts((cur) => ({
                             ...cur,
                             [item.id]: {
-                              rp_price: cur[item.id]?.rp_price ?? (item.rp_price == null ? "" : String(item.rp_price)),
+                              rp_price: cur[item.id]?.rp_price ?? (item.rp_price == null ? "" : dec1(item.rp_price)),
                               staff_price: e.target.value,
                             },
                           }))

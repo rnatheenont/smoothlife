@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { parseItemInput, MAX_PER_PERSON, rpOf } from "./staff-sale.ts";
+import { parseItemInput, MAX_PER_PERSON, rpOf, discountedPrice } from "./staff-sale.ts";
 
 // The per-person ceiling. It is checked here rather than only in the admin
 // form because the form is not the only way a row gets written — the bulk
@@ -76,4 +76,22 @@ test("the staff price is measured against RP, not the catalogue price", () => {
 
   const bad = parseItemInput(row({ regular_price: 418, rp_price: 190, staff_price: 200 }));
   assert.ok("error" in bad);
+});
+
+// Prices are read off a list, so one decimal at most — 238.18 is not a
+// price, it is the arithmetic showing through.
+
+test("the discount lands on one decimal, not two", () => {
+  assert.equal(discountedPrice(476.36, 50, 0), 238.2);
+  assert.equal(discountedPrice(179.09, 50, 0), 89.5);
+  // Rounding to the baht and to 5 are untouched.
+  assert.equal(discountedPrice(476.36, 50, 1), 238);
+  assert.equal(discountedPrice(476.36, 50, 5), 235);
+});
+
+test("a saved row is stored to one decimal too", () => {
+  const parsed = parseItemInput(row({ regular_price: 524, rp_price: 476.36, staff_price: 238.18 }));
+  assert.ok("input" in parsed);
+  assert.equal(parsed.input.staff_price, 238.2);
+  assert.equal(parsed.input.rp_price, 476.4);
 });
