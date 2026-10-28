@@ -355,16 +355,14 @@ export default function StaffShop() {
     }, 0);
   }, [cart, shop]);
 
-  // The part of the cart that comes out of the allowance. An item outside the
-  // allowance is still in `subtotal` — it is paid for in full — but buying it
-  // uses none of the allowance, so every "over the limit" check reads this.
-  const capUsed = useMemo(() => {
-    if (!shop) return 0;
-    return Object.entries(cart).reduce((sum, [variantId, qty]) => {
-      const item = shop.items.find((i) => i.variant_id === variantId);
-      return sum + (item && item.counts_toward_cap ? item.staff_price * qty : 0);
-    }, 0);
-  }, [cart, shop]);
+  // What the cart takes from the allowance. Normally the subtotal; an item
+  // that fills the allowance takes all that is left of it, whatever its
+  // price, so every "over the limit" check reads this rather than subtotal.
+  const fillsInCart = useMemo(
+    () => (shop ? shop.items.some((i) => i.fills_allowance && cart[i.variant_id]) : false),
+    [cart, shop],
+  );
+  const capUsed = fillsInCart && shop ? shop.standing.left_thb : subtotal;
 
   const cartCount = Object.values(cart).reduce((n, q) => n + q, 0);
 
@@ -544,10 +542,30 @@ export default function StaffShop() {
     );
   }
 
-  function setQty(item: StaffShopVariant, qty: number) {
+  function setQty(item: StaffShopVariant, qty: number): boolean {
+    // An item that fills the allowance goes alone: refused here, with the
+    // reason, rather than at the payment button. Only when adding — taking
+    // one away is always allowed.
+    if (qty > (cart[item.variant_id] ?? 0) && shop) {
+      const others = Object.keys(cart).filter((v) => v !== item.variant_id);
+      const otherFills = others.some((v) => shop.items.find((i) => i.variant_id === v)?.fills_allowance);
+      if (item.fills_allowance && others.length > 0) {
+        setError(`${item.name} ใช้วงเงินทั้งหมด ต้องซื้อเดี่ยว — เอาสินค้าอื่นออกจากตะกร้าก่อน`);
+        return false;
+      }
+      if (otherFills) {
+        setError("ในตะกร้ามีสินค้าที่ใช้วงเงินทั้งหมดแล้ว — เพิ่มสินค้าอื่นไม่ได้");
+        return false;
+      }
+      if (item.fills_allowance && shop.standing.left_thb <= 0) {
+        setError("วงเงินของคุณหมดแล้ว");
+        return false;
+      }
+    }
     // Clamped against both ceilings here as well as in the database, so the
     // plus button stops rather than the checkout refusing after the fact.
     const ceilings = [
+      item.fills_allowance ? 1 : Infinity,
       item.per_person_limit === null ? Infinity : item.per_person_limit - item.mine,
       item.left === null ? Infinity : item.left,
     ];
@@ -559,6 +577,7 @@ export default function StaffShop() {
       else copy[item.variant_id] = next;
       return copy;
     });
+    return true;
   }
 
   /**
@@ -570,7 +589,7 @@ export default function StaffShop() {
    * pressed the button.
    */
   function add(item: StaffShopVariant, from?: HTMLElement) {
-    setQty(item, (cart[item.variant_id] ?? 0) + 1);
+    if (!setQty(item, (cart[item.variant_id] ?? 0) + 1)) return;
     setJustAdded(item.variant_id);
     if (from) flyToCart(from, "staff");
     window.setTimeout(() => setJustAdded((cur) => (cur === item.variant_id ? null : cur)), 1200);
@@ -1210,9 +1229,9 @@ export default function StaffShop() {
                                 information — when this product allows fewer
                                 than the round does, and when the number has
                                 been reached. */}
-                            {!item.counts_toward_cap && (
+                            {item.fills_allowance && (
                               <span className="mt-1 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-800">
-                                ไม่หักวงเงิน
+                                ใช้วงเงินทั้งหมด · ซื้อเดี่ยว 1 ชิ้น
                               </span>
                             )}
                             {(soldOut || item.left !== null || item.mine > 0 || limitLine) && (

@@ -36,8 +36,8 @@ export type StaffShopVariant = {
   mine: number;
   /** False when Shopify has none of this variant left. */
   in_stock: boolean;
-  /** False: paid in full, but not counted against the allowance. */
-  counts_toward_cap: boolean;
+  /** True: bought on its own, one piece, and it uses up the whole allowance. */
+  fills_allowance: boolean;
 };
 
 /**
@@ -102,13 +102,13 @@ export type StaffRoundItem = {
   sold_qty: number;
   reserved_qty: number;
   enabled: boolean;
-  /** False: paid at the staff price but not charged against the allowance. */
-  counts_toward_cap: boolean;
+  /** True: sold alone, one per order, and takes the whole remaining allowance. */
+  fills_allowance: boolean;
 };
 
 export const ITEM_COLUMNS =
   "id,round_id,variant_id,product_slug,collection_handle,regular_price,rp_price,staff_price," +
-  "per_person_limit,total_quota,sold_qty,reserved_qty,enabled,counts_toward_cap";
+  "per_person_limit,total_quota,sold_qty,reserved_qty,enabled,fills_allowance";
 
 /** The markup sitting on top of RP in the catalogue price. */
 export const RP_MARKUP = 1.1;
@@ -229,6 +229,7 @@ export const STAFF_REASON_TH: Record<string, string> = {
   per_person_limit: "เกินจำนวนที่ซื้อได้ต่อคนสำหรับสินค้านี้",
   sold_out: "สินค้านี้หมดแล้ว",
   over_cap: "เกินวงเงินที่เหลือของคุณ",
+  fills_allowance_alone: "สินค้านี้ใช้วงเงินทั้งหมด ซื้อได้ 1 ชิ้นและต้องไม่มีสินค้าอื่นในตะกร้า",
   pending_order_exists: "คุณมีคำสั่งซื้อที่รอชำระเงินอยู่แล้ว",
   order_limit_reached: "รอบนี้ซื้อได้ครั้งเดียว และคุณใช้สิทธิ์ไปแล้ว",
   unknown_reference: "ไม่พบรายการชำระเงินนี้",

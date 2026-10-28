@@ -410,15 +410,16 @@ export default function ItemsTab({
     else onReload();
   }
 
-  // In or out of the allowance. The employee pays the full staff price either
-  // way; out means buying it uses none of the allowance. Orders already held
-  // keep the amount they were charged, so flipping this mid-round is safe.
+  // "Takes the whole allowance": for a line that costs more than the
+  // allowance but should still be on offer. Bought alone, one piece, full
+  // staff price at checkout, and the allowance is used up. Orders already
+  // held keep the amount they were charged, so flipping this mid-round is safe.
   async function toggleCap(item: StaffRoundItemView) {
-    const next = item.counts_toward_cap === false;
+    const next = item.fills_allowance !== true;
     if (
-      !next &&
+      next &&
       !confirm(
-        "ไม่หักวงเงินสินค้านี้?\nพนักงานยังจ่ายเต็มราคาพนักงาน แต่ไม่ใช้วงเงินของรอบ (ยังติดลิมิตจำนวนและ 1 ออเดอร์ต่อรอบ)",
+        "ตั้งให้สินค้านี้ใช้วงเงินทั้งหมด?\nซื้อได้ 1 ชิ้นต่อออเดอร์ และต้องซื้อเดี่ยว พนักงานจ่ายเต็มราคาพนักงาน (เกินวงเงินได้) แล้ววงเงินที่เหลือในรอบนี้หมดทันที",
       )
     ) {
       return;
@@ -431,11 +432,11 @@ export default function ItemsTab({
         id: item.id,
         staff_price: item.staff_price,
         enabled: item.enabled,
-        counts_toward_cap: next,
+        fills_allowance: next,
       }),
     });
     const json = await res.json();
-    if (!json.ok) onError(json.error ?? "เปลี่ยนการหักวงเงินไม่สำเร็จ");
+    if (!json.ok) onError(json.error ?? "เปลี่ยนการใช้วงเงินไม่สำเร็จ");
     else onReload();
   }
 
@@ -686,7 +687,7 @@ export default function ItemsTab({
                             {item.product_slug} · {item.variant_id.split("/").pop()}
                           </p>
                           {!item.enabled && <Badge tone="neutral">ปิดการขายรายการนี้</Badge>}
-                          {item.counts_toward_cap === false && <Badge tone="warning">ไม่หักวงเงิน</Badge>}
+                          {item.fills_allowance && <Badge tone="warning">ใช้วงเงินทั้งหมด · ซื้อเดี่ยว</Badge>}
                         </div>
                       </div>
                     </td>
@@ -766,7 +767,7 @@ export default function ItemsTab({
                           {item.enabled ? "ปิดขาย" : "เปิดขาย"}
                         </Button>
                         <Button size="sm" variant="ghost" onPress={() => toggleCap(item)}>
-                          {item.counts_toward_cap === false ? "หักวงเงิน" : "ไม่หักวงเงิน"}
+                          {item.fills_allowance ? "ยกเลิกใช้วงเงินทั้งหมด" : "ใช้วงเงินทั้งหมด"}
                         </Button>
                         {item.sold_qty === 0 && item.reserved_qty === 0 && (
                           <Button size="sm" variant="ghost" onPress={() => remove(item)}>
