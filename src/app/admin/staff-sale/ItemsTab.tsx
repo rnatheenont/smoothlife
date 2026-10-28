@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import { Check, Copy, Percent, Plus, Search, Trash2, X } from "lucide-react";
 import { Button } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import AdminField from "@/components/admin/AdminField";
 import { Panel, adminTable } from "@/components/admin/layout-kit";
-import { discountedPrice, type StaffRoundItem, type StaffRoundTo } from "@/lib/staff-sale";
-import type { CollectionSummary, PickerProduct } from "./types";
+import { discountedPrice, type StaffRoundTo } from "@/lib/staff-sale";
+import type { CollectionSummary, PickerProduct, StaffRoundItemView } from "./types";
 
 // The price list of one round: what is on sale, for how much, and how many.
 //
@@ -34,7 +35,7 @@ export default function ItemsTab({
   onReload,
 }: {
   roundId: string;
-  items: StaffRoundItem[];
+  items: StaffRoundItemView[];
   busy: boolean;
   /** Rounds to copy a price list from — this one excluded. */
   otherRounds: { id: string; name: string }[];
@@ -58,9 +59,29 @@ export default function ItemsTab({
   // Narrows what is already on screen. The box above it goes to the server
   // and replaces the list; a collection of 239 needs one that does not.
   const [filter, setFilter] = useState("");
+  // The price list's own search, separate from the picker's two above: this
+  // one narrows the rows already saved in the round. A round of 387 rows is
+  // not something anyone scrolls to find one toothbrush in.
+  const [rowQuery, setRowQuery] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
 
   const already = new Set(items.map((i) => i.variant_id));
+
+  // Name, SKU, size, brand and the slug all count, because all five are
+  // things somebody holding a product might type. Matched word by word so
+  // "ortho 6580" finds the row that "ortho" and "6580" both appear in,
+  // whichever order they were typed.
+  const words = rowQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const shown =
+    words.length === 0
+      ? items
+      : items.filter((i) => {
+          const hay = [i.name, i.brand, i.sku, i.size, i.product_slug, i.variant_id.split("/").pop()]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          return words.every((w) => hay.includes(w));
+        });
 
   const loadCollections = useCallback(async () => {
     try {
@@ -162,7 +183,14 @@ export default function ItemsTab({
       !confirm(
         `ตั้งราคาพนักงานทุกรายการเป็นส่วนลด ${pct}% จากราคาปกติ (${
           roundTo === "0" ? "ไม่ปัดเศษ" : `ปัดลงเป็นหลัก ${roundTo} บาท`
-        })?\nราคาที่แก้ไว้เองจะถูกเขียนทับ`,
+        })?\nราคาที่แก้ไว้เองจะถูกเขียนทับ` +
+          // The search narrows the table, not this button — it reprices the
+          // round on the server. Said out loud, because somebody who has
+          // just filtered to three rows will read "ทั้งหมด" as those three
+          // and overwrite three hundred hand-set prices.
+          (words.length > 0
+            ? `\n\nรวมรายการที่ช่องค้นหาซ่อนอยู่ด้วย — ทั้งหมด ${items.length} รายการ ไม่ใช่ ${shown.length} รายการที่เห็น`
+            : ""),
       )
     ) {
       return;
@@ -181,7 +209,7 @@ export default function ItemsTab({
     onReload();
   }
 
-  async function saveRow(item: StaffRoundItem) {
+  async function saveRow(item: StaffRoundItemView) {
     const d = drafts[item.id];
     setSaving(item.id);
     onError(null);
@@ -210,7 +238,7 @@ export default function ItemsTab({
     onReload();
   }
 
-  async function toggle(item: StaffRoundItem) {
+  async function toggle(item: StaffRoundItemView) {
     onError(null);
     const res = await fetch(`/api/admin/staff-sale/rounds/${roundId}/items`, {
       method: "PATCH",
@@ -228,7 +256,7 @@ export default function ItemsTab({
     else onReload();
   }
 
-  async function remove(item: StaffRoundItem) {
+  async function remove(item: StaffRoundItemView) {
     if (!confirm("เอาสินค้านี้ออกจากรอบ?")) return;
     onError(null);
     const res = await fetch(
@@ -275,7 +303,11 @@ export default function ItemsTab({
   return (
     <div className="space-y-4">
       <Panel
-        title={`สินค้าในรอบนี้ · ${items.length} รายการ`}
+        title={
+          words.length > 0
+            ? `สินค้าในรอบนี้ · ${shown.length} จาก ${items.length} รายการ`
+            : `สินค้าในรอบนี้ · ${items.length} รายการ`
+        }
         toolbar={
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 rounded-full bg-surface-soft px-2 py-1">
@@ -314,6 +346,28 @@ export default function ItemsTab({
           </div>
         }
       >
+        {items.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+            <label className="relative flex min-w-[260px] flex-1 items-center">
+              <Search className="pointer-events-none absolute left-3 h-4 w-4 text-slate-400" aria-hidden />
+              <input
+                value={rowQuery}
+                onChange={(e) => setRowQuery(e.target.value)}
+                type="search"
+                placeholder="ค้นหาในรอบนี้ — ชื่อสินค้า, SKU, ขนาด หรือแบรนด์"
+                aria-label="ค้นหาสินค้าในรอบนี้"
+                className="h-10 w-full rounded-xl2 border border-slate-200 bg-white pl-9 pr-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+              />
+            </label>
+            {words.length > 0 && (
+              <Button size="sm" variant="ghost" onPress={() => setRowQuery("")}>
+                <X className="h-3.5 w-3.5" aria-hidden />
+                ล้าง
+              </Button>
+            )}
+          </div>
+        )}
+
         <div className={`${adminTable.scroll} max-h-[560px]`}>
           <table className={adminTable.table}>
             <thead className={adminTable.thead}>
@@ -336,7 +390,14 @@ export default function ItemsTab({
                   </td>
                 </tr>
               )}
-              {items.map((item) => {
+              {items.length > 0 && shown.length === 0 && (
+                <tr>
+                  <td className={adminTable.muted} colSpan={8}>
+                    ไม่พบสินค้าที่ตรงกับ “{rowQuery.trim()}” ในรอบนี้
+                  </td>
+                </tr>
+              )}
+              {shown.map((item) => {
                 const d = drafts[item.id];
                 const price = Number(d?.staff_price ?? item.staff_price);
                 const off =
@@ -347,13 +408,43 @@ export default function ItemsTab({
                 return (
                   <tr key={item.id} className={adminTable.row}>
                     <td className={adminTable.cell}>
-                      <p className="font-medium text-brand-ink">{item.product_slug}</p>
-                      <p className="font-mono text-[11px] text-slate-400">
-                        {item.variant_id.split("/").pop()}
-                      </p>
-                      {!item.enabled && (
-                        <Badge tone="neutral">ปิดการขายรายการนี้</Badge>
-                      )}
+                      <div className="flex items-start gap-2.5">
+                        {/* Five rows reading the same slug are five different
+                            sizes, and only the picture and the SKU say which
+                            is which. */}
+                        <span className="relative size-11 shrink-0 overflow-hidden rounded-m border border-slate-100 bg-white">
+                          {item.image ? (
+                            <Image
+                              src={item.image}
+                              alt=""
+                              fill
+                              sizes="44px"
+                              className="object-contain"
+                            />
+                          ) : (
+                            <span className="grid h-full w-full place-items-center text-[10px] text-slate-300">
+                              ไม่มีรูป
+                            </span>
+                          )}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-medium leading-snug text-brand-ink">
+                            {item.name ?? item.product_slug}
+                          </p>
+                          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-500">
+                            {item.brand && <span>{item.brand}</span>}
+                            {item.size && <span>{item.size}</span>}
+                            {item.sku && <span className="font-mono text-slate-400">{item.sku}</span>}
+                          </p>
+                          {/* Kept, quietly: the slug and the variant id are
+                              what a Shopify or database lookup needs when a
+                              row is in dispute. */}
+                          <p className="font-mono text-[10px] text-slate-300">
+                            {item.product_slug} · {item.variant_id.split("/").pop()}
+                          </p>
+                          {!item.enabled && <Badge tone="neutral">ปิดการขายรายการนี้</Badge>}
+                        </div>
+                      </div>
                     </td>
                     <td className={adminTable.mono}>{baht(item.regular_price)}</td>
                     <td className={adminTable.cell}>
@@ -371,7 +462,7 @@ export default function ItemsTab({
                           }))
                         }
                         inputMode="decimal"
-                        aria-label={`ราคาพนักงานของ ${item.product_slug}`}
+                        aria-label={`ราคาพนักงานของ ${item.name ?? item.product_slug}`}
                         className="w-24 rounded-xl2 border border-slate-200 px-2 py-1 font-mono text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                       />
                     </td>
@@ -398,7 +489,7 @@ export default function ItemsTab({
                         }
                         inputMode="numeric"
                         placeholder="ไม่จำกัด"
-                        aria-label={`จำนวนจำกัดต่อคนของ ${item.product_slug}`}
+                        aria-label={`จำนวนจำกัดต่อคนของ ${item.name ?? item.product_slug}`}
                         className="w-20 rounded-xl2 border border-slate-200 px-2 py-1 text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                       />
                     </td>
@@ -418,7 +509,7 @@ export default function ItemsTab({
                         }
                         inputMode="numeric"
                         placeholder="ไม่จำกัด"
-                        aria-label={`โควตารวมของ ${item.product_slug}`}
+                        aria-label={`โควตารวมของ ${item.name ?? item.product_slug}`}
                         className="w-20 rounded-xl2 border border-slate-200 px-2 py-1 text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                       />
                     </td>

@@ -31,9 +31,25 @@ export type RoundOverview = {
   top: { variant_id: string; slug: string; qty: number; thb: number }[];
 };
 
+/**
+ * A price-list row with the words a person reads.
+ *
+ * The stored row keys off a slug and a variant id; these come from the
+ * catalogue on the way out (see the round route's `describe`) so the table
+ * can show a picture, a name and the SKU of the exact size. Null when the
+ * product has left the catalogue — the row still shows, by slug.
+ */
+export type StaffRoundItemView = StaffRoundItem & {
+  name: string | null;
+  brand: string | null;
+  image: string | null;
+  size: string | null;
+  sku: string | null;
+};
+
 export type RoundDetail = {
   round: StaffRound;
-  items: StaffRoundItem[];
+  items: StaffRoundItemView[];
   orders: StaffOrder[];
   verifications: { user_id: string; staff_email_canonical: string; verified_at: string }[];
   entitlements: { user_id: string; cap_thb: number; reserved_thb: number; spent_thb: number }[];

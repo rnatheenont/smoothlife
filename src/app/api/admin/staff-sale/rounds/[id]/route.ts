@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getProductDetail } from "@/data/product-details";
 import { pgValue, supabaseRest } from "@/lib/supabase-server";
 import { auditStaffSale, badRequest, guard } from "@/lib/staff-sale-admin";
 import {
@@ -21,6 +22,42 @@ async function loadRound(id: string): Promise<StaffRound | null> {
     `staff_rounds?id=eq.${pgValue(id)}&select=${ROUND_COLUMNS}&limit=1`,
   );
   return rows?.[0] ?? null;
+}
+
+/**
+ * What a saved row looks like to a person: the product's name, its picture
+ * and the SKU of the exact variant.
+ *
+ * The row itself stores a slug and a variant id, because those are what the
+ * order and the stock count key off and a name copied into the table would
+ * be wrong the first time anyone renames a product in Shopify. But a price
+ * list of 387 rows reading "6580-ortho-pro-toothbrush / 45427130269847" five
+ * times over is not something a person can check — the five are different
+ * sizes and the row does not say so.
+ *
+ * Resolved here, on the way out, from the catalogue the server already holds
+ * (the same 3 MB one the picker reads and which must never reach a browser).
+ * Null when a product has since left the catalogue, and the page falls back
+ * to the slug rather than hiding the row — a line nobody can see is still
+ * being sold.
+ */
+function describe(item: { product_slug: string; variant_id: string }): {
+  name: string | null;
+  brand: string | null;
+  image: string | null;
+  size: string | null;
+  sku: string | null;
+} {
+  const p = getProductDetail(item.product_slug);
+  if (!p) return { name: null, brand: null, image: null, size: null, sku: null };
+  const v = p.variants.find((x) => x.variantId === item.variant_id);
+  return {
+    name: p.name,
+    brand: p.brand,
+    image: p.image ?? null,
+    size: v?.size ?? null,
+    sku: v?.sku ?? null,
+  };
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -68,6 +105,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       ...i,
       regular_price: Number(i.regular_price),
       staff_price: Number(i.staff_price),
+      ...describe(i),
     })),
     orders: orders.map((o) => ({ ...o, subtotal_thb: Number(o.subtotal_thb) })),
     verifications,
