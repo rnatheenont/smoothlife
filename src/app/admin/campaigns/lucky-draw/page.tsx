@@ -7,7 +7,7 @@ import { ArrowLeft, Play, RotateCcw, SkipForward, Sparkles, TriangleAlert } from
 import { Button, Spinner } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import LuckyDrawStage from "@/components/admin/lucky-draw/LuckyDrawStage";
-import { ACCENT_UI } from "@/components/admin/lucky-draw/faces";
+import { ACCENT_UI } from "@/components/admin/lucky-draw/wheel";
 import {
   LUCKY_FAN_PRIZES,
   drawLuckyFan,
@@ -163,7 +163,7 @@ export default function LuckyDrawPreviewPage() {
               They are read against each other — a name lands and you look to
               see where it went — and stacking them put the list under the
               fold for the whole of the draw. */}
-          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_460px]">
             <div className="flex min-w-0 flex-col gap-3">
           <div className="relative overflow-hidden rounded-xl2 bg-[#05060b] shadow-card">
             <LuckyDrawStage
@@ -242,7 +242,13 @@ export default function LuckyDrawPreviewPage() {
                   {revealed} / {LUCKY_FAN_PRIZES}
                 </p>
               </div>
-              <ol className="flex max-h-[62vh] flex-col gap-1.5 overflow-y-auto pr-1">
+              {/* Two columns: twenty-five in one ran past the bottom of the
+                  stage beside it, so the last few were only ever reached by
+                  scrolling the panel while the draw carried on. Filled down
+                  the first column and then the second, not across — the list
+                  is numbered, and a 1,2 / 3,4 that jumps sides on every name
+                  is not a list anybody reads in order. */}
+              <ol className="grid max-h-[62vh] grid-flow-col grid-cols-2 gap-x-2 gap-y-1.5 overflow-y-auto pr-1 [grid-template-rows:repeat(13,minmax(0,auto))]">
                 {Array.from({ length: LUCKY_FAN_PRIZES }, (_, i) => {
                   const w = i < revealed ? winners[i] : null;
                   return (

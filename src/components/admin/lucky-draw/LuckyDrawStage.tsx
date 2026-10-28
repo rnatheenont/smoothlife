@@ -14,37 +14,28 @@ import {
   stepSnowfall,
   type Snowfall,
 } from "./winter";
-import {
-  ACCENT,
-  DRUM_RADIUS,
-  FACE_COUNT,
-  FACE_HEIGHT,
-  FACE_WIDTH,
-  glowTexture,
-  makeFaceCanvas,
-  paintFace,
-} from "./faces";
+import { ACCENT, WEDGES, WHEEL_RADIUS, glowTexture, makeWheelCanvas, paintWheel } from "./wheel";
 
-// The machine the names come out of.
+// The machine the names come out of: a wheel, under a pointer, in the
+// campaign's winter night.
 //
-// A drum of eighteen panels under two spotlights, spun on its side. The
-// winner is already decided before it starts turning — the draw is a pure
-// function and runs in a fifth of a millisecond — so everything here is
-// about the three seconds between knowing and being told. The other
-// seventeen panels are filled with real names from the room, because a reel
-// of strangers flying past is what makes the one that stops mean anything.
+// The winner is already decided before it starts turning — the draw is a
+// pure function and runs in a fifth of a millisecond — so everything here is
+// about the three seconds between knowing and being told. The other eleven
+// wedges carry real names from the room, because a wheel of strangers going
+// past is what makes the one under the pointer mean anything.
 //
 // Deliberately not react-three-fiber: one scene, one lifetime, no React
 // state inside the frame loop. The whole thing is built once in an effect
 // and torn down with it; the only thing that crosses the boundary afterwards
 // is "spin to this person", which arrives as a prop change.
 
-const SPIN_MS = 3300;
+const SPIN_MS = 3400;
 const REVEAL_MS = 1500;
 const TURNS = 5;
-const STEP = (Math.PI * 2) / FACE_COUNT;
-/** The face at +z, i.e. the one pointing at the camera. */
-const FRONT = Math.PI / 2;
+/** The whole machine sits low, so the pointer has sky above it rather than
+ *  the top edge of the frame. */
+const WHEEL_Y = -0.5;
 
 type Phase = "idle" | "spinning" | "reveal";
 
@@ -52,9 +43,11 @@ type Scene = {
   renderer: THREE.WebGLRenderer;
   camera: THREE.PerspectiveCamera;
   scene: THREE.Scene;
-  drum: THREE.Group;
-  faces: { mesh: THREE.Mesh; canvas: HTMLCanvasElement; texture: THREE.CanvasTexture }[];
-  rims: THREE.Mesh[];
+  wheel: THREE.Group;
+  face: THREE.Mesh;
+  canvas: HTMLCanvasElement;
+  texture: THREE.CanvasTexture;
+  pointer: THREE.Mesh;
   stars: THREE.Points;
   snow: Snowfall;
   aurora: THREE.Group;
@@ -65,15 +58,12 @@ type Scene = {
   confettiMat: THREE.PointsMaterial;
   confettiVel: Float32Array;
   confettiLife: { t: number };
-  spots: THREE.SpotLight[];
   phase: Phase;
   spinStart: number;
   spinFrom: number;
   spinTo: number;
   rot: number;
   revealAt: number;
-  /** Has a name landed yet. Before the first one the drum drifts; after it
-   *  the drum holds, because the winner has to still be on it. */
   landedOnce: boolean;
   onLanded: (() => void) | null;
   raf: number;
@@ -95,7 +85,7 @@ export default function LuckyDrawStage({
   onLanded,
   className,
 }: {
-  /** Everyone still in the room — the names the reel is filled with. */
+  /** Everyone still in the room — the names the wheel is filled with. */
   pool: Entrant[];
   /** Spin to this person. A new object starts a spin; null leaves it idle. */
   target: Winner | null;
@@ -120,7 +110,6 @@ export default function LuckyDrawStage({
     if (!mount) return;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const reducedMotionSnow = () => (reduced ? 160 : 700);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(mount.clientWidth, mount.clientHeight);
@@ -128,89 +117,85 @@ export default function LuckyDrawStage({
     mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    // Fogged in the sky's own colour and only from well behind the drum, so
-    // the treeline recedes without the machine picking up a haze.
+    // Fogged in the sky's own colour and only from well behind the wheel, so
+    // the treeline recedes without the wheel picking up a haze.
     scene.fog = new THREE.Fog(new THREE.Color(WINTER.skyMid).getHex(), 24, 54);
 
     // The night, back to front: sky, aurora, ridge, snow, trees.
     const aurora = auroraRibbons();
     scene.add(skyBackdrop(), aurora, mountainRange(), snowGround(), pineForest());
-    const snow = snowfall(reducedMotionSnow());
+    const snow = snowfall(reduced ? 160 : 700);
+
     const camera = new THREE.PerspectiveCamera(42, mount.clientWidth / mount.clientHeight, 0.1, 120);
-    camera.position.set(0, 0.3, 13.4);
+    camera.position.set(0, 0, 11.6);
     camera.lookAt(0, 0, 0);
 
-    // --- the drum -------------------------------------------------------
-    const drum = new THREE.Group();
-    const faces: Scene["faces"] = [];
-    for (let i = 0; i < FACE_COUNT; i++) {
-      const canvas = makeFaceCanvas();
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      const mesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(FACE_WIDTH, FACE_HEIGHT),
-        new THREE.MeshStandardMaterial({
-          map: texture,
-          roughness: 0.42,
-          metalness: 0.18,
-          emissive: new THREE.Color(0x000000),
-          emissiveMap: texture,
-          emissiveIntensity: 0.35,
-        }),
-      );
-      const a = i * STEP;
-      mesh.position.set(0, DRUM_RADIUS * Math.cos(a), DRUM_RADIUS * Math.sin(a));
-      // The panel's own normal is +z, and it has to end up pointing out of
-      // the drum, which at angle a is (0, cos a, sin a). Rotating about x by
-      // a − π/2 is what takes one to the other; −a leaves every panel edge
-      // on to the camera, which renders as a drum with no names on it.
-      mesh.rotation.x = a - Math.PI / 2;
-      drum.add(mesh);
-      faces.push({ mesh, canvas, texture });
-    }
-
-    // The core, so the drum is solid and you cannot read the far side's
-    // names through the near side's gaps.
-    const core = new THREE.Mesh(
-      new THREE.CylinderGeometry(DRUM_RADIUS * 0.97, DRUM_RADIUS * 0.97, FACE_WIDTH * 0.995, 48),
-      new THREE.MeshStandardMaterial({ color: 0x0a1026, roughness: 0.9, metalness: 0.1 }),
+    // --- the wheel ------------------------------------------------------
+    const wheel = new THREE.Group();
+    const canvas = makeWheelCanvas();
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    const face = new THREE.Mesh(
+      new THREE.CircleGeometry(WHEEL_RADIUS, 96),
+      new THREE.MeshStandardMaterial({
+        map: texture,
+        roughness: 0.46,
+        metalness: 0.12,
+        emissiveMap: texture,
+        emissive: new THREE.Color(0x3a3570),
+        emissiveIntensity: 0.5,
+      }),
     );
-    core.rotation.z = Math.PI / 2;
-    drum.add(core);
+    wheel.add(face);
 
-    // Gold rims. The one piece of real material in the scene — everything
-    // else is a lit plane — and the thing that makes it look like a machine.
-    const rims: THREE.Mesh[] = [];
-    for (const x of [-FACE_WIDTH / 2, FACE_WIDTH / 2]) {
-      const rim = new THREE.Mesh(
-        new THREE.TorusGeometry(DRUM_RADIUS * 1.02, 0.17, 20, 72),
-        new THREE.MeshStandardMaterial({
-          // Polished ice rather than gold: the campaign's winter, and a warm
-          // metal in this sky reads as a prop from another set.
-          color: 0xe6edf8,
-          roughness: 0.18,
-          metalness: 1,
-          emissive: new THREE.Color(0x1b2140),
-        }),
-      );
-      rim.position.x = x;
-      rim.rotation.y = Math.PI / 2;
-      drum.add(rim);
-      rims.push(rim);
-    }
-    scene.add(drum);
+    // The rim. Polished ice rather than gold: the campaign's winter, and a
+    // warm metal in this sky reads as a prop from another set.
+    const rim = new THREE.Mesh(
+      new THREE.TorusGeometry(WHEEL_RADIUS + 0.09, 0.17, 20, 110),
+      new THREE.MeshStandardMaterial({
+        color: 0xe6edf8,
+        roughness: 0.18,
+        metalness: 1,
+        emissive: new THREE.Color(0x1b2140),
+      }),
+    );
+    wheel.add(rim);
+    wheel.position.y = WHEEL_Y;
+    scene.add(wheel);
+
+    // The pointer does not turn with the wheel — it is the thing the wheel
+    // is measured against.
+    const pointer = new THREE.Mesh(
+      // Three sides, so it reads as a triangle from the front rather than
+      // as a little gem.
+      new THREE.ConeGeometry(0.55, 1.25, 3),
+      new THREE.MeshStandardMaterial({
+        color: 0xfff6e2,
+        roughness: 0.3,
+        metalness: 0.5,
+        // Lit from inside as well as from the spotlights: it sits above the
+        // rim, outside the pool of light the wheel is in, and without this
+        // it reads as a dark sliver against the sky.
+        emissive: new THREE.Color(0xc9a24e),
+        emissiveIntensity: 0.85,
+      }),
+    );
+    // A cone's apex is +y, and this one has to point down into the wheel.
+    pointer.rotation.z = Math.PI;
+    pointer.position.set(0, WHEEL_Y + WHEEL_RADIUS + 0.2, 0.6);
+    scene.add(pointer);
 
     // --- light ----------------------------------------------------------
-    scene.add(new THREE.AmbientLight(0x8a93c8, 0.7));
+    scene.add(new THREE.AmbientLight(0x8a93c8, 0.85));
     // Moonlight from the left, aurora from the upper right — the two light
     // sources the artwork already has.
-    const key = new THREE.SpotLight(0xdfe7ff, 190, 30, 0.55, 0.55, 1.6);
+    const key = new THREE.SpotLight(0xdfe7ff, 190, 30, 0.6, 0.6, 1.6);
     key.position.set(-6, 6.5, 8);
     const fill = new THREE.SpotLight(0x7ff0d0, 110, 30, 0.6, 0.6, 1.6);
     fill.position.set(7, 5.5, 5.5);
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    rimLight.position.set(0, 0, -8);
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.45);
+    rimLight.position.set(0, 0, 8);
     scene.add(key, key.target, fill, fill.target, rimLight);
 
     // --- glow, flash, stars, confetti ------------------------------------
@@ -223,8 +208,8 @@ export default function LuckyDrawStage({
         transparent: true,
       }),
     );
-    glow.scale.set(12, 12, 1);
-    glow.position.set(0, 0, -2.2);
+    glow.scale.set(13, 13, 1);
+    glow.position.set(0, WHEEL_Y, -2.2);
     scene.add(glow);
 
     const flash = new THREE.Sprite(
@@ -266,12 +251,12 @@ export default function LuckyDrawStage({
     confGeo.setAttribute("position", new THREE.BufferAttribute(confPos, 3));
     confGeo.setAttribute("color", new THREE.BufferAttribute(confColors, 3));
     const confettiMat = new THREE.PointsMaterial({
-        size: 0.17,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
+      size: 0.17,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
     });
     const confetti = new THREE.Points(confGeo, confettiMat);
     scene.add(confetti);
@@ -280,9 +265,11 @@ export default function LuckyDrawStage({
       renderer,
       camera,
       scene,
-      drum,
-      faces,
-      rims,
+      wheel,
+      face,
+      canvas,
+      texture,
+      pointer,
       stars,
       snow,
       aurora,
@@ -292,12 +279,11 @@ export default function LuckyDrawStage({
       confettiMat,
       confettiVel,
       confettiLife: { t: 1 },
-      spots: [key, fill],
       phase: "idle",
       spinStart: 0,
       spinFrom: 0,
       spinTo: 0,
-      rot: FRONT,
+      rot: 0,
       revealAt: 0,
       landedOnce: false,
       onLanded: null,
@@ -305,23 +291,23 @@ export default function LuckyDrawStage({
       reduced,
     };
     sceneRef.current = s;
-    drum.rotation.x = s.rot;
 
     // Names only once the Thai font is actually there — painted before it
-    // loads, every panel is drawn in the fallback and stays that way until
+    // loads, the face is drawn in the fallback and stays that way until
     // something else repaints it.
-    const paintAll = () => {
+    const paintIdle = () => {
       const people = poolRef.current;
       if (!people.length) return;
       const picks = shuffled(people);
-      s.faces.forEach((f, i) => {
-        const p = picks[i % picks.length];
-        paintFace(f.canvas, { name: p.name ?? "(ไม่มีชื่อ)" });
-        f.texture.needsUpdate = true;
-      });
+      paintWheel(
+        s.canvas,
+        Array.from({ length: WEDGES }, (_, i) => picks[i % picks.length].name ?? "(ไม่มีชื่อ)"),
+        -1,
+      );
+      s.texture.needsUpdate = true;
     };
-    void (document.fonts?.ready ?? Promise.resolve()).then(paintAll);
-    paintAll();
+    void (document.fonts?.ready ?? Promise.resolve()).then(paintIdle);
+    paintIdle();
 
     const onResize = () => {
       if (!mount.clientWidth) return;
@@ -348,25 +334,24 @@ export default function LuckyDrawStage({
         mat.opacity = 0.3 + Math.sin(now / (3400 + i * 900) + i) * 0.16;
         ribbon.position.x += Math.sin(now / (6000 + i * 1500)) * dt * 0.6;
       });
-      for (const rim of s.rims) rim.rotation.z += dt * 0.25;
 
       if (s.phase !== "spinning" && s.landedOnce) {
-        // Held on the winner, with just enough movement to look alive.
-        // It used to go back to drifting a second and a half after landing,
-        // which slid the name that had just been drawn off the front of the
-        // drum while everyone was still reading it.
-        s.rot = s.spinTo + Math.sin(now / 1500) * 0.008;
+        // Held on the winner, with just enough movement to look alive. It
+        // used to go back to drifting a second and a half after landing,
+        // which turned the name that had just been drawn away from the
+        // pointer while everyone was still reading it.
+        s.rot = s.spinTo + Math.sin(now / 1500) * 0.006;
         if (s.phase === "reveal" && now - s.revealAt > REVEAL_MS) s.phase = "idle";
       } else if (s.phase === "idle") {
         // Before the first name: turning, because a stopped machine looks
         // broken.
-        s.rot += dt * 0.16;
+        s.rot -= dt * 0.12;
       } else if (s.phase === "spinning") {
         const t = Math.min((now - s.spinStart) / (s.reduced ? 900 : SPIN_MS), 1);
         // Quint ease-out: still flying at the half-way mark, then the last
-        // half-turn takes almost a second. The slow landing is the whole
-        // trick — it is what makes a name arriving feel decided rather than
-        // merely displayed.
+        // wedge takes almost a second. The slow landing is the whole trick —
+        // it is what makes a name arriving feel decided rather than merely
+        // displayed.
         const e = 1 - Math.pow(1 - t, 5);
         s.rot = s.spinFrom + (s.spinTo - s.spinFrom) * e;
         if (t >= 1) {
@@ -384,7 +369,7 @@ export default function LuckyDrawStage({
             const ice = new THREE.Color(0xc9dbff);
             const mint = new THREE.Color(0x9ff0dc);
             for (let i = 0; i < confCount; i++) {
-              pos.setXYZ(i, (Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 1.2, 3.4);
+              pos.setXYZ(i, (Math.random() - 0.5) * 1.6, WHEEL_Y + WHEEL_RADIUS * 0.6, 2.6);
               const speed = 3.5 + Math.random() * 7;
               const a = Math.random() * Math.PI * 2;
               const up = 0.35 + Math.random() * 0.9;
@@ -404,7 +389,7 @@ export default function LuckyDrawStage({
         }
       }
 
-      s.drum.rotation.x = s.rot;
+      s.wheel.rotation.z = s.rot;
 
       // Flash and glow fall off on their own clock, so they keep burning
       // after the phase has moved on rather than being cut at a boundary.
@@ -413,7 +398,7 @@ export default function LuckyDrawStage({
       }
       const pulse = s.phase === "reveal" ? 0.75 : 0.4;
       s.glow.material.opacity += (pulse - s.glow.material.opacity) * Math.min(1, dt * 4);
-      const breathe = 12 + Math.sin(now / 900) * 0.4 + (s.phase === "reveal" ? 2.4 : 0);
+      const breathe = 13 + Math.sin(now / 900) * 0.4 + (s.phase === "reveal" ? 2.4 : 0);
       s.glow.scale.set(breathe, breathe, 1);
 
       if (confCount > 0 && s.confettiLife.t < 1) {
@@ -431,10 +416,7 @@ export default function LuckyDrawStage({
       }
 
       // The camera leans in while a name is landing and settles back after.
-      // Framed so the drum is a machine standing in a room — at 10 units it
-      // filled the frame corner to corner and the stars, the glow and the
-      // rims all went off the edges, which is most of what makes it a scene.
-      const want = s.phase === "idle" ? 13.4 : 12.3;
+      const want = s.phase === "idle" ? 11.6 : 10.8;
       s.camera.position.z += (want - s.camera.position.z) * Math.min(1, dt * 2.2);
       s.camera.lookAt(0, 0, 0);
 
@@ -453,41 +435,37 @@ export default function LuckyDrawStage({
           (Array.isArray(m) ? m : [m]).forEach((mat) => mat.dispose());
         }
       });
-      for (const f of s.faces) f.texture.dispose();
+      s.texture.dispose();
       renderer.domElement.remove();
       sceneRef.current = null;
     };
   }, []);
 
-  // A new target means: fill the reel with strangers, put this person on
-  // face zero, and turn until face zero is at the front.
+  // A new target means: fill the wheel with strangers, put this person on
+  // the wedge at twelve o'clock, and turn until twelve o'clock comes round.
   useEffect(() => {
     const s = sceneRef.current;
     if (!s || !target) return;
 
     const others = shuffled(pool.filter((p) => p.userId !== target.userId));
-    s.faces.forEach((f, i) => {
-      const p: Entrant | undefined = others[(i - 1) % Math.max(1, others.length)];
-      paintFace(
-        f.canvas,
-        i === 0
-          ? { name: target.name ?? "(ไม่มีชื่อ)", winner: true }
-          : { name: p?.name ?? "(ไม่มีชื่อ)" },
-      );
-      f.texture.needsUpdate = true;
-      const mat = f.mesh.material as THREE.MeshStandardMaterial;
-      mat.emissiveIntensity = i === 0 ? 0.9 : 0.3;
-      mat.emissive.set(i === 0 ? ACCENT : "#000000");
-    });
+    const names = Array.from({ length: WEDGES }, (_, i) =>
+      i === 0
+        ? target.name ?? "(ไม่มีชื่อ)"
+        : others[(i - 1) % Math.max(1, others.length)]?.name ?? "(ไม่มีชื่อ)",
+    );
+    paintWheel(s.canvas, names, 0);
+    s.texture.needsUpdate = true;
+    (s.face.material as THREE.MeshStandardMaterial).emissive.set(ACCENT);
 
-    // Face zero sits at angle 0, so it is at the front when the drum has
-    // turned to FRONT. Whole turns on top of that, and the remainder taken
-    // forwards only — a reel that creeps backwards to land reads as rigged.
+    // Clockwise, always, and never backwards to land: a wheel that creeps
+    // the short way round to its answer reads as rigged. Wedge zero is at
+    // twelve o'clock on the face, so the target is a whole number of turns
+    // from zero, taken the long way from wherever it is now.
     const current = s.rot;
-    const toFront = FRONT + Math.PI * 2 * TURNS;
-    const delta = ((toFront - current) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+    const full = Math.PI * 2;
+    const back = ((current % full) + full) % full;
     s.spinFrom = current;
-    s.spinTo = current + Math.PI * 2 * TURNS + delta;
+    s.spinTo = current - back - full * TURNS;
     s.spinStart = performance.now();
     s.phase = "spinning";
     s.onLanded = () => landedRef.current();
