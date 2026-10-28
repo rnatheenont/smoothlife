@@ -183,7 +183,7 @@ export default function LuckyDrawPreviewPage() {
                     <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/50">
                       รางวัลที่ {nowShowing.order} / {LUCKY_FAN_PRIZES}
                     </p>
-                    <p className="truncate text-2xl font-extrabold text-white md:text-4xl">
+                    <p className="truncate text-2xl font-medium tracking-tight text-white md:text-4xl">
                       {nowShowing.name || "(ไม่มีชื่อ)"}
                     </p>
                   </>

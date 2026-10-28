@@ -51,7 +51,10 @@ export type FaceContent = {
 function fitFont(ctx: CanvasRenderingContext2D, text: string, max: number) {
   let size = 96;
   do {
-    ctx.font = `700 ${size}px "IBM Plex Sans Thai", "Noto Sans Thai", "Sarabun", sans-serif`;
+    // Light rather than bold. Bold Thai at this size closes up its own
+    // loops — ฐ, ญ and ณ stop being distinguishable at a glance, which is
+    // the only thing a name on a spinning drum has to do.
+    ctx.font = `400 ${size}px "IBM Plex Sans Thai", "Noto Sans Thai", "Sarabun", sans-serif`;
     if (ctx.measureText(text).width <= max) return;
     size -= 4;
   } while (size > 34);
