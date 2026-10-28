@@ -44,22 +44,34 @@ async function triggerCatalogueRebuildIfDue(): Promise<{ triggered: boolean; rea
   const hookUrl = process.env.VERCEL_DEPLOY_HOOK_URL;
   if (!hookUrl) return { triggered: false, reason: "VERCEL_DEPLOY_HOOK_URL not configured" };
 
-  const [state] = await supabaseRest<{ last_triggered_at: string | null }[]>(
-    "catalogue_refresh_state?select=last_triggered_at&limit=1"
+  // Claim the slot before calling the hook, in one conditional UPDATE. This
+  // used to read last_triggered_at, call the hook, then write it — and Shopify
+  // sends several of these at once (an order with four line items is four
+  // inventory_levels/update), so every one of them read the old time, passed,
+  // and spent its own deployment: 16 extra production builds on 20 Oct 69.
+  // Postgres locks the row for the UPDATE, so the losers re-check the WHERE
+  // against the winner's new time and match nothing.
+  const claimedAt = new Date().toISOString();
+  const cutoff = encodeURIComponent(new Date(Date.now() - REBUILD_DEBOUNCE_MS).toISOString());
+  const claimed = await supabaseRest<{ last_triggered_at: string }[]>(
+    `catalogue_refresh_state?id=eq.true&or=(last_triggered_at.is.null,last_triggered_at.lt.${cutoff})&select=last_triggered_at`,
+    { method: "PATCH", body: JSON.stringify({ last_triggered_at: claimedAt }) }
   );
-  const lastTriggeredAt = state?.last_triggered_at ? new Date(state.last_triggered_at).getTime() : 0;
-  if (Date.now() - lastTriggeredAt < REBUILD_DEBOUNCE_MS) {
+  if (!claimed?.length) {
     return { triggered: false, reason: "debounced — a rebuild already ran recently" };
   }
 
-  const res = await fetch(hookUrl, { method: "POST" });
-  if (!res.ok) return { triggered: false, reason: `deploy hook returned ${res.status}` };
-
-  await supabaseRest("catalogue_refresh_state?id=eq.true", {
-    method: "PATCH",
-    returning: false,
-    body: JSON.stringify({ last_triggered_at: new Date().toISOString() }),
-  });
+  const res = await fetch(hookUrl, { method: "POST" }).catch(() => null);
+  if (!res?.ok) {
+    // Give the slot back so the next product change can try again, instead of
+    // waiting out ten minutes for a rebuild that never started. Only if it is
+    // still ours — another claim may have landed since.
+    await supabaseRest(
+      `catalogue_refresh_state?id=eq.true&last_triggered_at=eq.${encodeURIComponent(claimedAt)}`,
+      { method: "PATCH", returning: false, body: JSON.stringify({ last_triggered_at: null }) }
+    ).catch(() => {});
+    return { triggered: false, reason: `deploy hook ${res ? `returned ${res.status}` : "unreachable"}` };
+  }
   return { triggered: true };
 }
 
