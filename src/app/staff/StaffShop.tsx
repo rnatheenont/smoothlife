@@ -757,7 +757,15 @@ export default function StaffShop() {
               // off it. top-(--app-header-h) is the height the header reports
               // as it hides and comes back, so this follows it rather than
               // guessing a number (see Header.tsx).
-              <div className="scrollbar-none sticky top-(--app-header-h) z-30 -mx-4 mb-5 space-y-3 bg-white/95 px-4 py-3 backdrop-blur-sm transition-[top] duration-300 lg:-mx-2 lg:px-2">
+              // A card, like the allowance card beside it, rather than a
+              // white band bleeding to both edges. The bleed was invisible
+              // while the page behind it was white; against the aurora it
+              // reads as a square-cornered slab sitting on a rounded page.
+              //
+              // Still sticky, and now offset from the header by the same
+              // 1rem the sidebar card uses — a rounded card jammed against
+              // the bar above it looks like it failed to stop.
+              <div className="scrollbar-none sticky top-[calc(var(--app-header-h,0px)+1rem)] z-30 mb-5 space-y-3 rounded-xl2 bg-white/95 p-3 ring-1 ring-surface-line backdrop-blur-sm transition-[top] duration-300">
                 {/* Search first, because it is the shortest route to one
                     known product, and the tabs are for browsing. */}
                 <div className="flex gap-2">
@@ -816,7 +824,10 @@ export default function StaffShop() {
                   <div
                     role="tablist"
                     aria-label="แบรนด์"
-                    className="scrollbar-none -mx-4 flex gap-1 overflow-x-auto border-b border-surface-line px-4 md:mx-0 md:px-0"
+                    // No -mx bleed any more: inside a rounded card an
+                    // overflow-x-auto child that runs to the edge draws its
+                    // square corners straight through the curve.
+                    className="scrollbar-none flex gap-1 overflow-x-auto border-b border-surface-line"
                   >
                     {/* Counted in products, because products are what the
                         grid shows: three colours of one toothbrush are one
