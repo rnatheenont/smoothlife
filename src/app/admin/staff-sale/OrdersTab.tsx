@@ -88,6 +88,46 @@ export default function OrdersTab({
     void load();
   }, [load]);
 
+  /**
+   * For an order 2C2P charged but our webhook never finished.
+   *
+   * The webhook answers 200 whatever happens, so a delivery we mishandle is
+   * one we never see again — and on 28 Oct 2026 that was every staff payment
+   * ever taken. This asks 2C2P what actually happened and finishes the job
+   * only if the invoice, the response code and the amount all agree.
+   */
+  async function recover(order: AdminStaffOrder) {
+    if (
+      !confirm(
+        `เช็คกับ 2C2P ว่าออร์เดอร์นี้ (${baht(order.subtotal_thb)} บาท) จ่ายสำเร็จแล้วหรือยัง?\n` +
+          "ถ้าจ่ายแล้วจะปิดออร์เดอร์ ตัดสต็อก และสร้างออร์เดอร์ใน Shopify ให้\n" +
+          "ถ้ายังไม่จ่าย จะไม่มีอะไรเปลี่ยน",
+      )
+    ) {
+      return;
+    }
+    setBusyId(order.id);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/staff-sale/orders/recover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error ?? "ปิดออร์เดอร์ไม่สำเร็จ");
+      if (!json.synced) {
+        setError("ปิดออร์เดอร์แล้ว แต่สร้างใน Shopify ไม่สำเร็จ — กด “ลอง Shopify อีกครั้ง” ที่แถวนี้");
+      }
+      await load();
+      onReload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ปิดออร์เดอร์ไม่สำเร็จ");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function act(
     order: AdminStaffOrder,
     action: "refund_restore" | "cancel" | "clear_flag" | "retry_shopify",
@@ -242,15 +282,29 @@ export default function OrdersTab({
                       </Button>
                     )}
                     {o.status === "pending" && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onPress={() => act(o, "cancel")}
-                        isDisabled={busyId === o.id}
-                      >
-                        <XCircle className="h-3.5 w-3.5" aria-hidden />
-                        ยกเลิก
-                      </Button>
+                      <>
+                        {/* For the order that was paid for and never
+                            completed. It asks 2C2P before it moves a row, so
+                            pressing it on an unpaid order simply says so. */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => recover(o)}
+                          isDisabled={busyId === o.id}
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                          เช็ค 2C2P แล้วปิดให้
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => act(o, "cancel")}
+                          isDisabled={busyId === o.id}
+                        >
+                          <XCircle className="h-3.5 w-3.5" aria-hidden />
+                          ยกเลิก
+                        </Button>
+                      </>
                     )}
                     {o.status === "paid" && !o.shopify_order_id && (
                       <Button
