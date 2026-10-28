@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
-import Image from "next/image";
-import { shopifyImage } from "@/lib/shopify-image";
+import { shopifySquare, shopifySquareSrcSet } from "@/lib/shopify-image";
 import Link from "next/link";
 import { Heart, Check, Flame, Plus, Star } from "lucide-react";
 import type { ProductCardData } from "@/data/card";
@@ -152,15 +151,28 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
             and shrank it inside padding. No zoom on hover — the card lifting
             its shadow is enough to say it is clickable. */}
         <Link href={`/product/${product.slug}`} className="relative block aspect-square overflow-hidden bg-white">
-          <Image
-            // 560px: a card is drawn at most ~280px wide, so this is enough
-            // for a 2x screen. The catalogue URL asks for 700px, and with
-            // images.unoptimized that is what every card downloaded.
-            src={shopifyImage(product.image, 560)}
+          {/* A plain img, not next/image, and the reason is srcset.
+              `images.unoptimized` is on, so next/image emits a bare <img>
+              with one source and drops the `sizes` prop — every phone was
+              downloading and decoding the 560px file for a slot drawn at
+              163px, and a shop page with a hundred cards on it came to 147 MB
+              of decoded image. That is what was killing the tab on iOS.
+
+              Square crops, because the slot is square and object-cover was
+              throwing away two thirds of a 560×948 packshot after paying to
+              decode all of it. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={shopifySquare(product.image, 480)}
+            srcSet={shopifySquareSrcSet(product.image)}
+            sizes="(max-width: 768px) 50vw, (max-width: 1536px) 25vw, 20vw"
             alt={product.name}
-            fill
-            sizes="(max-width: 768px) 50vw, 25vw"
-            className={clsx("object-cover", soldOut && "grayscale opacity-60")}
+            loading="lazy"
+            decoding="async"
+            className={clsx(
+              "absolute inset-0 h-full w-full object-cover",
+              soldOut && "grayscale opacity-60",
+            )}
           />
           {soldOut ? (
             <div className="absolute inset-0 grid place-items-center bg-black/10">

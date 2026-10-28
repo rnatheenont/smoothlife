@@ -21,13 +21,18 @@ import type { ShopSearchParams } from "@/lib/filter-products";
 
 /** Pages fetched without being asked before the button takes over.
  *
- *  A phone that scrolls steadily for a minute would otherwise hold a
- *  thousand product cards and their images in one document, and iOS Safari
- *  answers that by killing the tab — "A problem repeatedly occurred", a
- *  black screen, and everything the shopper had scrolled past gone. Three
- *  pages is 96 products, which is more than anybody reads in one go, and
- *  after that carrying on is a decision rather than a side effect. */
-const AUTO_PAGES = 3;
+ *  This started at three, as a brake on iOS Safari killing the tab — "A
+ *  problem repeatedly occurred", a black screen, and everything scrolled
+ *  past gone. The brake was not the fix and it did not work: the cause was
+ *  the card images, which were being served at 560px for a 163px slot and
+ *  came to 147 MB of decoded image on a phone. Square crops and a real
+ *  srcset took the same hundred cards to 15 MB, so the ceiling could go back
+ *  up.
+ *
+ *  Not removed, though. Eight pages is 192 products, which is further than
+ *  anybody reads in one sitting, and a list that loads for ever because a
+ *  phone is face down in a pocket is still a list nobody asked for. */
+const AUTO_PAGES = 8;
 
 export default function InfiniteProducts({
   initial,
