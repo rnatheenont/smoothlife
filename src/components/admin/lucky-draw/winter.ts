@@ -9,6 +9,17 @@ import * as THREE from "three";
 // behind the drum, and lit by the same lights as everything else for the
 // scene to read as a place. It also costs nothing to download.
 
+/**
+ * The campaign's own artwork, if somebody has put it there.
+ *
+ * Drop the key visual at this path and it replaces the painted scenery
+ * outright — sky, ridge, snow and trees all come from the picture, and the
+ * built ones switch off rather than being drawn on top of it. Leave it out
+ * and the scene paints itself, so the page never depends on a file being
+ * present.
+ */
+export const BACKDROP_IMAGE = "/lucky-draw/winter-night.jpg";
+
 export const WINTER = {
   skyTop: "#070b24",
   skyMid: "#241a4e",
@@ -268,4 +279,38 @@ export function stepSnowfall(snow: Snowfall, dt: number, now: number) {
     }
   }
   attr.needsUpdate = true;
+}
+
+/**
+ * The whole night, assembled.
+ *
+ * One call rather than five, because the pieces have to know about each
+ * other: if the artwork loads, everything that was standing in for it has to
+ * go, and that is not a decision the stage should be making.
+ */
+export function winterNight(): { group: THREE.Group; aurora: THREE.Group } {
+  const sky = skyBackdrop();
+  const aurora = auroraRibbons();
+  const ridge = mountainRange();
+  const ground = snowGround();
+  const trees = pineForest();
+  const group = new THREE.Group();
+  group.add(sky, aurora, ridge, ground, trees);
+
+  new THREE.TextureLoader().load(
+    BACKDROP_IMAGE,
+    (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const mat = sky.material as THREE.MeshBasicMaterial;
+      mat.map = tex;
+      mat.needsUpdate = true;
+      // The picture already has all of this in it.
+      for (const built of [aurora, ridge, ground, trees]) built.visible = false;
+    },
+    undefined,
+    // No file is the normal case, not an error worth a console line.
+    () => {},
+  );
+
+  return { group, aurora };
 }

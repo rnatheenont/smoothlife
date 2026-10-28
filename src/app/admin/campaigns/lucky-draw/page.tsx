@@ -7,7 +7,7 @@ import { ArrowLeft, Play, RotateCcw, SkipForward, Sparkles, TriangleAlert } from
 import { Button, Spinner } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import LuckyDrawStage from "@/components/admin/lucky-draw/LuckyDrawStage";
-import { ACCENT_UI } from "@/components/admin/lucky-draw/wheel";
+import { ACCENT_UI } from "@/components/admin/lucky-draw/faces";
 import {
   LUCKY_FAN_PRIZES,
   drawLuckyFan,
