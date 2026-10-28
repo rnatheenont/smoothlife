@@ -52,9 +52,6 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
             lg:hidden goes on the row itself, not on a wrapper: a wrapper is
             a box exactly the row's own height. */}
         <CategoryCircles current={searchParams} className="lg:hidden" />
-        {/* Shrunk and pinned under the app bar once the one above is gone —
-            see sections/shop_listing for why it is fixed and not sticky. */}
-        <CategoryCircles current={searchParams} mode="overlay" />
 
         <div className="flex flex-col gap-6">
           <div className="min-w-0 flex-1">

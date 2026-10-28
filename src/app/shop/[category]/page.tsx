@@ -95,7 +95,6 @@ async function CategoryPageWritten({
       </div>
       {/* Phones and tablets: the banner carries the row from lg. */}
       <CategoryCircles current={current} className="lg:hidden" />
-      <CategoryCircles current={current} mode="overlay" />
       {ADVISOR_ENTRY[params.category] && (
         <Link
           href={ADVISOR_ENTRY[params.category].href}

@@ -56,9 +56,6 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
       {/* The banner above carries this row from lg; below that it belongs
           here. The lg:hidden goes on the row itself, not on a wrapper. */}
       <CategoryCircles current={data.params} className="lg:hidden" />
-      {/* The same row shrunk and pinned under the app bar once the one above
-          is gone — see sections/shop_listing for why it is fixed. */}
-      <CategoryCircles current={data.params} mode="overlay" />
       <div className="flex flex-col gap-6">
         <div className="flex-1">
           {/* One toolbar, the same as /shop: filters on the left, ordering

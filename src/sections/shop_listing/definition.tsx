@@ -25,13 +25,12 @@ import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // The shop: the category row, the filters, and the products that survive them.
 //
-// One section and not three, and the reason is the sticky category row. It
-// pins under the app bar so the category you are in stays reachable however
-// far down the grid you are — and a sticky element can only travel inside its
-// own parent. Split into its own section it would get a parent the height of
-// the circles themselves and stop sticking after 24 pixels, which is the kind
-// of regression you only find by scrolling. So the row and the grid share one
-// container, exactly as the hand-written page had them.
+// One section and not three: the category row, the toolbar and the grid are
+// one idea read top to bottom, and a page document that could drop the row
+// and keep the filters would be a shop you cannot leave a category from.
+//
+// The row was pinned under the app bar for a while and is not any more —
+// see the note in CategoryCircles.
 //
 // Locked and settingless: every number on this page is counted per request
 // against the filters already on, so there is nothing here to type in.
@@ -90,11 +89,6 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
           a wrapper is a box exactly the row's own height, and anything
           positioned inside one has nowhere to travel. */}
       <CategoryCircles current={data.params} className="lg:hidden" />
-      {/* The same row again, shrunk and pinned under the app bar, from the
-          moment the one above goes off the top. Every width: the banner's
-          copy scrolls away on desktop too, and 664 products is a long way to
-          come back from. */}
-      <CategoryCircles current={data.params} mode="overlay" />
       <div className="flex flex-col gap-6">
         <div className="min-w-0 flex-1">
           {/* One toolbar: what narrows the list on the left, how it is
