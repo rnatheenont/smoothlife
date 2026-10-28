@@ -78,6 +78,34 @@ export async function supabaseRest<T>(
 }
 
 /**
+ * How many rows a filter matches, without reading them.
+ *
+ * PostgREST only sends a count in the Content-Range header, and supabaseRest
+ * returns the parsed body — so a caller that wants "438 accounts, here are
+ * the first 50" has no way to ask for the 438. Range: 0-0 keeps the body to
+ * a single row while the header still counts the lot.
+ */
+export async function supabaseCount(path: string): Promise<number> {
+  if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+    throw new Error("Supabase not configured — set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
+  }
+  const res = await fetchWithRetry(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      Prefer: "count=exact",
+      Range: "0-0",
+    },
+    cache: "no-store",
+  });
+  // 206 Partial Content is the normal answer to a Range request, so ok alone
+  // is not the test.
+  if (!res.ok && res.status !== 206) throw new Error(`Supabase REST ${res.status}: ${await res.text()}`);
+  const total = Number(res.headers.get("content-range")?.split("/")[1]);
+  return Number.isFinite(total) ? total : 0;
+}
+
+/**
  * A read that Next.js may cache — for public data that pages render, where a
  * short staleness window is fine and every write path calls revalidateTag()
  * on the same tags. Unlike supabaseRest this does not force the page dynamic,

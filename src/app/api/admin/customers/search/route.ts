@@ -78,15 +78,36 @@ export async function GET(req: NextRequest) {
     phoneForms.add(`66${local.slice(1)}`);
   }
 
+  // Searching by customer id, which is the one thing support can always
+  // copy out of a conversation: either the account id from this screen's own
+  // URL, or the shop's customer number as the row beside it prints it.
+  //
+  // ilike and not eq for the shop number, because the column holds the long
+  // form — gid://shopify/Customer/31241846030487 — for all but two of the
+  // 438 linked accounts, so matching the whole value finds almost nobody.
+  // A pasted "#31241846030487" or the whole gid both reduce to the digits.
+  const accountId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(term)
+    ? term
+    : null;
+  const shopDigits = term.replace(/\D/g, "");
+  // Six, so a short number or part of a phone does not drag in every id
+  // that happens to contain those digits.
+  const shopNumber = shopDigits.length >= 6 ? shopDigits : null;
+
   const like = `*${term}*`;
+  const userOr = [
+    `display_name.ilike.${encodeURIComponent(like)}`,
+    ...[...phoneForms].map((p) => `phone.eq.${pgValue(p)}`),
+    ...(accountId ? [`id.eq.${pgValue(accountId)}`] : []),
+    ...(shopNumber ? [`shopify_customer_id.ilike.${encodeURIComponent(`*${shopNumber}*`)}`] : []),
+  ].join(",");
+
   const [identities, byName] = await Promise.all([
     supabaseRest<IdentityRow[]>(
       `auth_identities?select=user_id,provider,provider_uid,verified_at&provider_uid=ilike.${encodeURIComponent(like)}&limit=25`
     ).catch(() => []),
     supabaseRest<UserRow[]>(
-      `users?select=id,display_name,phone,shopify_customer_id,created_at&or=(display_name.ilike.${encodeURIComponent(
-        like
-      )}${[...phoneForms].map((p) => `,phone.eq.${pgValue(p)}`).join("")})&limit=25`
+      `users?select=id,display_name,phone,shopify_customer_id,created_at&or=(${userOr})&limit=25`
     ).catch(() => []),
   ]);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import {
@@ -104,6 +104,18 @@ type Candidate = {
   adminHandle: string;
 };
 
+/** A row of the standing list: an account that is already joined to a shop
+ *  record. Flatter than Account because nothing on this list is edited —
+ *  it is read, and clicked through to the customer. */
+type LinkedAccount = {
+  id: string;
+  displayName: string | null;
+  phone: string | null;
+  email: string | null;
+  shopifyCustomerId: string | null;
+  createdAt: string;
+};
+
 type HealthAccount = {
   id: string;
   name: string | null;
@@ -197,6 +209,42 @@ export default function AdminCustomersPage() {
       cancelled = true;
     };
   }, [selected]);
+  // Who is linked, all of them, without being asked. The search above needs
+  // a name to start from; this needs nothing, so it is also the answer to
+  // "did that link actually happen" after you have made one.
+  const [linked, setLinked] = useState<LinkedAccount[] | null>(null);
+  const [linkedTotal, setLinkedTotal] = useState(0);
+  const [linkedPages, setLinkedPages] = useState(0);
+  const [linkedBusy, setLinkedBusy] = useState(false);
+  const [linkedError, setLinkedError] = useState("");
+
+  const loadLinked = useCallback(async (page: number) => {
+    setLinkedBusy(true);
+    setLinkedError("");
+    try {
+      const res = await fetch(`/api/admin/customers/linked?page=${page}`);
+      const json = await res.json();
+      if (!json.ok) {
+        setLinkedError(json.error || "โหลดรายชื่อไม่สำเร็จ");
+        return;
+      }
+      // Appended, not replaced: "โหลดเพิ่ม" adds to the list you are already
+      // reading rather than paging you away from it.
+      setLinked((prev) => (page === 1 ? json.accounts : [...(prev ?? []), ...json.accounts]));
+      setLinkedTotal(json.total);
+      setLinkedPages(page);
+    } catch {
+      setLinkedError("โหลดรายชื่อไม่สำเร็จ");
+    } finally {
+      setLinkedBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- first load
+    void loadLinked(1);
+  }, [loadLinked]);
+
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState("");
   const [done, setDone] = useState("");
@@ -473,7 +521,7 @@ export default function AdminCustomersPage() {
           className="min-w-0 flex-1"
           value={term}
           onChange={setTerm}
-          placeholder="อีเมล / เบอร์โทร / ชื่อลูกค้า"
+          placeholder="อีเมล / เบอร์โทร / ชื่อ / รหัสลูกค้า"
         />
         <Button type="submit" isPending={loading}>
           {loading ? (
@@ -1252,6 +1300,131 @@ export default function AdminCustomersPage() {
           </Card>
         </div>
       )}
+
+      {/* Everyone who is already joined up, loaded without being asked.
+          Full width rather than one half of the pair above: this list is not
+          read against anything, and the two tables above only sit side by
+          side from 2xl because 560px is the floor for a row.
+
+          table-fixed and every cell truncated, for the reason written above:
+          a nowrap cell's minimum width is its whole string, so one long
+          e-mail would otherwise set the width of the column for all fifty
+          rows and push the last one off the card. */}
+      <Card className="min-w-0 p-4">
+        <SectionTitle className="mb-1">
+          บัญชีที่ผูกกับ Shopify แล้ว
+          {linkedTotal > 0 && ` (${linkedTotal.toLocaleString("th-TH")})`}
+        </SectionTitle>
+        <p className="mb-3 text-[11px] text-slate-400">
+          ทุกบัญชีในเว็บที่ผูกกับใบลูกค้าใน Shopify เรียงจากสมัครล่าสุด —
+          กดชื่อเพื่อดูประวัติลูกค้า
+        </p>
+
+        {linkedError && (
+          <p role="alert" className="text-xs font-medium text-rose-600">
+            {linkedError}
+          </p>
+        )}
+        {linked === null && !linkedError && (
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <Spinner size="sm" color="current" />
+            กำลังโหลดรายชื่อ
+          </div>
+        )}
+        {linked !== null && linked.length === 0 && !linkedError && (
+          <p className="text-xs text-slate-400">ยังไม่มีบัญชีที่ผูกกับ Shopify</p>
+        )}
+
+        {linked !== null && linked.length > 0 && (
+          <>
+            <div className={clsx(adminCards.forTable, adminTable.scroll)}>
+              <table className={clsx(adminTable.table, "table-fixed")}>
+                <thead className={adminTable.thead}>
+                  <tr>
+                    <th>ลูกค้า</th>
+                    <th className="w-56">อีเมล</th>
+                    <th className="w-28">เบอร์โทร</th>
+                    <th className="w-40">รหัสลูกค้า</th>
+                    <th className="w-24">สมัคร</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {linked.map((a) => (
+                    <tr key={a.id} className={adminTable.row}>
+                      <td className={adminTable.cell}>
+                        <Link
+                          href={`/admin/customers/${a.id}`}
+                          title="เปิดหน้าประวัติลูกค้า"
+                          className="block truncate font-semibold text-brand-ink hover:underline"
+                        >
+                          {a.displayName || "(ไม่มีชื่อ)"}
+                        </Link>
+                      </td>
+                      <td className={adminTable.cell}>
+                        <span className="block truncate text-slate-600">
+                          {a.email || "—"}
+                        </span>
+                      </td>
+                      <td className={adminTable.cell}>
+                        <span className="block truncate text-slate-600">
+                          {a.phone || "—"}
+                        </span>
+                      </td>
+                      <td className={adminTable.mono}>
+                        <span className="block truncate">
+                          #{shortId(a.shopifyCustomerId)}
+                        </span>
+                      </td>
+                      <td className={adminTable.muted}>{fmtDate(a.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Cards below md: five columns on a phone is five columns of
+                single words. */}
+            <div className={adminCards.list}>
+              {linked.map((a) => (
+                <div key={a.id} className={adminCards.item}>
+                  <div className={adminCards.head}>
+                    <Link
+                      href={`/admin/customers/${a.id}`}
+                      className="min-w-0 truncate font-semibold text-brand-ink"
+                    >
+                      {a.displayName || "(ไม่มีชื่อ)"}
+                    </Link>
+                    <Badge tone="success">#{shortId(a.shopifyCustomerId)}</Badge>
+                  </div>
+                  <div className={adminCards.foot}>
+                    {a.email && <span className="w-full truncate">{a.email}</span>}
+                    {a.phone && <span>{a.phone}</span>}
+                    <span className="ml-auto">สมัคร {fmtDate(a.createdAt)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {linked.length < linkedTotal && (
+              <div className="mt-3 flex items-center gap-3">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => void loadLinked(linkedPages + 1)}
+                  isPending={linkedBusy}
+                >
+                  {linkedBusy && <Spinner size="sm" color="current" />}
+                  โหลดเพิ่ม
+                </Button>
+                <span className="text-[11px] text-slate-400">
+                  แสดง {linked.length.toLocaleString("th-TH")} จาก{" "}
+                  {linkedTotal.toLocaleString("th-TH")}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+      </Card>
 
       {selected && (
         <Card className="p-4 max-w-2xl">
