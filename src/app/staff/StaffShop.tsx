@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   ShoppingCart,
   Wallet,
+  X,
 } from "lucide-react";
 import { Button } from "@heroui/react";
 import { categories } from "@/data/categories";
@@ -276,6 +277,10 @@ function WindowStrip({ to, windowMin }: { to: string; windowMin: number }) {
 export default function StaffShop() {
   const [data, setData] = useState<State>({ state: "loading" });
   const [error, setError] = useState<string | null>(null);
+  // Why the last tap on a plus did nothing — kept apart from `error` so it can
+  // go away on its own the moment the cart changes, while a failed load or
+  // checkout stays until it is dealt with.
+  const [cartNotice, setCartNotice] = useState<string | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
   const [justPaid, setJustPaid] = useState(false);
@@ -550,15 +555,15 @@ export default function StaffShop() {
       const others = Object.keys(cart).filter((v) => v !== item.variant_id);
       const otherFills = others.some((v) => shop.items.find((i) => i.variant_id === v)?.fills_allowance);
       if (item.fills_allowance && others.length > 0) {
-        setError(`${item.name} ใช้วงเงินทั้งหมด ต้องซื้อเดี่ยว — เอาสินค้าอื่นออกจากตะกร้าก่อน`);
+        setCartNotice(`${item.name} ใช้วงเงินทั้งหมด ต้องซื้อเดี่ยว — เอาสินค้าอื่นออกจากตะกร้าก่อน`);
         return false;
       }
       if (otherFills) {
-        setError("ในตะกร้ามีสินค้าที่ใช้วงเงินทั้งหมดแล้ว — เพิ่มสินค้าอื่นไม่ได้");
+        setCartNotice("ในตะกร้ามีสินค้าที่ใช้วงเงินทั้งหมดแล้ว — เพิ่มสินค้าอื่นไม่ได้");
         return false;
       }
       if (item.fills_allowance && shop.standing.left_thb <= 0) {
-        setError("วงเงินของคุณหมดแล้ว");
+        setCartNotice("วงเงินของคุณหมดแล้ว");
         return false;
       }
     }
@@ -577,6 +582,7 @@ export default function StaffShop() {
       else copy[item.variant_id] = next;
       return copy;
     });
+    setCartNotice(null);
     return true;
   }
 
@@ -732,6 +738,24 @@ export default function StaffShop() {
         <div className="mb-5 flex items-start gap-2 rounded-xl2 bg-rose-50 p-3 text-[13px] text-rose-700">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <p>{error}</p>
+        </div>
+      )}
+
+      {cartNotice && (
+        <div
+          role="status"
+          className="mb-5 flex items-start gap-2 rounded-xl2 bg-amber-50 p-3 text-[13px] text-amber-800"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <p className="flex-1">{cartNotice}</p>
+          <button
+            type="button"
+            onClick={() => setCartNotice(null)}
+            aria-label="ปิดข้อความ"
+            className="-m-1 rounded-full p-1 text-amber-700 hover:bg-amber-100"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
         </div>
       )}
 
