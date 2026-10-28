@@ -27,6 +27,7 @@ import AccountGate from "@/components/AccountGate";
 import { useAuth } from "@/lib/auth-context";
 import { DAILY_CHECKIN_ENABLED, REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 import { useStaffAccess } from "@/lib/use-staff-access";
+import Countdown from "@/components/staff/Countdown";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 type NavGroup = { label?: string; items: NavItem[] };
@@ -135,6 +136,33 @@ function AccountShell({ children }: { children: ReactNode }) {
                 <div className="flex flex-col gap-1">
                   {group.items.map((item) => {
                     const active = isActive(pathname, item.href);
+                    // The employee shop gets the card that used to sit under
+                    // the orders on the overview: on a desktop the sidebar is
+                    // always in view, so the round and its clock live here and
+                    // the overview card is phone-only.
+                    if (item.href === "/staff") {
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className="flex items-start gap-2.5 rounded-xl bg-brand-50 px-3 py-3 ring-1 ring-brand-100 transition-colors hover:ring-brand-800/40"
+                        >
+                          <item.icon size={16} className="mt-0.5 shrink-0 text-brand-800" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-bold text-brand-ink">{item.label}</span>
+                            <span className="block text-xs text-slate-600">
+                              {staff.roundName ?? "ซื้อสินค้าราคาพนักงาน"}
+                            </span>
+                            {staff.ends_at && (
+                              <Countdown
+                                to={staff.ends_at}
+                                className="mt-0.5 block whitespace-nowrap text-xs font-semibold text-brand-800"
+                              />
+                            )}
+                          </span>
+                        </Link>
+                      );
+                    }
                     return (
                       <Link
                         key={item.href}

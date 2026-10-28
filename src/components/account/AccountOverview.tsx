@@ -183,14 +183,14 @@ export default function AccountOverview() {
           </div>
         )}
 
-        {/* The employee shop, for the few accounts it is open to.
-            Not a tile among the others and not hidden on desktop like them:
-            it is the only thing on this page with a date it stops working,
-            and the sidebar entry beside it cannot say when that is. */}
+        {/* The employee shop, for the few accounts it is open to. Not a
+            tile among the others: it is the only thing on this page with a
+            date it stops working. Phone only — on a desktop the sidebar
+            entry is this same card, round name and clock included. */}
         {staff.available && (
           <Link
             href="/staff"
-            className="flex items-center gap-3 rounded-xl2 bg-brand-50 p-4 ring-1 ring-brand-100 transition-colors hover:ring-brand-800/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
+            className="flex lg:hidden items-center gap-3 rounded-xl2 bg-brand-50 p-4 ring-1 ring-brand-100 transition-colors hover:ring-brand-800/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
               <ShoppingBag size={18} className="text-brand-800" />
