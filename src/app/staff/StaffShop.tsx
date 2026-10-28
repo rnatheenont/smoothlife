@@ -551,7 +551,7 @@ export default function StaffShop() {
       {data.state === "loading" && <p className="text-[13px] text-slate-400">กำลังโหลด…</p>}
 
       {data.state === "unavailable" && (
-        <div className="rounded-xl2 bg-surface-soft p-6">
+        <div className="rounded-xl2 bg-white p-6 ring-1 ring-surface-line">
           <p className="text-[14px] text-slate-600">
             ร้านพนักงานยังไม่พร้อมใช้งาน กรุณาลองใหม่อีกครั้งภายหลัง
           </p>
@@ -559,7 +559,7 @@ export default function StaffShop() {
       )}
 
       {data.state === "closed" && (
-        <div className="rounded-xl2 bg-surface-soft p-6">
+        <div className="rounded-xl2 bg-white p-6 ring-1 ring-surface-line">
           <p className="text-[15px] font-semibold text-brand-ink">ยังไม่มีรอบการซื้อที่เปิดอยู่</p>
           <p className="mt-1 text-[13px] text-slate-600">
             {data.nextRound
@@ -573,7 +573,7 @@ export default function StaffShop() {
         // Reached only by somebody whose session expired between the page
         // loading and this call — the page itself sends a signed-out visitor
         // to the login screen before any of this renders.
-        <div className="rounded-xl2 bg-surface-soft p-6">
+        <div className="rounded-xl2 bg-white p-6 ring-1 ring-surface-line">
           <p className="text-[15px] font-semibold text-brand-ink">กรุณาเข้าสู่ระบบ</p>
           <p className="mt-2 text-[13px] text-slate-600">
             เข้าสู่ระบบด้วยบัญชี Smoothlife ของคุณก่อน แล้วยืนยันอีเมลบริษัทเพื่อดูราคาพนักงาน
@@ -648,7 +648,7 @@ export default function StaffShop() {
             )}
 
             {!shop.canOrder && !shop.pending && (
-              <div className="mb-5 rounded-xl2 bg-surface-soft p-4">
+              <div className="mb-5 rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
                 <p className="text-[14px] font-semibold text-brand-ink">
                   คุณใช้สิทธิ์ของรอบนี้แล้ว
                 </p>
@@ -667,7 +667,13 @@ export default function StaffShop() {
                 finding out at checkout that a cart was never allowed is
                 finding out too late. */}
             {shop.canOrder && !shop.pending && (
-              <div className="mb-5 rounded-xl2 bg-surface-soft p-3 lg:hidden">
+              // White with a ring, like its own desktop twin in the sidebar
+              // below. It used to be bg-surface-soft (#edf4f1), which read as
+              // a box while the page behind it was white — and stopped the
+              // day the page grew an aurora, because the wash lands on very
+              // nearly that same colour. A panel whose background matches
+              // what is behind it is not a panel.
+              <div className="mb-5 rounded-xl2 bg-white p-3 ring-1 ring-surface-line lg:hidden">
                 <p className="flex items-baseline justify-between gap-2">
                   <span className="text-[12px] font-medium text-slate-500">วงเงินที่เหลือ</span>
                   <span className="text-[17px] font-bold">
@@ -719,17 +725,17 @@ export default function StaffShop() {
             )}
 
             {shop.items.length === 0 && (
-              <p className="rounded-xl2 bg-surface-soft p-6 text-[13px] text-slate-500">
+              <p className="rounded-xl2 bg-white p-6 text-[13px] text-slate-500 ring-1 ring-surface-line">
                 รอบนี้ยังไม่มีสินค้าให้เลือก
               </p>
             )}
             {shop.items.length > 0 && sellable.length === 0 && (
-              <p className="rounded-xl2 bg-surface-soft p-6 text-[13px] text-slate-500">
+              <p className="rounded-xl2 bg-white p-6 text-[13px] text-slate-500 ring-1 ring-surface-line">
                 สินค้าในรอบนี้หมดทั้งหมดแล้ว
               </p>
             )}
             {sellable.length > 0 && shownProducts.length === 0 && !q && (
-              <p className="rounded-xl2 bg-surface-soft p-6 text-[13px] text-slate-500">
+              <p className="rounded-xl2 bg-white p-6 text-[13px] text-slate-500 ring-1 ring-surface-line">
                 ไม่มีสินค้าที่ตรงกับตัวกรองนี้ —{" "}
                 <button
                   type="button"
@@ -1614,7 +1620,7 @@ function VerifyPanel({
   }
 
   return (
-    <div className="max-w-[520px] rounded-xl2 bg-surface-soft p-5 md:p-6">
+    <div className="max-w-[520px] rounded-xl2 bg-white p-5 ring-1 ring-surface-line md:p-6">
       <p className="flex items-center gap-1.5 text-[15px] font-bold text-brand-ink">
         <ShieldCheck className="h-4 w-4 text-brand-700" aria-hidden />
         ยืนยันอีเมลบริษัท
