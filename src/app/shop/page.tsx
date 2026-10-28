@@ -6,6 +6,7 @@ import ActiveFilterChips from "@/components/shop/ActiveFilterChips";
 import SortSelect from "@/components/SortSelect";
 import SortMenu from "@/components/shop/SortMenu";
 import Pagination from "@/components/Pagination";
+import InfiniteProducts from "@/components/shop/InfiniteProducts";
 import ShopHero from "@/components/shop/ShopHero";
 import CategoryCircles from "@/components/shop/CategoryCircles";
 import ViewToggle from "@/components/shop/ViewToggle";
@@ -101,7 +102,13 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
                     ))}
                   </div>
                 )}
-                <Pagination current={searchParams} page={page} totalPages={totalPages} />
+                {/* See the note in sections/shop_listing: scroll-loading
+                    for the grid, page numbers for the list view. */}
+                {isList ? (
+                  <Pagination current={searchParams} page={page} totalPages={totalPages} />
+                ) : (
+                  <InfiniteProducts params={searchParams} page={page} totalPages={totalPages} />
+                )}
               </>
             )}
           </div>

@@ -6,6 +6,7 @@ import ActiveFilterChips from "@/components/shop/ActiveFilterChips";
 import SortSelect from "@/components/SortSelect";
 import SortMenu from "@/components/shop/SortMenu";
 import Pagination from "@/components/Pagination";
+import InfiniteProducts from "@/components/shop/InfiniteProducts";
 import ViewToggle from "@/components/shop/ViewToggle";
 import ProductRow from "@/components/shop/ProductRow";
 import { categories } from "@/data/categories";
@@ -138,7 +139,19 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
                   ))}
                 </div>
               )}
-              <Pagination current={data.params} page={data.page} totalPages={data.totalPages} />
+              {/* The grid keeps loading as you reach the bottom; the list
+                  view keeps its page numbers, because a row carries the full
+                  product and that is the half of the catalogue this page is
+                  careful never to send to a browser. */}
+              {data.isList ? (
+                <Pagination current={data.params} page={data.page} totalPages={data.totalPages} />
+              ) : (
+                <InfiniteProducts
+                  params={data.params}
+                  page={data.page}
+                  totalPages={data.totalPages}
+                />
+              )}
             </>
           )}
         </div>
