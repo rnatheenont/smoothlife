@@ -122,27 +122,22 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4 2xl:grid-cols-5">
-                  {/* Five per row only from 2xl. This page gives 256px to the
-                      filter sidebar, so at 1280 five columns would leave 179px
-                      cards — narrower than the two-column phone layout. */}
-                  {data.cards.map((p) => (
-                    <ProductCard key={p.slug} product={p} />
-                  ))}
-                </div>
-              )}
-              {/* The grid keeps loading as you reach the bottom; the list
-                  view keeps its page numbers, because a row carries the full
-                  product and that is the half of the catalogue this page is
-                  careful never to send to a browser. */}
-              {data.isList ? (
-                <Pagination current={data.params} page={data.page} totalPages={data.totalPages} />
-              ) : (
+                /* The grid and everything that lands in it later are one
+                   component, so the fetched pages continue the same rows
+                   rather than starting a second grid under the first — which
+                   left a hole beside the four products in page one's last
+                   row. The list view keeps its page numbers, because a row
+                   carries the full product and that is the half of the
+                   catalogue this page never sends to a browser. */
                 <InfiniteProducts
+                  initial={data.cards}
                   params={data.params}
                   page={data.page}
                   totalPages={data.totalPages}
                 />
+              )}
+              {data.isList && (
+                <Pagination current={data.params} page={data.page} totalPages={data.totalPages} />
               )}
             </>
           )}

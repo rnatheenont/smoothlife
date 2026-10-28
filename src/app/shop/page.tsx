@@ -87,21 +87,17 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4 2xl:grid-cols-5">
-                    {/* Five per row only from 2xl. This page gives 256px to the
-                        filter sidebar, so at 1280 five columns would leave 179px
-                        cards — narrower than the two-column phone layout. */}
-                    {items.map((p) => (
-                      <ProductCard key={p.slug} product={toCardData(p)} />
-                    ))}
-                  </div>
+                  /* See the note in sections/shop_listing: one component owns
+                     the grid and everything that lands in it later. */
+                  <InfiniteProducts
+                    initial={items.map(toCardData)}
+                    params={searchParams}
+                    page={page}
+                    totalPages={totalPages}
+                  />
                 )}
-                {/* See the note in sections/shop_listing: scroll-loading
-                    for the grid, page numbers for the list view. */}
-                {isList ? (
+                {isList && (
                   <Pagination current={searchParams} page={page} totalPages={totalPages} />
-                ) : (
-                  <InfiniteProducts params={searchParams} page={page} totalPages={totalPages} />
                 )}
               </>
             )}
