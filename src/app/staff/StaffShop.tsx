@@ -243,9 +243,22 @@ export default function StaffShop() {
    * Counted in products rather than variants, like the tabs, so a brand
    * offering one toothbrush in five colours is one entry of one.
    */
+  // The tabs are brands now and the select is categories — the two swapped
+  // places. A staff round is shopped brand-first ("what Dentiste is in it?")
+  // far more than category-first, and this round carries eight brands, which
+  // is a row rather than the thirty the select was defending against.
+
+  // Narrowed before the tabs are built, so their counts are counts of what
+  // the grid will actually show. A tab saying 68 under a category with three
+  // of them is a tab nobody can trust.
+  const inCategory = useMemo(
+    () => (category === "all" ? sellable : sellable.filter((i) => (i.category || "other") === category)),
+    [sellable, category],
+  );
+
   const brands = useMemo(() => {
     const by = new Map<string, Set<string>>();
-    for (const item of sellable) {
+    for (const item of inCategory) {
       if (!item.brand) continue;
       if (!by.has(item.brand)) by.set(item.brand, new Set());
       by.get(item.brand)!.add(item.product_slug);
@@ -253,30 +266,34 @@ export default function StaffShop() {
     return [...by.entries()]
       .map(([name, slugs]) => ({ name, count: slugs.size }))
       .sort((a, b) => a.name.localeCompare(b.name, "th"));
-  }, [sellable]);
+  }, [inCategory]);
 
-  // Narrowed before the tabs are built, so their counts are counts of what
-  // the grid will actually show. A tab saying 68 under a brand with three
-  // of them is a tab nobody can trust.
-  const inBrand = useMemo(
-    () => (brand === "all" ? sellable : sellable.filter((i) => i.brand === brand)),
-    [sellable, brand],
-  );
-
-  const grouped = useMemo(() => {
+  /** For the select. Counted across the whole round, not inside the brand
+   *  tab that happens to be open — otherwise choosing a category could only
+   *  ever narrow, never move you somewhere with more in it. */
+  const categoryOptions = useMemo(() => {
     if (!shop) return [];
-    const byCategory = new Map<string, StaffShopVariant[]>();
-    for (const item of inBrand) {
+    const by = new Map<string, Set<string>>();
+    for (const item of sellable) {
       const key = item.category || "other";
-      if (!byCategory.has(key)) byCategory.set(key, []);
-      byCategory.get(key)!.push(item);
+      if (!by.has(key)) by.set(key, new Set());
+      by.get(key)!.add(item.product_slug);
     }
-    return [...byCategory.entries()].map(([key, items]) => ({
-      key,
-      label: CATEGORY_TH.get(key) ?? "อื่นๆ",
-      items: items.sort((a, b) => a.name.localeCompare(b.name, "th")),
-    }));
-  }, [shop, inBrand]);
+    return [...by.entries()]
+      .map(([key, slugs]) => ({ key, label: CATEGORY_TH.get(key) ?? "อื่นๆ", count: slugs.size }))
+      .sort((a, b) => a.label.localeCompare(b.label, "th"));
+  }, [shop, sellable]);
+
+  /** Category order inside the grid, so like still sits beside like however
+   *  the tabs above were set. */
+  const ordered = useMemo(() => {
+    const picked = brand === "all" ? inCategory : inCategory.filter((i) => i.brand === brand);
+    return [...picked].sort(
+      (a, b) =>
+        (a.category || "other").localeCompare(b.category || "other", "th") ||
+        a.name.localeCompare(b.name, "th"),
+    );
+  }, [inCategory, brand]);
 
   // Searching crosses the tabs. Somebody typing a product name is asking the
   // whole round, not the tab they happen to be standing in — so a hit in
@@ -294,15 +311,12 @@ export default function StaffShop() {
    * order so like still sits beside like without anything announcing it.
    */
   const shownItems = useMemo(() => {
-    const all = grouped.flatMap((g) => g.items.map((item) => ({ item, key: g.key })));
-    const picked = q
-      ? all.filter((r) => matches(r.item))
-      : category === "all"
-        ? all
-        : all.filter((r) => r.key === category);
-    return picked.map((r) => r.item);
+    // Searching asks the whole round, so it starts from everything sellable
+    // rather than from whatever the tab and the select have narrowed it to.
+    if (q) return sellable.filter(matches);
+    return ordered;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `matches` closes over q, which is in the deps
-  }, [grouped, category, q]);
+  }, [ordered, sellable, q]);
 
   /**
    * One card per product, not per variant.
@@ -755,32 +769,34 @@ export default function StaffShop() {
                       className="h-11 w-full rounded-xl2 border border-slate-200 bg-white pl-9 pr-3 text-[14px] text-brand-ink placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                     />
                   </div>
-                  {/* A select, not a row of chips: a round can carry thirty
-                      brands, and thirty chips is a second set of tabs
-                      competing with the first. It narrows the tabs' counts
-                      as well as the grid, so the two always agree. */}
-                  {brands.length > 1 && (
+                  {/* The category, as a select. It used to be the tab row
+                      and the brands used to be here; they swapped. Six
+                      categories fit in a menu and are the thing people reach
+                      for second — the brand is what they come in asking for.
+                      It narrows the tabs' counts as well as the grid, so the
+                      two always agree. */}
+                  {categoryOptions.length > 1 && (
                     <select
-                      value={brand}
+                      value={category}
                       onChange={(e) => {
-                        setBrand(e.target.value);
-                        // Back to ทั้งหมด: the tab that was open may have
-                        // nothing from the new brand, and a grid that empties
-                        // itself on a press that was meant to narrow it
-                        // reads as a broken filter.
-                        setCategory("all");
+                        setCategory(e.target.value);
+                        // Back to ทุกแบรนด์: the brand tab that was open may
+                        // have nothing in the new category, and a grid that
+                        // empties itself on a press meant to narrow it reads
+                        // as a broken filter.
+                        setBrand("all");
                       }}
-                      aria-label="กรองตามแบรนด์"
+                      aria-label="กรองตามหมวดสินค้า"
                       className={`h-11 max-w-[45%] shrink-0 rounded-xl2 border bg-white px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 ${
-                        brand === "all"
+                        category === "all"
                           ? "border-slate-200 text-slate-600"
                           : "border-brand-800 font-semibold text-brand-800"
                       }`}
                     >
-                      <option value="all">ทุกแบรนด์ ({brands.length})</option>
-                      {brands.map((b) => (
-                        <option key={b.name} value={b.name}>
-                          {b.name} ({b.count})
+                      <option value="all">ทุกหมวด ({categoryOptions.length})</option>
+                      {categoryOptions.map((c) => (
+                        <option key={c.key} value={c.key}>
+                          {c.label} ({c.count})
                         </option>
                       ))}
                     </select>
@@ -790,10 +806,10 @@ export default function StaffShop() {
                 {/* One scrolling row rather than a wrapped block: six
                     categories at 375px wrap into three lines of chips, which
                     reads as a paragraph of buttons. */}
-                {!q && grouped.length > 1 && (
+                {!q && brands.length > 1 && (
                   <div
                     role="tablist"
-                    aria-label="หมวดสินค้า"
+                    aria-label="แบรนด์"
                     className="scrollbar-none -mx-4 flex gap-1 overflow-x-auto border-b border-surface-line px-4 md:mx-0 md:px-0"
                   >
                     {/* Counted in products, because products are what the
@@ -801,29 +817,23 @@ export default function StaffShop() {
                         card, and a tab promising 387 next to 240 cards is a
                         tab that looks broken. */}
                     {(
-                      [["all", "ทั้งหมด", new Set(inBrand.map((i) => i.product_slug)).size]] as [
+                      [["all", "ทั้งหมด", new Set(inCategory.map((i) => i.product_slug)).size]] as [
                         string,
                         string,
                         number,
                       ][]
                     )
-                      .concat(
-                        grouped.map((g) => [
-                          g.key,
-                          g.label,
-                          new Set(g.items.map((i) => i.product_slug)).size,
-                        ]),
-                      )
+                      .concat(brands.map((b) => [b.name, b.name, b.count]))
                       .map(([key, label, count]) => (
                         <button
                           key={key}
                           role="tab"
-                          aria-selected={category === key}
-                          onClick={() => setCategory(key)}
+                          aria-selected={brand === key}
+                          onClick={() => setBrand(key)}
                           // h-11: these are how the round is filtered, and a
                           // 36px target is below what a thumb is asked to find.
                           className={`flex h-11 shrink-0 items-center whitespace-nowrap border-b-2 px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 ${
-                            category === key
+                            brand === key
                               ? "border-brand-action font-bold text-brand-ink"
                               : "border-transparent font-medium text-slate-500 hover:text-brand-ink"
                           }`}
