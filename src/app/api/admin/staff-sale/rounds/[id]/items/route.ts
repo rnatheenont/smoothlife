@@ -7,6 +7,7 @@ import {
   type StaffRoundTo,
   parseItemInput,
   type StaffRoundItem,
+  MAX_PER_PERSON,
 } from "@/lib/staff-sale";
 
 // Admin: the price list of one round.
@@ -167,6 +168,43 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       changed: updates.length,
       skipped: skipped.length,
     });
+  }
+
+  // "จำกัดคนละ N ชิ้น ทุกอย่างในรอบ."
+  //
+  // Its own operation rather than 387 row saves: the limit is a rule about
+  // the round, and typing it into every row is both an afternoon's work and
+  // a guarantee that a few rows end up different from the rest by accident.
+  // One filtered PATCH, so the rows cannot disagree.
+  if (body.bulkLimit && typeof body.bulkLimit === "object") {
+    const raw = (body.bulkLimit as Record<string, unknown>).perPersonLimit;
+    let value: number | null;
+    if (raw === null || raw === undefined || raw === "") {
+      value = null;
+    } else {
+      const n = Number(raw);
+      if (!Number.isInteger(n) || n < 1) return badRequest("จำนวนจำกัดต่อคนต้องเป็นจำนวนเต็มตั้งแต่ 1");
+      if (n > MAX_PER_PERSON) return badRequest(`จำนวนจำกัดต่อคนต้องไม่เกิน ${MAX_PER_PERSON} ชิ้น`);
+      value = n;
+    }
+
+    const rows = await supabaseRest<{ id: string }[]>(
+      `staff_round_items?round_id=eq.${pgValue(id)}&select=id&limit=2000`,
+    );
+    if (!rows?.length) return badRequest("ยังไม่มีสินค้าในรอบนี้");
+
+    await supabaseRest(`staff_round_items?round_id=eq.${pgValue(id)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({ per_person_limit: value, updated_at: new Date().toISOString() }),
+    });
+
+    await auditStaffSale(req, "staff_sale.items_limit", id, {
+      per_person_limit: value,
+      changed: rows.length,
+    });
+
+    return NextResponse.json({ ok: true, changed: rows.length });
   }
 
   const itemId = typeof body.id === "string" ? body.id : "";

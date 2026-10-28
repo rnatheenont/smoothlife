@@ -323,6 +323,16 @@ export type ItemInput = {
  * warned about: the whole page exists to sell below retail, and a row that
  * does not is a typo every time. Zero is refused by the database as well.
  */
+/**
+ * The most of any one product a member of staff may take in a round.
+ *
+ * A shop rule, not a per-row preference, so it lives here rather than in the
+ * form: the console writes this number into every row, and a row edited by
+ * hand afterwards is checked against it too. Six is what the shop sells at
+ * cost without it turning into a side business.
+ */
+export const MAX_PER_PERSON = 6;
+
 export function parseItemInput(body: unknown): { input: ItemInput } | { error: string } {
   if (!body || typeof body !== "object") return { error: "ข้อมูลไม่ถูกต้อง" };
   const b = body as Record<string, unknown>;
@@ -342,6 +352,12 @@ export function parseItemInput(body: unknown): { input: ItemInput } | { error: s
   const limit = b.per_person_limit == null || b.per_person_limit === "" ? null : Number(b.per_person_limit);
   if (limit !== null && (!Number.isInteger(limit) || limit < 1)) {
     return { error: "จำนวนจำกัดต่อคนต้องเป็นจำนวนเต็มตั้งแต่ 1" };
+  }
+  // Checked here rather than only in the form, because the form is not the
+  // only way a row is written: the bulk setter, a copied round and a direct
+  // PATCH all come through here.
+  if (limit !== null && limit > MAX_PER_PERSON) {
+    return { error: `จำนวนจำกัดต่อคนต้องไม่เกิน ${MAX_PER_PERSON} ชิ้น` };
   }
   const quota = b.total_quota == null || b.total_quota === "" ? null : Number(b.total_quota);
   if (quota !== null && (!Number.isInteger(quota) || quota < 1)) {

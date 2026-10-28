@@ -7,7 +7,7 @@ import { Button } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import AdminField from "@/components/admin/AdminField";
 import { Panel, adminTable } from "@/components/admin/layout-kit";
-import { discountedPrice, type StaffRoundTo } from "@/lib/staff-sale";
+import { discountedPrice, MAX_PER_PERSON, type StaffRoundTo } from "@/lib/staff-sale";
 import type { CollectionSummary, PickerProduct, StaffRoundItemView } from "./types";
 
 // The price list of one round: what is on sale, for how much, and how many.
@@ -63,6 +63,9 @@ export default function ItemsTab({
   // one narrows the rows already saved in the round. A round of 387 rows is
   // not something anyone scrolls to find one toothbrush in.
   const [rowQuery, setRowQuery] = useState("");
+  // The round's limit, set once for everything in it. Starts at the shop's
+  // ceiling because that is what every round has used.
+  const [limitAll, setLimitAll] = useState(String(MAX_PER_PERSON));
   const [saving, setSaving] = useState<string | null>(null);
 
   const already = new Set(items.map((i) => i.variant_id));
@@ -170,6 +173,43 @@ export default function ItemsTab({
       return;
     }
     setCopyFrom("");
+    onReload();
+  }
+
+  async function applyLimit() {
+    const raw = limitAll.trim();
+    const n = raw === "" ? null : Number(raw);
+    if (n !== null && (!Number.isInteger(n) || n < 1 || n > MAX_PER_PERSON)) {
+      onError(`จำนวนจำกัดต่อคนต้องเป็นจำนวนเต็ม 1–${MAX_PER_PERSON} หรือเว้นว่างเพื่อไม่จำกัด`);
+      return;
+    }
+    if (
+      !confirm(
+        n === null
+          ? `ยกเลิกการจำกัดจำนวนต่อคนของทุกรายการในรอบนี้ (${items.length} รายการ)?`
+          : `ตั้งจำกัดคนละ ${n} ชิ้น ให้ทุกรายการในรอบนี้ (${items.length} รายการ)?\nค่าที่แก้ไว้เองจะถูกเขียนทับ` +
+              // Same trap as the reprice button: the search narrows the
+              // table, not the round.
+              (words.length > 0
+                ? `\n\nรวมรายการที่ช่องค้นหาซ่อนอยู่ด้วย ไม่ใช่แค่ ${shown.length} รายการที่เห็น`
+                : ""),
+      )
+    ) {
+      return;
+    }
+    onError(null);
+    const res = await fetch(`/api/admin/staff-sale/rounds/${roundId}/items`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bulkLimit: { perPersonLimit: raw === "" ? null : n } }),
+    });
+    const json = await res.json();
+    if (!json.ok) {
+      onError(json.error ?? "ตั้งจำนวนจำกัดไม่สำเร็จ");
+      return;
+    }
+    // Drafts are stale the moment the server rewrites every row.
+    setDrafts({});
     onReload();
   }
 
@@ -339,6 +379,24 @@ export default function ItemsTab({
             <Button size="sm" variant="ghost" onPress={reprice} isDisabled={busy || items.length === 0}>
               ตั้งราคาทั้งหมด
             </Button>
+            {/* The limit is a rule about the round, so it is set once here
+                rather than typed into 387 rows — which is both an afternoon
+                and a guarantee that a few end up different by accident. */}
+            <div className="flex items-center gap-1.5 rounded-full bg-surface-soft px-2 py-1">
+              <span className="text-[12px] text-slate-500">จำกัด/คน</span>
+              <input
+                value={limitAll}
+                onChange={(e) => setLimitAll(e.target.value)}
+                inputMode="numeric"
+                placeholder="ไม่จำกัด"
+                aria-label={`จำนวนจำกัดต่อคน สูงสุด ${MAX_PER_PERSON} ชิ้น`}
+                className="w-12 rounded bg-transparent text-[13px] font-semibold text-brand-ink focus:outline-none focus:ring-2 focus:ring-brand-800/25"
+              />
+              <span className="text-[11px] text-slate-400">สูงสุด {MAX_PER_PERSON}</span>
+            </div>
+            <Button size="sm" variant="ghost" onPress={applyLimit} isDisabled={busy || items.length === 0}>
+              ตั้งจำกัดทั้งหมด
+            </Button>
             <Button size="sm" onPress={() => setPicker((v) => !v)}>
               <Plus className="h-4 w-4" aria-hidden />
               เพิ่มสินค้า
@@ -489,7 +547,9 @@ export default function ItemsTab({
                         }
                         inputMode="numeric"
                         placeholder="ไม่จำกัด"
-                        aria-label={`จำนวนจำกัดต่อคนของ ${item.name ?? item.product_slug}`}
+                        max={MAX_PER_PERSON}
+                        title={`สูงสุด ${MAX_PER_PERSON} ชิ้นต่อคน`}
+                        aria-label={`จำนวนจำกัดต่อคนของ ${item.name ?? item.product_slug} สูงสุด ${MAX_PER_PERSON} ชิ้น`}
                         className="w-20 rounded-xl2 border border-slate-200 px-2 py-1 text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                       />
                     </td>
