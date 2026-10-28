@@ -402,20 +402,52 @@ export async function GET(req: NextRequest) {
   // entered. The latest receipt wins when somebody typed it more than once —
   // a correction is worth more than the first attempt — and the account name
   // is still there for the entries that left the field blank.
-  const tickets = new Map<
-    string,
-    { typed: string | null; typedAt: number; account: string | null; entries: number }
-  >();
+  //
+  // Each field takes the newest receipt that actually filled it in, rather
+  // than everything from one receipt: somebody who left the phone blank on
+  // their last entry but gave it on the one before still has a number to be
+  // reached on, which is the whole point of the column.
+  type Ticket = {
+    name: string | null;
+    nameAt: number;
+    phone: string | null;
+    phoneAt: number;
+    email: string | null;
+    emailAt: number;
+    account: string | null;
+    accountPhone: string | null;
+    entries: number;
+  };
+  const tickets = new Map<string, Ticket>();
   for (const r of approved) {
-    const cur =
-      tickets.get(r.user_id) ?? { typed: null, typedAt: -1, account: null, entries: 0 };
+    const cur: Ticket = tickets.get(r.user_id) ?? {
+      name: null,
+      nameAt: -1,
+      phone: null,
+      phoneAt: -1,
+      email: null,
+      emailAt: -1,
+      account: null,
+      accountPhone: null,
+      entries: 0,
+    };
     cur.entries += entriesOf(r);
     cur.account ??= r.users?.display_name ?? null;
-    const typed = r.contact_name?.trim();
+    cur.accountPhone ??= r.users?.phone ?? null;
     const at = Date.parse(r.created_at ?? "") || 0;
-    if (typed && at >= cur.typedAt) {
-      cur.typed = typed;
-      cur.typedAt = at;
+    const newest = (value: string | null | undefined, seenAt: number) =>
+      Boolean(value?.trim()) && at >= seenAt;
+    if (newest(r.contact_name, cur.nameAt)) {
+      cur.name = r.contact_name!.trim();
+      cur.nameAt = at;
+    }
+    if (newest(r.contact_phone, cur.phoneAt)) {
+      cur.phone = r.contact_phone!.trim();
+      cur.phoneAt = at;
+    }
+    if (newest(r.contact_email, cur.emailAt)) {
+      cur.email = r.contact_email!.trim();
+      cur.emailAt = at;
     }
     tickets.set(r.user_id, cur);
   }
@@ -489,7 +521,13 @@ export async function GET(req: NextRequest) {
         }));
       })(),
       luckyFan: [...tickets.entries()]
-        .map(([userId, t]) => ({ userId, customer: t.typed ?? t.account, entries: t.entries }))
+        .map(([userId, t]) => ({
+          userId,
+          customer: t.name ?? t.account,
+          phone: t.phone ?? t.accountPhone,
+          email: t.email,
+          entries: t.entries,
+        }))
         .sort((a, b) => b.entries - a.entries)
         .slice(0, 200),
     },

@@ -41,7 +41,14 @@ type Vip = {
   quantity: number;
   reserve: boolean;
 };
-type Fan = { userId: string; customer: string | null; entries: number };
+type Fan = {
+  userId: string;
+  customer: string | null;
+  /** What the customer wrote on the receipt — the way to reach a winner. */
+  phone: string | null;
+  email: string | null;
+  entries: number;
+};
 
 /**
  * The Lucky Fan list as a file.
@@ -59,8 +66,15 @@ type Fan = { userId: string; customer: string | null; entries: number };
 function downloadFanCsv(rows: Fan[], campaignName: string | null) {
   const stamp = new Date().toISOString().slice(0, 10);
   const csv = csvDocument(
-    ["ลำดับ", "ลูกค้า", "รหัสผู้ใช้", "สิทธิ์"],
-    rows.map((f, i) => [i + 1, f.customer ?? "", f.userId, f.entries]),
+    ["ลำดับ", "ลูกค้า", "เบอร์โทร", "อีเมล", "รหัสผู้ใช้", "สิทธิ์"],
+    rows.map((f, i) => [
+      i + 1,
+      f.customer ?? "",
+      f.phone ?? "",
+      f.email ?? "",
+      f.userId,
+      f.entries,
+    ]),
   );
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const a = document.createElement("a");
@@ -193,7 +207,7 @@ export default function Page() {
   const vipShown =
     data?.vipBuyers.filter((v) => hit(v.customer, v.email, v.orderName)) ?? [];
   const fanShown =
-    data?.luckyFan.filter((f) => hit(f.customer, f.userId)) ?? [];
+    data?.luckyFan.filter((f) => hit(f.customer, f.phone, f.email, f.userId)) ?? [];
 
   // "" for the first campaign keeps the URL clean and the server defaulting.
   const campaignQuery = campaign
@@ -1062,16 +1076,24 @@ export default function Page() {
                 ดูเพื่อความโปร่งใส ไม่ใช่การตัดสิน —
                 ผู้ชนะมาจากการสุ่มถ่วงน้ำหนักตามจำนวนสิทธิ์
               </p>
-              {/* Two columns is a list, not a table, once the screen is a
-                  phone: the name on the left and the number on the right. */}
+              {/* A list, not a table, once the screen is a phone: who they
+                  are on the left with their contact details under the name,
+                  and the number of tickets on the right. */}
               <ul className={`mt-4 ${adminCards.list}`}>
                 {fanShown.map((f) => (
                   <li
                     key={f.userId}
-                    className={`${adminCards.item} flex items-center justify-between gap-3`}
+                    className={`${adminCards.item} flex items-start justify-between gap-3`}
                   >
-                    <span className="text-[13px] text-brand-ink">
-                      {f.customer ?? f.userId.slice(0, 8)}
+                    <span className="min-w-0">
+                      <span className="block text-[13px] text-brand-ink">
+                        {f.customer ?? f.userId.slice(0, 8)}
+                      </span>
+                      {(f.phone || f.email) && (
+                        <span className="mt-0.5 block break-words text-[12px] text-slate-500">
+                          {[f.phone, f.email].filter(Boolean).join(" · ")}
+                        </span>
+                      )}
                     </span>
                     <span className="font-mono text-[13px] font-bold tabular-nums text-brand-ink">
                       {f.entries}
@@ -1087,7 +1109,9 @@ export default function Page() {
                   <thead className={adminTable.thead}>
                     <tr>
                       <th>ลูกค้า</th>
-                      <th>สิทธิ์</th>
+                      <th className="w-44">เบอร์โทร</th>
+                      <th>อีเมล</th>
+                      <th className="w-20">สิทธิ์</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1095,6 +1119,10 @@ export default function Page() {
                       <tr key={f.userId} className={adminTable.row}>
                         <td className={adminTable.cell}>
                           {f.customer ?? f.userId.slice(0, 8)}
+                        </td>
+                        <td className={adminTable.mono}>{f.phone ?? "—"}</td>
+                        <td className={adminTable.cell}>
+                          <span className="break-all">{f.email ?? "—"}</span>
                         </td>
                         <td className={adminTable.mono}>{f.entries}</td>
                       </tr>
