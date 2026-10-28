@@ -7,7 +7,7 @@ import { Button } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import AdminField from "@/components/admin/AdminField";
 import { Panel, adminTable } from "@/components/admin/layout-kit";
-import { discountedPrice, MAX_PER_PERSON, type StaffRoundTo } from "@/lib/staff-sale";
+import { discountedPrice, MAX_PER_PERSON, rpOf, RP_MARKUP, type StaffRoundTo } from "@/lib/staff-sale";
 import type { CollectionSummary, PickerProduct, StaffRoundItemView } from "./types";
 
 // The price list of one round: what is on sale, for how much, and how many.
@@ -20,10 +20,13 @@ import type { CollectionSummary, PickerProduct, StaffRoundItemView } from "./typ
 const baht = (n: number) =>
   n.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
+// Only the two editable prices. The per-person limit is set for the whole
+// round from the toolbar and the total quota is not edited here any more, so
+// a draft that still carried them would be three fields pretending to be a
+// form that no longer exists.
 type Draft = {
+  rp_price: string;
   staff_price: string;
-  per_person_limit: string;
-  total_quota: string;
 };
 
 export default function ItemsTab({
@@ -49,7 +52,9 @@ export default function ItemsTab({
   const [found, setFound] = useState<PickerProduct[]>([]);
   const [chosen, setChosen] = useState<Record<string, PickerProduct["variants"][number] & { slug: string }>>({});
   const [searching, setSearching] = useState(false);
-  const [percent, setPercent] = useState("40");
+  // The staff price is half the RP. Still a field, because a round can be
+  // run at another number, but 50 is the one it opens on.
+  const [percent, setPercent] = useState("50");
   // Whole baht by default: no satang on a price list people read off a
   // screen, and the discount still lands within a couple of points of the
   // one that was typed. "ไม่ปัด" is there for when it has to be exact.
@@ -134,10 +139,15 @@ export default function ItemsTab({
         product_slug: v.slug,
         collection_handle: collection || null,
         regular_price: v.price,
+        // The catalogue price carries the 10%; the discount comes off what
+        // is underneath it. Left as null rather than written in, so a round
+        // priced before anyone typed an RP still says "derived" rather than
+        // claiming a figure nobody approved.
+        rp_price: null,
         staff_price:
           Number.isFinite(pct) && pct > 0 && pct < 100
-            ? discountedPrice(v.price, pct, rt)
-            : Math.max(1, Math.floor(v.price * 0.6)),
+            ? discountedPrice(rpOf({ regular_price: v.price }), pct, rt)
+            : Math.max(1, Math.floor(rpOf({ regular_price: v.price }) * 0.6)),
         per_person_limit: null,
         total_quota: null,
         enabled: true,
@@ -258,9 +268,11 @@ export default function ItemsTab({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: item.id,
+        rp_price: d?.rp_price ?? item.rp_price ?? "",
         staff_price: d?.staff_price ?? item.staff_price,
-        per_person_limit: d?.per_person_limit ?? item.per_person_limit ?? "",
-        total_quota: d?.total_quota ?? item.total_quota ?? "",
+        // Left out on purpose: the route merges the row it already has, so
+        // the limit and the quota keep whatever they hold rather than being
+        // re-sent by a form that no longer shows them.
         enabled: item.enabled,
       }),
     });
@@ -286,8 +298,6 @@ export default function ItemsTab({
       body: JSON.stringify({
         id: item.id,
         staff_price: item.staff_price,
-        per_person_limit: item.per_person_limit ?? "",
-        total_quota: item.total_quota ?? "",
         enabled: !item.enabled,
       }),
     });
@@ -431,11 +441,10 @@ export default function ItemsTab({
             <thead className={adminTable.thead}>
               <tr>
                 <th>สินค้า</th>
-                <th>ราคาปกติ</th>
+                <th>ราคา RP</th>
+                <th>ราคา RP +{Math.round((RP_MARKUP - 1) * 100)}%</th>
                 <th>ราคาพนักงาน</th>
                 <th>ส่วนลด</th>
-                <th>จำกัด/คน</th>
-                <th>โควตารวม</th>
                 <th>ขาย/จอง</th>
                 <th />
               </tr>
@@ -443,14 +452,14 @@ export default function ItemsTab({
             <tbody>
               {items.length === 0 && (
                 <tr>
-                  <td className={adminTable.muted} colSpan={8}>
+                  <td className={adminTable.muted} colSpan={7}>
                     ยังไม่มีสินค้าในรอบนี้ — กด “เพิ่มสินค้า” หรือคัดลอกจากรอบก่อนด้านล่าง
                   </td>
                 </tr>
               )}
               {items.length > 0 && shown.length === 0 && (
                 <tr>
-                  <td className={adminTable.muted} colSpan={8}>
+                  <td className={adminTable.muted} colSpan={7}>
                     ไม่พบสินค้าที่ตรงกับ “{rowQuery.trim()}” ในรอบนี้
                   </td>
                 </tr>
@@ -458,10 +467,11 @@ export default function ItemsTab({
               {shown.map((item) => {
                 const d = drafts[item.id];
                 const price = Number(d?.staff_price ?? item.staff_price);
-                const off =
-                  item.regular_price > 0
-                    ? Math.round((1 - price / item.regular_price) * 100)
-                    : 0;
+                // What the row is priced from: whatever is in the RP box
+                // right now, or the catalogue price with the markup removed.
+                const derivedRp = rpOf({ regular_price: item.regular_price });
+                const basis = Number(d?.rp_price ?? item.rp_price ?? derivedRp) || derivedRp;
+                const off = basis > 0 ? Math.round((1 - price / basis) * 100) : 0;
                 const dirty = Boolean(d);
                 return (
                   <tr key={item.id} className={adminTable.row}>
@@ -504,6 +514,30 @@ export default function ItemsTab({
                         </div>
                       </div>
                     </td>
+                    {/* RP first: it is the number the staff price is worked
+                        out from, so it reads left to right in the order the
+                        arithmetic happens. Empty means nobody has typed one
+                        and the figure underneath is the catalogue price with
+                        the 10% taken back off — shown as a placeholder, so
+                        "derived" and "decided" never look the same. */}
+                    <td className={adminTable.cell}>
+                      <input
+                        value={d?.rp_price ?? (item.rp_price == null ? "" : String(item.rp_price))}
+                        onChange={(e) =>
+                          setDrafts((cur) => ({
+                            ...cur,
+                            [item.id]: {
+                              rp_price: e.target.value,
+                              staff_price: cur[item.id]?.staff_price ?? String(item.staff_price),
+                            },
+                          }))
+                        }
+                        inputMode="decimal"
+                        placeholder={baht(derivedRp)}
+                        aria-label={`ราคา RP ของ ${item.name ?? item.product_slug}`}
+                        className="w-24 rounded-xl2 border border-slate-200 px-2 py-1 font-mono text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                      />
+                    </td>
                     <td className={adminTable.mono}>{baht(item.regular_price)}</td>
                     <td className={adminTable.cell}>
                       <input
@@ -512,10 +546,8 @@ export default function ItemsTab({
                           setDrafts((cur) => ({
                             ...cur,
                             [item.id]: {
+                              rp_price: cur[item.id]?.rp_price ?? (item.rp_price == null ? "" : String(item.rp_price)),
                               staff_price: e.target.value,
-                              per_person_limit:
-                                cur[item.id]?.per_person_limit ?? String(item.per_person_limit ?? ""),
-                              total_quota: cur[item.id]?.total_quota ?? String(item.total_quota ?? ""),
                             },
                           }))
                         }
@@ -525,53 +557,14 @@ export default function ItemsTab({
                       />
                     </td>
                     <td className={adminTable.cell}>
-                      {/* Said in the row rather than left to arithmetic: a
-                          price typed one digit short is a 90% discount and
-                          looks like any other number until it is a percentage. */}
+                      {/* Against RP, because that is what the discount is
+                          taken off. Said in the row rather than left to
+                          arithmetic: a price typed one digit short is a 90%
+                          discount and looks like any other number until it
+                          is a percentage. */}
                       <Badge tone={off >= 80 ? "danger" : off <= 0 ? "warning" : "success"}>
                         {off > 0 ? `-${off}%` : "ไม่ลด"}
                       </Badge>
-                    </td>
-                    <td className={adminTable.cell}>
-                      <input
-                        value={d?.per_person_limit ?? String(item.per_person_limit ?? "")}
-                        onChange={(e) =>
-                          setDrafts((cur) => ({
-                            ...cur,
-                            [item.id]: {
-                              staff_price: cur[item.id]?.staff_price ?? String(item.staff_price),
-                              per_person_limit: e.target.value,
-                              total_quota: cur[item.id]?.total_quota ?? String(item.total_quota ?? ""),
-                            },
-                          }))
-                        }
-                        inputMode="numeric"
-                        placeholder="ไม่จำกัด"
-                        max={MAX_PER_PERSON}
-                        title={`สูงสุด ${MAX_PER_PERSON} ชิ้นต่อคน`}
-                        aria-label={`จำนวนจำกัดต่อคนของ ${item.name ?? item.product_slug} สูงสุด ${MAX_PER_PERSON} ชิ้น`}
-                        className="w-20 rounded-xl2 border border-slate-200 px-2 py-1 text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
-                      />
-                    </td>
-                    <td className={adminTable.cell}>
-                      <input
-                        value={d?.total_quota ?? String(item.total_quota ?? "")}
-                        onChange={(e) =>
-                          setDrafts((cur) => ({
-                            ...cur,
-                            [item.id]: {
-                              staff_price: cur[item.id]?.staff_price ?? String(item.staff_price),
-                              per_person_limit:
-                                cur[item.id]?.per_person_limit ?? String(item.per_person_limit ?? ""),
-                              total_quota: e.target.value,
-                            },
-                          }))
-                        }
-                        inputMode="numeric"
-                        placeholder="ไม่จำกัด"
-                        aria-label={`โควตารวมของ ${item.name ?? item.product_slug}`}
-                        className="w-20 rounded-xl2 border border-slate-200 px-2 py-1 text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
-                      />
                     </td>
                     <td className={adminTable.mono}>
                       {item.sold_qty}/{item.reserved_qty}

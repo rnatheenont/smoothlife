@@ -92,6 +92,8 @@ export type StaffRoundItem = {
   product_slug: string;
   collection_handle: string | null;
   regular_price: number;
+  /** RP before the 10% markup. Null means nobody has typed one — see rpOf. */
+  rp_price: number | null;
   staff_price: number;
   per_person_limit: number | null;
   total_quota: number | null;
@@ -101,8 +103,29 @@ export type StaffRoundItem = {
 };
 
 export const ITEM_COLUMNS =
-  "id,round_id,variant_id,product_slug,collection_handle,regular_price,staff_price," +
+  "id,round_id,variant_id,product_slug,collection_handle,regular_price,rp_price,staff_price," +
   "per_person_limit,total_quota,sold_qty,reserved_qty,enabled";
+
+/** The markup sitting on top of RP in the catalogue price. */
+export const RP_MARKUP = 1.1;
+
+/**
+ * The RP a staff price is worked out from.
+ *
+ * The catalogue price is the RP with 10% on it, so the RP is that divided by
+ * 1.1 — 418 is 380, 583 is 530. Checked against the round's own 387 rows
+ * before this was written: dividing lands on a whole baht almost three times
+ * as often as taking 10% off does, which is what you would expect if the
+ * markup is what put the number there.
+ *
+ * It is only ever a starting figure. The moment an admin types an RP, that
+ * is the RP, and this stops guessing for that row.
+ */
+export function rpOf(item: { regular_price: number | string; rp_price?: number | string | null }): number {
+  const typed = item.rp_price == null || item.rp_price === "" ? null : Number(item.rp_price);
+  if (typed !== null && Number.isFinite(typed) && typed > 0) return typed;
+  return Math.round((Number(item.regular_price) / RP_MARKUP) * 100) / 100;
+}
 
 export type EligibilityKind = "allow_domain" | "allow_email" | "block_email";
 
@@ -310,6 +333,7 @@ export type ItemInput = {
   product_slug: string;
   collection_handle: string | null;
   regular_price: number;
+  rp_price: number | null;
   staff_price: number;
   per_person_limit: number | null;
   total_quota: number | null;
@@ -345,8 +369,20 @@ export function parseItemInput(body: unknown): { input: ItemInput } | { error: s
   const staff = Number(b.staff_price);
   if (!Number.isFinite(regular) || regular < 0) return { error: "ราคาปกติไม่ถูกต้อง" };
   if (!Number.isFinite(staff) || staff <= 0) return { error: "ราคาพนักงานต้องมากกว่า 0" };
-  if (staff >= regular && regular > 0) {
-    return { error: "ราคาพนักงานต้องต่ำกว่าราคาปกติ" };
+
+  const rpRaw = b.rp_price == null || b.rp_price === "" ? null : Number(b.rp_price);
+  if (rpRaw !== null && (!Number.isFinite(rpRaw) || rpRaw <= 0)) {
+    return { error: "ราคา RP ต้องมากกว่า 0" };
+  }
+  if (rpRaw !== null && regular > 0 && rpRaw > regular) {
+    // RP is the price before the markup, so it cannot be above the price
+    // that carries it. Usually a digit typed twice.
+    return { error: "ราคา RP ต้องไม่สูงกว่าราคา RP +10%" };
+  }
+  const rp = rpOf({ regular_price: regular, rp_price: rpRaw });
+  // Measured against RP now, because that is what the discount comes off.
+  if (staff >= rp && rp > 0) {
+    return { error: "ราคาพนักงานต้องต่ำกว่าราคา RP" };
   }
 
   const limit = b.per_person_limit == null || b.per_person_limit === "" ? null : Number(b.per_person_limit);
@@ -371,6 +407,7 @@ export function parseItemInput(body: unknown): { input: ItemInput } | { error: s
       collection_handle:
         typeof b.collection_handle === "string" && b.collection_handle ? b.collection_handle : null,
       regular_price: Math.round(regular * 100) / 100,
+      rp_price: rpRaw === null ? null : Math.round(rpRaw * 100) / 100,
       staff_price: Math.round(staff * 100) / 100,
       per_person_limit: limit,
       total_quota: quota,

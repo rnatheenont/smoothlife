@@ -8,6 +8,7 @@ import {
   parseItemInput,
   type StaffRoundItem,
   MAX_PER_PERSON,
+  rpOf,
 } from "@/lib/staff-sale";
 
 // Admin: the price list of one round.
@@ -130,17 +131,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const items = await supabaseRest<StaffRoundItem[]>(
-      `staff_round_items?round_id=eq.${pgValue(id)}&select=id,variant_id,regular_price,staff_price&limit=2000`,
+      `staff_round_items?round_id=eq.${pgValue(id)}&select=id,variant_id,regular_price,rp_price,staff_price&limit=2000`,
     );
     if (!items?.length) return badRequest("ยังไม่มีสินค้าในรอบนี้");
 
     const skipped: string[] = [];
     const updates = items
       .map((i) => {
-        const price = discountedPrice(Number(i.regular_price), percent, roundTo as StaffRoundTo);
-        // A row whose regular price is 0 has nothing to discount — a free
-        // gift variant, or a product the catalogue has no price for yet.
-        if (price <= 0 || Number(i.regular_price) <= 0) {
+        // Off the RP, not off the catalogue price — the catalogue price is
+        // the RP with 10% on it, and discounting that would quietly hand
+        // staff a tenth more than the number on the screen says.
+        const basis = rpOf(i);
+        const price = discountedPrice(basis, percent, roundTo as StaffRoundTo);
+        // A row whose price is 0 has nothing to discount — a free gift
+        // variant, or a product the catalogue has no price for yet.
+        if (price <= 0 || basis <= 0) {
           skipped.push(i.variant_id);
           return null;
         }

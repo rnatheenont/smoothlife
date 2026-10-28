@@ -104,6 +104,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     items: items.map((i) => ({
       ...i,
       regular_price: Number(i.regular_price),
+      rp_price: i.rp_price == null ? null : Number(i.rp_price),
       staff_price: Number(i.staff_price),
       ...describe(i),
     })),
