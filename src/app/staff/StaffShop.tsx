@@ -81,6 +81,12 @@ const baht = (n: number) =>
 
 const CATEGORY_TH = new Map(categories.map((c) => [c.slug as string, c.nameTh]));
 
+/** What makes two vendor spellings the same brand: case, apostrophes of
+ *  either shape, and extra spaces are not differences anybody meant. */
+function brandKey(brand: string): string {
+  return brand.toLowerCase().replace(/[’']/g, "").replace(/\s+/g, " ").trim();
+}
+
 /**
  * The checkout button, in both of its states.
  *
@@ -257,14 +263,34 @@ export default function StaffShop() {
   );
 
   const brands = useMemo(() => {
-    const by = new Map<string, Set<string>>();
+    // Grouped on a key, not on the string Shopify happens to carry.
+    //
+    // The vendor field is typed by hand per product, so one brand arrives
+    // under several spellings: this round has "Palmers" on fifteen products
+    // and "Palmer’s" — curly apostrophe — on a sixteenth, which is two tabs
+    // for one brand and one of them holding a single hand cream. Apostrophes
+    // of either kind, case and runs of spaces are ignored when deciding what
+    // belongs together.
+    //
+    // The label is whichever spelling covers the most products, so the tab
+    // reads the way the shelf mostly does rather than however the odd one
+    // out was typed. Fixing the vendors in Shopify is still the real fix;
+    // this stops the shop from showing the mess while that happens.
+    const by = new Map<string, { slugs: Set<string>; spellings: Map<string, number> }>();
     for (const item of inCategory) {
       if (!item.brand) continue;
-      if (!by.has(item.brand)) by.set(item.brand, new Set());
-      by.get(item.brand)!.add(item.product_slug);
+      const key = brandKey(item.brand);
+      if (!by.has(key)) by.set(key, { slugs: new Set(), spellings: new Map() });
+      const row = by.get(key)!;
+      row.slugs.add(item.product_slug);
+      row.spellings.set(item.brand, (row.spellings.get(item.brand) ?? 0) + 1);
     }
     return [...by.entries()]
-      .map(([name, slugs]) => ({ name, count: slugs.size }))
+      .map(([key, row]) => ({
+        key,
+        name: [...row.spellings.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0],
+        count: row.slugs.size,
+      }))
       .sort((a, b) => a.name.localeCompare(b.name, "th"));
   }, [inCategory]);
 
@@ -287,7 +313,7 @@ export default function StaffShop() {
   /** Category order inside the grid, so like still sits beside like however
    *  the tabs above were set. */
   const ordered = useMemo(() => {
-    const picked = brand === "all" ? inCategory : inCategory.filter((i) => i.brand === brand);
+    const picked = brand === "all" ? inCategory : inCategory.filter((i) => brandKey(i.brand) === brand);
     return [...picked].sort(
       (a, b) =>
         (a.category || "other").localeCompare(b.category || "other", "th") ||
@@ -765,14 +791,14 @@ export default function StaffShop() {
               // Still sticky, and now offset from the header by the same
               // 1rem the sidebar card uses — a rounded card jammed against
               // the bar above it looks like it failed to stop.
-              // brand-50 with a brand-200 edge: the same pair the staff
-              // entry in the header wears. This card and that button are the
-              // two things on screen that belong to the staff round rather
-              // than to the shop, and now they say so in the same colour.
+              // White, as it was. It wore the header button's mint for one
+              // revision and the shop reads better without it: the grid is
+              // already full of colour, and a tinted bar across the top of
+              // it competes with the products instead of framing them.
               //
               // /95 rather than flat, because it is sticky over a moving
               // grid — the blur underneath needs something to blur.
-              <div className="scrollbar-none sticky top-[calc(var(--app-header-h,0px)+1rem)] z-30 mb-5 space-y-3 rounded-xl2 bg-brand-50/95 p-3 ring-1 ring-brand-200 backdrop-blur-sm transition-[top] duration-300">
+              <div className="scrollbar-none sticky top-[calc(var(--app-header-h,0px)+1rem)] z-30 mb-5 space-y-3 rounded-xl2 bg-white/95 p-3 ring-1 ring-surface-line backdrop-blur-sm transition-[top] duration-300">
                 {/* Search first, because it is the shortest route to one
                     known product, and the tabs are for browsing. */}
                 <div className="flex gap-2">
@@ -847,7 +873,7 @@ export default function StaffShop() {
                         number,
                       ][]
                     )
-                      .concat(brands.map((b) => [b.name, b.name, b.count]))
+                      .concat(brands.map((b) => [b.key, b.name, b.count]))
                       .map(([key, label, count]) => (
                         <button
                           key={key}
