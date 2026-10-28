@@ -35,6 +35,71 @@ type TxRow = {
   staff_order_id: string | null;
 };
 
+/**
+ * Asks 2C2P what really happened to every staff order that never reached
+ * `paid`, and changes nothing.
+ *
+ * Needed because the constraint bug was silent: our own rows say "pending"
+ * or "expired" either way, so the only place the truth exists is 2C2P. One
+ * order was found by reading a log line; this is how the rest are found
+ * without waiting for someone to complain about a charge.
+ *
+ * Read-only on purpose. Deciding what to do about a payment we lost —
+ * finish the order, or refund it — is not a thing to automate across a list.
+ */
+export async function GET(req: NextRequest) {
+  const stop = guard(req);
+  if (stop) return stop;
+  if (!supabaseConfigured() || !twoC2PConfigured()) {
+    return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
+  }
+
+  const roundId = req.nextUrl.searchParams.get("roundId");
+  const scope = roundId ? `round_id=eq.${pgValue(roundId)}&` : "";
+  const orders = await supabaseRest<
+    { id: string; staff_email: string; status: string; subtotal_thb: number; payment_reference: string | null }[]
+  >(
+    `staff_orders?${scope}status=neq.paid&select=id,staff_email,status,subtotal_thb,payment_reference&order=created_at.desc&limit=200`,
+  );
+
+  const checked = [];
+  for (const o of orders ?? []) {
+    if (!o.payment_reference) continue;
+    try {
+      const q = await inquireTransactionStatus(o.payment_reference);
+      checked.push({
+        id: o.id,
+        staff_email: o.staff_email,
+        status: o.status,
+        amount: Number(o.subtotal_thb),
+        invoice: o.payment_reference,
+        respCode: q.respCode,
+        respDesc: q.respDesc,
+        tranRef: q.tranRef ?? null,
+        paidAt2c2p: q.transactionDateTime ?? null,
+        // The one field anybody reading this actually wants.
+        moneyTaken: q.respCode === "0000",
+      });
+    } catch (err) {
+      checked.push({
+        id: o.id,
+        staff_email: o.staff_email,
+        status: o.status,
+        amount: Number(o.subtotal_thb),
+        invoice: o.payment_reference,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    checked: checked.length,
+    taken: checked.filter((c) => "moneyTaken" in c && c.moneyTaken).length,
+    orders: checked,
+  });
+}
+
 export async function POST(req: NextRequest) {
   const stop = guard(req);
   if (stop) return stop;
