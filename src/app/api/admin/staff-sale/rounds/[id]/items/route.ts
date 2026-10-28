@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseRest } from "@/lib/supabase-server";
 import { auditStaffSale, badRequest, guard } from "@/lib/staff-sale-admin";
+import { shopifyAdminConfigured, variantPricesByGid } from "@/lib/shopify-admin";
 import {
   ITEM_COLUMNS,
   discountedPrice,
@@ -172,6 +173,92 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ok: true,
       changed: updates.length,
       skipped: skipped.length,
+    });
+  }
+
+  // "ราคาใน Shopify เปลี่ยนไปแล้ว — เอาของใหม่มา."
+  //
+  // Each row carries its own copy of the shop price, taken when the product
+  // was added to the round. That copy is deliberate: a staff order placed
+  // yesterday was placed against yesterday's price list, and the discount
+  // on the screen has to be the one that was actually given. The cost of it
+  // is that a price edited in Shopify never reaches this table on its own,
+  // and the console goes on showing a shop price that no longer exists —
+  // which is both the wrong discount on screen and the wrong number struck
+  // through on the staff shop.
+  //
+  // Only the shop price moves. Nothing here re-prices anything staff are
+  // being sold: that stays a decision somebody makes with "ตั้งราคาทั้งหมด"
+  // afterwards, looking at the discounts this leaves behind.
+  if (body.refreshPrices === true) {
+    if (!shopifyAdminConfigured()) {
+      return badRequest("ยังไม่ได้ตั้งค่าการเชื่อม Shopify");
+    }
+    const items = await supabaseRest<StaffRoundItem[]>(
+      `staff_round_items?round_id=eq.${pgValue(id)}&select=id,variant_id,product_slug,regular_price,rp_price,staff_price&limit=2000`,
+    );
+    if (!items?.length) return badRequest("ยังไม่มีสินค้าในรอบนี้");
+
+    let live: Map<string, number>;
+    try {
+      live = await variantPricesByGid(items.map((i) => i.variant_id));
+    } catch (err) {
+      console.error("[staff-sale] refreshPrices", err);
+      return NextResponse.json(
+        { ok: false, error: "ดึงราคาจาก Shopify ไม่สำเร็จ" },
+        { status: 502 },
+      );
+    }
+
+    // A variant Shopify no longer answers for is left exactly as it is and
+    // named in the reply. Deleted or renamed products are the case this is
+    // most likely to meet, and overwriting a price with nothing would turn
+    // "we could not check this row" into "this row is free".
+    const missing = items.filter((i) => !live.has(i.variant_id)).map((i) => i.product_slug);
+    const changed: { id: string; from: number; to: number; slug: string }[] = [];
+    for (const i of items) {
+      const now = live.get(i.variant_id);
+      if (now === undefined) continue;
+      const before = Number(i.regular_price);
+      // Compared in satang, because 329 and 329.00 come back as different
+      // strings and the same price.
+      if (Math.round(now * 100) === Math.round(before * 100)) continue;
+      changed.push({ id: i.id, from: before, to: now, slug: i.product_slug });
+    }
+
+    for (const c of changed) {
+      await supabaseRest(`staff_round_items?id=eq.${pgValue(c.id)}`, {
+        method: "PATCH",
+        returning: false,
+        body: JSON.stringify({ regular_price: c.to, updated_at: new Date().toISOString() }),
+      });
+    }
+
+    // How many of the rows that moved are now selling at a discount that is
+    // not what it was: the reason to go and press "ตั้งราคาทั้งหมด" again.
+    const items_by_id = new Map(items.map((i) => [i.id, i]));
+    const reprice = changed.filter((c) => {
+      const row = items_by_id.get(c.id);
+      if (!row) return false;
+      const staff = Number(row.staff_price);
+      return staff > 0 && rpOf({ regular_price: c.to, rp_price: row.rp_price }) !== rpOf(row);
+    }).length;
+
+    await auditStaffSale(req, "staff_sale.items_refresh_prices", id, {
+      checked: items.length,
+      changed: changed.length,
+      missing: missing.length,
+      // The first few, so the log says what moved without carrying the
+      // whole price list into it.
+      sample: changed.slice(0, 10).map((c) => ({ slug: c.slug, from: c.from, to: c.to })),
+    });
+
+    return NextResponse.json({
+      ok: true,
+      checked: items.length,
+      changed: changed.length,
+      missing: missing.length,
+      reprice,
     });
   }
 

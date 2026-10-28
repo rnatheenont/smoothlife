@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { Check, Copy, Percent, Plus, Search, Trash2, X } from "lucide-react";
+import { Check, Copy, Percent, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
 import { Button } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import AdminField from "@/components/admin/AdminField";
@@ -68,6 +68,11 @@ export default function ItemsTab({
   const [roundTo, setRoundTo] = useState<"0" | "1" | "5" | "10">("1");
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [copyFrom, setCopyFrom] = useState("");
+  // What the last price refresh found. Kept on screen rather than shouted in
+  // an alert: the answer is usually "nothing moved", and that is worth
+  // reading beside the table it is about.
+  const [priceNews, setPriceNews] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   // Narrows what is already on screen. The box above it goes to the server
   // and replaces the list; a collection of 239 needs one that does not.
   const [filter, setFilter] = useState("");
@@ -253,6 +258,63 @@ export default function ItemsTab({
     onReload();
   }
 
+  /**
+   * Bring every row's shop price back in line with Shopify.
+   *
+   * The round keeps its own copy of each price so that an order already
+   * placed keeps the discount it was actually given. The copy going stale is
+   * the price of that, and this is how it gets un-stuck — a price edited in
+   * Shopify reaches the console no other way, not even by deploying.
+   *
+   * Staff prices are left alone on purpose. Moving them is a decision about
+   * what to sell at, which belongs to whoever is looking at the discounts
+   * afterwards, not to a button that went to fetch some numbers.
+   */
+  async function refreshPrices() {
+    if (
+      !confirm(
+        `ดึงราคาปัจจุบันจาก Shopify มาทับ "ราคา RP +${Math.round((RP_MARKUP - 1) * 100)}%" ของทุกรายการในรอบนี้ (${items.length} รายการ)?\n\n` +
+          "ราคาพนักงานจะไม่ถูกแก้ — ถ้าราคาร้านขยับ ส่วนลดที่แสดงจะเปลี่ยนตาม และตั้งราคาใหม่ได้จาก “ตั้งราคาทั้งหมด”",
+      )
+    ) {
+      return;
+    }
+    onError(null);
+    setPriceNews("");
+    setRefreshing(true);
+    try {
+      const res = await fetch(`/api/admin/staff-sale/rounds/${roundId}/items`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshPrices: true }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        onError(json.error ?? "ดึงราคาไม่สำเร็จ");
+        return;
+      }
+      const parts = [
+        json.changed > 0
+          ? `ราคาร้านเปลี่ยน ${json.changed} รายการ จาก ${json.checked} รายการ`
+          : `ตรวจ ${json.checked} รายการ — ราคาร้านตรงกับ Shopify อยู่แล้ว`,
+      ];
+      if (json.reprice > 0) {
+        parts.push(`ส่วนลดของ ${json.reprice} รายการเปลี่ยนไปด้วย กด “ตั้งราคาทั้งหมด” ถ้าต้องการราคาพนักงานใหม่`);
+      }
+      if (json.missing > 0) {
+        parts.push(`${json.missing} รายการหาใน Shopify ไม่เจอ ปล่อยราคาเดิมไว้`);
+      }
+      setPriceNews(parts.join(" · "));
+      // Drafts are stale the moment the server rewrites a row underneath them.
+      setDrafts({});
+      onReload();
+    } catch {
+      onError("ดึงราคาไม่สำเร็จ");
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   async function reprice() {
     const pct = Number(percent);
     if (!Number.isFinite(pct) || pct <= 0 || pct >= 100) {
@@ -390,6 +452,19 @@ export default function ItemsTab({
         }
         toolbar={
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            {/* First in the row, because it is the step before the others:
+                a discount set against a price Shopify no longer charges is
+                the wrong discount, however carefully it was typed. */}
+            <Button
+              size="sm"
+              variant="ghost"
+              onPress={refreshPrices}
+              isPending={refreshing}
+              isDisabled={busy || refreshing || items.length === 0}
+            >
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+              ดึงราคาจาก Shopify
+            </Button>
             <div className="flex items-center gap-1.5 rounded-full bg-surface-soft px-2 py-1">
               <Percent className="h-3.5 w-3.5 text-slate-400" aria-hidden />
               <input
@@ -444,6 +519,11 @@ export default function ItemsTab({
           </div>
         }
       >
+        {priceNews && (
+          <p className="border-b border-slate-100 bg-brand-50/50 px-3 py-2 text-[12px] text-brand-800">
+            {priceNews}
+          </p>
+        )}
         {items.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
             <label className="relative flex min-w-[260px] flex-1 items-center">

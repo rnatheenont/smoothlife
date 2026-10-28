@@ -381,6 +381,45 @@ export async function orderNamesByGid(gids: (string | null | undefined)[]): Prom
 }
 
 /**
+ * What Shopify charges for these variants right now.
+ *
+ * The staff round keeps its own copy of each price, written when the row was
+ * added, because an order placed last week was placed at last week's price
+ * and the receipt has to go on saying so. The copy is the right design and
+ * the stale copy is the cost of it: change a price in Shopify and the price
+ * list in the console goes on showing the old one until somebody asks it
+ * not to. This is that ask.
+ *
+ * Live rather than from the generated catalogue: the catalogue is rebuilt at
+ * deploy, so reading it would answer "what did Shopify charge at the last
+ * build", which is the same staleness one step removed.
+ */
+export async function variantPricesByGid(
+  gids: (string | null | undefined)[],
+): Promise<Map<string, number>> {
+  const wanted = [
+    ...new Set(gids.filter((g): g is string => !!g && g.startsWith("gid://shopify/ProductVariant/"))),
+  ];
+  const out = new Map<string, number>();
+  if (!wanted.length || !shopifyAdminConfigured()) return out;
+
+  // Shopify caps `nodes` at 250. A round is a few hundred rows, so this is
+  // two or three calls, not one per product.
+  for (let i = 0; i < wanted.length; i += 200) {
+    const chunk = wanted.slice(i, i + 200);
+    const data = await adminGraphql<{ nodes: ({ id: string; price: string } | null)[] }>(
+      `query VariantPrices($ids: [ID!]!) { nodes(ids: $ids) { ... on ProductVariant { id price } } }`,
+      { ids: chunk },
+    );
+    for (const node of data.nodes ?? []) {
+      const price = Number(node?.price);
+      if (node?.id && Number.isFinite(price) && price > 0) out.set(node.id, price);
+    }
+  }
+  return out;
+}
+
+/**
  * What Shopify currently says about an order's money, for the receipt queue.
  *
  * Our own row says a 2C2P charge succeeded. That is not the same question as
