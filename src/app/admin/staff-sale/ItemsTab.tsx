@@ -87,6 +87,18 @@ export default function ItemsTab({
 
   const already = new Set(items.map((i) => i.variant_id));
 
+  // What this list counts, and what the shop counts, are different things —
+  // which is why "368 รายการ" here and "ทั้งหมด (204)" there looked like a
+  // bug. This is one row per variant; the shop shows one card per product
+  // and only for products it can actually sell. Both numbers are said here
+  // so the gap is a fact rather than a mystery.
+  const productCount = new Set(items.map((i) => i.product_slug)).size;
+  // A row whose product has left the catalogue has no name to show (see the
+  // round route's `describe`). It will never appear in the shop, so it is
+  // worth counting rather than leaving at the bottom of 368 rows.
+  const orphaned = items.filter((i) => i.name == null).length;
+  const offSale = items.filter((i) => !i.enabled).length;
+
   // Name, SKU, size, brand and the slug all count, because all five are
   // things somebody holding a product might type. Matched word by word so
   // "ortho 6580" finds the row that "ortho" and "6580" both appear in,
@@ -448,7 +460,7 @@ export default function ItemsTab({
         title={
           words.length > 0
             ? `สินค้าในรอบนี้ · ${shown.length} จาก ${items.length} รายการ`
-            : `สินค้าในรอบนี้ · ${items.length} รายการ`
+            : `สินค้าในรอบนี้ · ${items.length} รายการ (${productCount} สินค้า)`
         }
         toolbar={
           <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -537,6 +549,16 @@ export default function ItemsTab({
                 className="h-10 w-full rounded-xl2 border border-slate-200 bg-white pl-9 pr-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
               />
             </label>
+            {/* The two reasons a row here never reaches the shop. Said on
+                the toolbar rather than discovered by scrolling: both are
+                invisible in a list this long. */}
+            {(orphaned > 0 || offSale > 0) && (
+              <span className="text-[12px] text-slate-500">
+                {offSale > 0 && `ปิดขาย ${offSale} รายการ`}
+                {offSale > 0 && orphaned > 0 && " · "}
+                {orphaned > 0 && `ไม่อยู่ในแคตตาล็อกแล้ว ${orphaned} รายการ — ไม่ขึ้นในร้าน`}
+              </span>
+            )}
             {words.length > 0 && (
               <Button size="sm" variant="ghost" onPress={() => setRowQuery("")}>
                 <X className="h-3.5 w-3.5" aria-hidden />
