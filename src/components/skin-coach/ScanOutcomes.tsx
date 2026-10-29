@@ -42,8 +42,12 @@ export default function ScanOutcomes() {
       </section>
 
       <div className="flex items-center gap-2.5 rounded-[20px] bg-[linear-gradient(100deg,#f1faf6_0%,#fdfdf8_60%,#fef8ee_100%)] px-3 py-2 md:gap-5 md:px-6 md:py-3">
-        <div className="relative h-14 w-14 shrink-0 md:h-24 md:w-24">
-          <Image src="/skin-coach/mascot-clipboard.webp" alt="" width={320} height={332} sizes="96px" className="h-full w-full object-contain" />
+        {/* Bigger than the band and standing out of it. The negative margin
+            is what lets it overflow rather than stretching the band to fit:
+            the band keeps its own height and the mascot leans out of the
+            top and bottom of it. */}
+        <div className="relative -my-4 h-24 w-24 shrink-0 md:-my-5 md:h-32 md:w-32">
+          <Image src="/skin-coach/mascot-clipboard.webp" alt="" width={320} height={332} sizes="(max-width: 768px) 96px, 128px" className="h-full w-full object-contain" />
         </div>
         <p className="min-w-0 flex-1 text-[11.5px] font-bold leading-snug text-brand-ink md:text-sm">
           มาเริ่มดูแลผิวไปด้วยกัน กับน้อง Smoothie นะคะ
