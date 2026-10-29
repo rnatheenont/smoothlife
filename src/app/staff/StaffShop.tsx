@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import clsx from "clsx";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -27,6 +28,7 @@ import { HaloRing, RIM } from "@/components/Halo";
 import { formatTHB } from "@/lib/format";
 import { shopifyImage, shopifySquare, shopifySquareSrcSet } from "@/lib/shopify-image";
 import type { StaffShopVariant } from "@/lib/staff-sale";
+import { useStuck } from "@/components/shop/use-stuck";
 
 // The employee shop, all of its states.
 //
@@ -289,6 +291,9 @@ export default function StaffShop() {
   const [busy, setBusy] = useState(false);
   const [justPaid, setJustPaid] = useState(false);
   const [category, setCategory] = useState<string>("all");
+  // The toolbar parks a rem below the header; it wears glass only once it is
+  // there, with the grid running underneath it.
+  const [toolbar, stuck] = useStuck(16);
   const [brand, setBrand] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
@@ -1028,7 +1033,16 @@ export default function StaffShop() {
               // Flat white on a phone: a sticky backdrop-blur over a fast
               // scroll is one of the things that blacked the screen out
               // (29 Oct 2026). /95 and the blur only from lg up.
-              <div className="scrollbar-none sticky top-[calc(var(--app-header-h,0px)+1rem)] z-30 mb-5 space-y-3 rounded-xl2 bg-white p-3 ring-1 ring-surface-line transition-[top] duration-300 lg:bg-white/95 lg:backdrop-blur-sm">
+              <div
+                ref={toolbar}
+                className={clsx(
+                  "scrollbar-none sticky top-[calc(var(--app-header-h,0px)+1rem)] z-30 mb-5 space-y-3 rounded-xl2 bg-white p-3 ring-1 ring-surface-line transition-[top,background-color,box-shadow] duration-300",
+                  // Glass only once it is actually floating over the grid,
+                  // and only on a wide screen — the rule itself is in
+                  // globals.css, with the reason.
+                  stuck && "glass-card",
+                )}
+              >
                 {/* Search first, because it is the shortest route to one
                     known product, and the tabs are for browsing. */}
                 <div className="flex gap-2">

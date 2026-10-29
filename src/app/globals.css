@@ -623,6 +623,25 @@
 .glass-pill:hover {
   background-color: rgb(255 255 255 / 0.78);
 }
+/* The same glass, for a card that is already a card: it keeps its own
+   corners, ring and shadow and only swaps its fill.
+
+   Wide screens only, and that is not a taste decision. A sticky
+   backdrop-filter over a fast scroll is one of the things that blacked the
+   staff shop out on a phone (29 Oct 2026) — see StaffShop.tsx, which has
+   been flat white below lg ever since. Keeping the rule in the stylesheet
+   rather than in a class string is what stops it being copied back in. */
+@media (min-width: 1024px) {
+  .glass-card {
+    background-color: rgb(255 255 255 / 0.62);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.85),
+      0 10px 28px -18px rgb(16 24 40 / 0.4);
+  }
+}
+
 .glass-bar {
   background-color: rgb(247 250 252 / 0.7);
   /* An edge, so the bar ends somewhere. Without it the blur just stops
