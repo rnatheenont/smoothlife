@@ -17,7 +17,11 @@ export const HEADER_LINKS_DEFAULT: HeaderLinks = {
     // The skin check the tab bar has had on a phone from the start: on a wide
     // screen it was reachable only from the home page, which is the one place
     // somebody who has already started shopping is not.
-    { href: "/advisor", th: "ประเมินผิว", en: "Skin Check", mega: false },
+    //
+    // Points at /skin-coach, not /advisor: the camera scan is what this
+    // label promises now. Both pages still exist — /advisor is the
+    // questionnaire and is still linked from the places that ask for it.
+    { href: "/skin-coach", th: "ประเมินผิว", en: "Skin Check", mega: false },
     { href: "/knowledge", th: "บทความ", en: "Articles", mega: false },
     // เซ็ตสมาชิก and โปรโมชั่น are out of the navigation for now, by
     // request — the same way the affiliate link left it. Out of the drawer
@@ -38,7 +42,7 @@ export const HEADER_LINKS_DEFAULT: HeaderLinks = {
     { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: "grid" },
     { href: "/brands", th: "แบรนด์ทั้งหมด", en: "All brands", icon: "tag" },
     { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern", icon: "droplets" },
-    { href: "/advisor", th: "ประเมินผิว", en: "Skin Check", icon: "scan" },
+    { href: "/skin-coach", th: "ประเมินผิว", en: "Skin Check", icon: "scan" },
     { href: "/ai-assistant", th: "ผู้ช่วย AI", en: "AI Assistant", icon: "sparkles" },
     { href: "/knowledge", th: "ความรู้ความงาม", en: "Beauty Knowledge", icon: "book" },
     { href: "/account/wishlist", th: "รายการโปรด", en: "Wishlist", icon: "heart" },
