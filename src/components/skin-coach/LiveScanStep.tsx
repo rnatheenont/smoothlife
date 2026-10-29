@@ -608,10 +608,12 @@ export default function LiveScanStep({
   // coaches the framing live once it is open.
   if (phase === "intro" || phase === "error") {
     return (
-      // Room above it. The hero's sky now runs to the window's edges, so the
-      // card sitting straight underneath read as a second band stuck to the
-      // first rather than a card resting on the page.
-      <section className="mt-5 rounded-[22px] bg-[linear-gradient(135deg,#f2faf7_0%,#ffffff_52%,#edf7fc_100%)] p-3 shadow-product md:mt-8 md:p-7">
+      // A little room above it — the hero's sky runs to the window's edges,
+      // so a card flush against it reads as a second band stuck to the
+      // first. Only a little: three separate paddings were stacking here
+      // (the sky's own, the page's top, and this margin) and together they
+      // left a gap wider than the card's own padding.
+      <section className="mt-3.5 rounded-[22px] bg-[linear-gradient(135deg,#f2faf7_0%,#ffffff_52%,#edf7fc_100%)] p-3 shadow-product md:mt-6 md:p-7">
         {/* Two columns at every width, phone left, because that is what the
             artwork does — and the artwork is a phone screen, so this is not
             a desktop arrangement being forced onto a small one. Stacking it

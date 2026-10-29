@@ -159,7 +159,7 @@ export default function SkinCoachPage() {
       {opening && <ScanHero />}
 
       <div
-        className={`container-page py-8 md:py-10 ${opening ? "[--page-max:900px] pt-5 md:pt-6" : "[--page-max:760px]"}`}
+        className={`container-page py-8 md:py-10 ${opening ? "[--page-max:900px] pt-2 md:pt-5" : "[--page-max:760px]"}`}
       >
       {!opening && (
         <header className="mb-6 flex items-center gap-3">
