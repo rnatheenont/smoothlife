@@ -71,7 +71,7 @@ export default function ScanHero() {
             so it needs no mask to hide a background — the first attempt at
             this page used a rectangle cropped out of the mockup and spent
             an elliptical mask hiding its corners. */}
-        <div className="pointer-events-none absolute -right-4 -top-1 w-[56%] max-w-[370px] md:-right-3 md:w-[50%]">
+        <div className="pointer-events-none absolute -right-5 -top-2 w-[66%] max-w-[430px] md:-right-3 md:w-[56%]">
           <Image
             src="/skin-coach/hero-woman.webp"
             alt=""
