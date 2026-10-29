@@ -89,7 +89,7 @@ export default function ScanHero({ aside }: { aside?: React.ReactNode }) {
           the band than the card beside them, which is where TOP's boxes put
           them. On a phone there is no second column to sit against and the
           sky's own top padding already places it. */}
-      <div className="relative md:pt-12">
+      <div className="relative md:pt-36">
         {/* The portrait. A transparent cut-out, so it needs no mask to hide
             a background — the first attempt at this page used a rectangle
             cropped out of the mockup and spent an elliptical mask hiding its
