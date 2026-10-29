@@ -147,31 +147,46 @@ test("phone in gives what it can when the band has run out", () => {
 const vipList = (n: number): Entrant[] =>
   Array.from({ length: n }, (_, i) => ({ userId: `v${i}`, name: `vip ${i}`, entries: 1 }));
 
-test("gift exchange draws ten from the VIP list: eight gifts and two lucky", () => {
-  const winners = drawGiftExchange(vipList(21), [], GIFT_EXCHANGE, () => Math.random());
+test("gift exchange: eight from VIP and two from the Lucky Fan winners", () => {
+  const luckyWinners = drawLuckyFan(room(8, 26, 138), firstAlways);
+  const winners = drawGiftExchange(vipList(21), luckyWinners, [], GIFT_EXCHANGE, () => Math.random());
   assert.equal(winners.length, GIFT_EXCHANGE.vip + GIFT_EXCHANGE.lucky);
   assert.equal(winners.filter((w) => w.band === "gold").length, GIFT_EXCHANGE.vip);
   assert.equal(winners.filter((w) => w.band === "silver").length, GIFT_EXCHANGE.lucky);
+  // The two lucky gifts go to people who already won tonight.
+  const wonIds = new Set(luckyWinners.map((w) => w.userId));
+  assert.ok(winners.filter((w) => w.band === "silver").every((w) => wonIds.has(w.userId)));
 });
 
 test("nobody takes two of the ten", () => {
+  const luckyWinners = drawLuckyFan(room(8, 26, 138), () => Math.random());
   for (let i = 0; i < 50; i++) {
-    const winners = drawGiftExchange(vipList(21), [], GIFT_EXCHANGE, () => Math.random());
+    const winners = drawGiftExchange(vipList(21), luckyWinners, [], GIFT_EXCHANGE, () => Math.random());
     assert.equal(new Set(winners.map((w) => w.userId)).size, winners.length);
   }
 });
 
-test("a VIP who has already been called is out", () => {
+test("somebody on both lists is not called twice", () => {
+  // One person is both a VIP buyer and a Lucky Fan winner, and they are the
+  // only name in either pool.
+  const both: Entrant[] = [{ userId: "both", name: "both", entries: 1 }];
+  const winners = drawGiftExchange(both, both, [], { vip: 1, lucky: 1 }, firstAlways);
+  assert.equal(winners.length, 1);
+  assert.equal(winners[0].band, "silver");
+});
+
+test("a VIP who has already been called is out of the VIP half", () => {
   const vips = vipList(21);
   const out = vips.slice(0, 13).map((v) => v.userId);
-  const winners = drawGiftExchange(vips, out, GIFT_EXCHANGE, () => Math.random());
-  // Eight left to draw ten from: everyone who is left, and no one who is not.
+  const winners = drawGiftExchange(vips, [], out, GIFT_EXCHANGE, () => Math.random());
+  // Eight left to draw eight from, and no lucky winners to draw the other
+  // two from.
   assert.equal(winners.length, 8);
   assert.ok(winners.every((w) => !out.includes(w.userId)));
 });
 
-test("a VIP list shorter than the gifts hands out what there is", () => {
-  const winners = drawGiftExchange(vipList(4), [], GIFT_EXCHANGE, firstAlways);
+test("short lists hand out what there is", () => {
+  const winners = drawGiftExchange(vipList(4), [], [], GIFT_EXCHANGE, firstAlways);
   assert.equal(winners.length, 4);
   assert.ok(winners.every((w) => w.band === "gold"));
 });

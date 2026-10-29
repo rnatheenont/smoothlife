@@ -186,32 +186,46 @@ export type GiftSeats = { vip: number; lucky: number };
 export const GIFT_EXCHANGE: GiftSeats = { vip: 8, lucky: 2 };
 
 /**
- * Gift exchange: ten names out of the VIP list, in two kinds.
+ * Gift exchange: eight from the VIP list and two from the Lucky Fan winners.
  *
- * One pool, not two. Both halves come from the same twenty-one VIP buyers —
- * eight take the VIP gift and two take the Lucky one — so the only thing
- * that separates them is which gift they are called for. Drawn in one pass
- * without replacement, because the alternative is two draws that can land
- * on the same person and a rule bolted on afterwards to say they cannot.
+ * Two pools, because the two gifts are for two different rooms — the VIP
+ * gift goes to somebody who bought the set, the Lucky one to somebody whose
+ * name already came out of the drum tonight. The lucky half is drawn first
+ * so that a person who is on both lists is settled before the VIP half
+ * starts, rather than being picked twice and having to be taken back.
  *
- * Flat, not weighted. Entries decided who got onto this list in the first
+ * Flat, not weighted. Entries decided who got onto either list in the first
  * place and have no second say here; everybody standing in the room for a
  * gift exchange is standing in it on equal terms. Entries of 1 is what
  * makes drawFromBand uniform.
+ *
+ * `alreadyWon` keeps the VIP half honest: a name called earlier in the
+ * night is not called again for a VIP gift. The lucky half is drawn from
+ * people who have by definition already won something, so it is the one
+ * place that rule does not apply.
  */
 export function drawGiftExchange(
   vips: Entrant[],
+  luckyWinners: Entrant[],
   alreadyWon: Iterable<string> = [],
   seats: GiftSeats = GIFT_EXCHANGE,
   rng: Rng = cryptoRng,
 ): Winner[] {
-  const taken = new Set(alreadyWon);
-  const pool = vips.filter((e) => !taken.has(e.userId)).map((e) => ({ ...e, entries: 1 }));
-  const picked = drawFromBand(pool, seats.vip + seats.lucky, rng);
-  return picked.map((e, i) => ({
+  const flat = (list: Entrant[]) => list.map((e) => ({ ...e, entries: 1 }));
+
+  const lucky = drawFromBand(flat(luckyWinners), seats.lucky, rng).map((e) => ({
     ...e,
-    // The first eight out are the VIP gifts, the last two the Lucky ones.
-    band: (i < seats.vip ? "gold" : "silver") as BandKey,
-    order: i + 1,
+    band: "silver" as BandKey,
   }));
+
+  // Whoever is out of the VIP half: called earlier tonight, or just now.
+  const taken = new Set([...alreadyWon, ...lucky.map((w) => w.userId)]);
+  const vip = drawFromBand(
+    flat(vips.filter((e) => !taken.has(e.userId))),
+    seats.vip,
+    rng,
+  ).map((e) => ({ ...e, band: "gold" as BandKey }));
+
+  // VIP first on the screen, because that is the order the night runs in.
+  return [...vip, ...lucky].map((w, i) => ({ ...w, order: i + 1 }));
 }

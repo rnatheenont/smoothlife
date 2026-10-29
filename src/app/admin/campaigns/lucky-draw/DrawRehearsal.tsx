@@ -155,11 +155,13 @@ export default function DrawRehearsal({ campaign }: { campaign?: string }) {
         r.bands,
       );
       // The two id spaces meet at the e-mail address: ours are account ids,
-      // the VIP list's are the addresses the orders were placed with.
+      // the VIP list's are the addresses the orders were placed with. Only
+      // the VIP half of the gift exchange needs this — its other two come
+      // out of the Lucky Fan winners, who have all won already.
       const spoken = [...lucky, ...phone]
         .map((w) => emails.get(w.userId))
         .filter((e): e is string => Boolean(e));
-      const gift = drawGiftExchange(vipList, spoken, r.gift, cryptoRng);
+      const gift = drawGiftExchange(vipList, lucky, spoken, r.gift, cryptoRng);
       return { lucky, phone, gift };
     },
     [],
@@ -205,8 +207,10 @@ export default function DrawRehearsal({ campaign }: { campaign?: string }) {
 
   const bands = useMemo(() => splitIntoBands(pool ?? [], rules.bands), [pool, rules.bands]);
 
-  /** The names the reel is filled with while this tab is spinning. */
-  const reelPool = tab === "gift" ? vips : pool ?? [];
+  /** The names the reel is filled with while this tab is spinning. The
+   *  gift exchange reaches into two lists, so the reel shows both. */
+  const reelPool =
+    tab === "gift" ? [...vips, ...winners.lucky] : pool ?? [];
   const seats = list.length;
   const done = seats > 0 && seen >= seats;
   const running = auto && !done;
@@ -380,8 +384,8 @@ export default function DrawRehearsal({ campaign }: { campaign?: string }) {
                     </label>
                   </div>
                   <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
-                    จับจากรายชื่อ VIP {vips.length} คน คนหนึ่งได้ชิ้นเดียว และคนที่ได้ Lucky Fan
-                    หรือ Phone in ไปแล้วจะไม่ถูกจับซ้ำ
+                    ของ VIP จับจากรายชื่อ VIP {vips.length} คน · ของ Lucky จับจากผู้ชนะ Lucky Fan
+                    คนหนึ่งได้ชิ้นเดียว และคนที่ถูกเรียกชื่อไปแล้วคืนนี้จะไม่ถูกจับซ้ำในฝั่ง VIP
                   </p>
                 </div>
               </div>
@@ -436,7 +440,7 @@ export default function DrawRehearsal({ campaign }: { campaign?: string }) {
                     )}
                   </div>
                   <p className="shrink-0 text-right text-[11px] text-white/40">
-                    {tab === "gift" ? "รายชื่อ VIP" : "ผู้ร่วมสนุก"}{" "}
+                    {tab === "gift" ? "VIP + ผู้ชนะ Lucky Fan" : "ผู้ร่วมสนุก"}{" "}
                     {reelPool.length.toLocaleString("th-TH")} คน
                   </p>
                 </div>
