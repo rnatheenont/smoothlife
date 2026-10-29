@@ -27,7 +27,7 @@ const TAB_BAR_H = 55;
 const BUY_BAR_H = 65;
 const GAP = 12;
 
-export default function BackToTop() {
+export default function BackToTop({ bottomPx }: { bottomPx?: number } = {}) {
   const [shown, setShown] = useState(false);
   const { stickyBarVisible } = useQuickChat();
 
@@ -48,7 +48,10 @@ export default function BackToTop() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const bottom = TAB_BAR_H + (stickyBarVisible ? BUY_BAR_H : 0) + GAP;
+  // The storefront's own furniture by default. A page that is outside the
+  // floating stack — /staff has its own checkout strip and no tab bar —
+  // passes the height it needs to clear instead, gap included.
+  const bottom = bottomPx ?? TAB_BAR_H + (stickyBarVisible ? BUY_BAR_H : 0) + GAP;
 
   return (
     <button

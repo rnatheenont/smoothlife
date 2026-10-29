@@ -29,6 +29,8 @@ import { formatTHB } from "@/lib/format";
 import { shopifyImage, shopifySquare, shopifySquareSrcSet } from "@/lib/shopify-image";
 import type { StaffShopVariant } from "@/lib/staff-sale";
 import { useStuck } from "@/components/shop/use-stuck";
+import BackButton from "@/components/BackButton";
+import BackToTop from "@/components/BackToTop";
 
 // The employee shop, all of its states.
 //
@@ -294,6 +296,20 @@ export default function StaffShop() {
   // The toolbar parks a rem below the header; it wears glass only once it is
   // there, with the grid running underneath it.
   const [toolbar, stuck] = useStuck(16);
+
+  /**
+   * Narrowing the round puts you back at the top of it.
+   *
+   * The grid is filtered in place here — no navigation, so nothing resets
+   * the scroll. Pick a brand from halfway down a long round and the new
+   * grid is already scrolled past: the first products of the brand you just
+   * asked for are above the fold, and what is on screen is wherever the old
+   * list happened to reach.
+   */
+  function narrow(apply: () => void) {
+    apply();
+    window.scrollTo({ top: 0 });
+  }
   const [brand, setBrand] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
@@ -758,8 +774,21 @@ export default function StaffShop() {
 
   return (
     <div className="container-page py-6 md:py-10">
+      {/* Mounted here rather than coming with the storefront's floating
+          stack: /staff is on Providers' BARE list, because the tab bar and
+          the chat launcher would sit on top of this page's own checkout
+          strip. The round is long enough to need the ride back up anyway.
+          80px clears that strip; the storefront's own default would put it
+          behind it. */}
+      <BackToTop bottomPx={80} />
       <header className="mb-6">
-        <h1 className="text-2xl font-bold md:text-3xl">
+        {/* The same back control the product and category pages carry, and
+            for the same reason: this page is opened from a link in a chat
+            as often as from the menu, and a phone's own back gesture is the
+            only way out of it otherwise. Hidden from lg up, where the menu
+            is on screen anyway. */}
+        <BackButton fallbackHref="/" />
+        <h1 className="mt-1 text-2xl font-bold md:text-3xl lg:mt-0">
           {/* The shop's own gradient, the one on its buttons. Still a span
               rather than the heading itself: background-clip: text makes the
               box it sits on transparent, and the h1 is what the page layout
@@ -1082,7 +1111,7 @@ export default function StaffShop() {
                   {!q && brands.length > 1 && (
                     <select
                       value={brand}
-                      onChange={(e) => setBrand(e.target.value)}
+                      onChange={(e) => narrow(() => setBrand(e.target.value))}
                       aria-label="กรองตามแบรนด์"
                       className={`h-11 max-w-[56%] shrink-0 rounded-xl2 border bg-white pl-3 pr-7 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 sm:hidden ${
                         brand === "all"
@@ -1103,14 +1132,16 @@ export default function StaffShop() {
                   {categoryOptions.length > 1 && (
                     <select
                       value={category}
-                      onChange={(e) => {
-                        setCategory(e.target.value);
-                        // Back to ทุกแบรนด์: the brand tab that was open may
-                        // have nothing in the new category, and a grid that
-                        // empties itself on a press meant to narrow it reads
-                        // as a broken filter.
-                        setBrand("all");
-                      }}
+                      onChange={(e) =>
+                        narrow(() => {
+                          setCategory(e.target.value);
+                          // Back to ทุกแบรนด์: the brand that was open may
+                          // have nothing in the new category, and a grid
+                          // that empties itself on a press meant to narrow
+                          // it reads as a broken filter.
+                          setBrand("all");
+                        })
+                      }
                       aria-label="กรองตามหมวดสินค้า"
                       className={`hidden h-11 max-w-[45%] shrink-0 rounded-xl2 border bg-white px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 sm:block ${
                         category === "all"
@@ -1141,7 +1172,7 @@ export default function StaffShop() {
                     <div className="hidden sm:mt-3 sm:block">
                       <BrandTabs
                         current={brand}
-                        onPick={setBrand}
+                        onPick={(key) => narrow(() => setBrand(key))}
                         tabs={[
                           {
                             key: "all",
