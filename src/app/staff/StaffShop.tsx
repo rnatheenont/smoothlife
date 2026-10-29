@@ -981,9 +981,10 @@ export default function StaffShop() {
               // already full of colour, and a tinted bar across the top of
               // it competes with the products instead of framing them.
               //
-              // /95 rather than flat, because it is sticky over a moving
-              // grid — the blur underneath needs something to blur.
-              <div className="scrollbar-none sticky top-[calc(var(--app-header-h,0px)+1rem)] z-30 mb-5 space-y-3 rounded-xl2 bg-white/95 p-3 ring-1 ring-surface-line backdrop-blur-sm transition-[top] duration-300">
+              // Flat white on a phone: a sticky backdrop-blur over a fast
+              // scroll is one of the things that blacked the screen out
+              // (29 Oct 2026). /95 and the blur only from lg up.
+              <div className="scrollbar-none sticky top-[calc(var(--app-header-h,0px)+1rem)] z-30 mb-5 space-y-3 rounded-xl2 bg-white p-3 ring-1 ring-surface-line transition-[top] duration-300 lg:bg-white/95 lg:backdrop-blur-sm">
                 {/* Search first, because it is the shortest route to one
                     known product, and the tabs are for browsing. */}
                 <div className="flex gap-2">

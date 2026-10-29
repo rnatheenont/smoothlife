@@ -34,31 +34,14 @@ export default function AuroraBackground({
     <div className={cn("relative isolate", className)}>
       {/* aria-hidden and pointer-events-none: it is weather, not content, and
           nothing in it should ever take a tap meant for the page. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div
-          className={cn(
-            // Two stacked repeating gradients: a white one that breaks the
-            // colour into bands, and the colour itself. The second copy in
-            // ::after is the one that moves — animating a background that is
-            // also doing the masking makes the bands swim rather than drift.
-            "absolute -inset-[10px] opacity-45 will-change-transform",
-            "[--aurora:repeating-linear-gradient(100deg,var(--color-brand-400)_10%,var(--color-brand-200)_15%,var(--color-sky-200,#bae6fd)_20%,var(--color-brand-teal)_25%,var(--color-brand-600)_30%)]",
-            "[--band:repeating-linear-gradient(100deg,#fff_0%,#fff_7%,transparent_10%,transparent_12%,#fff_16%)]",
-            "[background-image:var(--band),var(--aurora)]",
-            "[background-size:300%,_200%] [background-position:50%_50%,50%_50%]",
-            "blur-[10px] invert",
-            'after:absolute after:inset-0 after:content-[""]',
-            "after:[background-image:var(--band),var(--aurora)]",
-            "after:[background-size:200%,_100%] after:[background-attachment:fixed]",
-            "after:mix-blend-difference after:animate-aurora",
-            // Someone who has asked for less movement gets the colour and
-            // none of the drift.
-            "motion-reduce:after:animate-none",
-            showRadialGradient &&
-              "[mask-image:radial-gradient(ellipse_at_100%_0%,black_10%,transparent_70%)]",
-          )}
-        />
-      </div>
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-0 overflow-hidden opacity-60",
+          "[background-image:radial-gradient(ellipse_55%_45%_at_85%_5%,color-mix(in_srgb,var(--color-brand-teal)_35%,transparent),transparent_70%),radial-gradient(ellipse_45%_40%_at_60%_0%,color-mix(in_srgb,var(--color-sky-200,#bae6fd)_70%,transparent),transparent_70%),radial-gradient(ellipse_40%_35%_at_100%_30%,color-mix(in_srgb,var(--color-brand-200)_70%,transparent),transparent_70%)]",
+          !showRadialGradient && "opacity-80",
+        )}
+      />
       {children}
     </div>
   );
