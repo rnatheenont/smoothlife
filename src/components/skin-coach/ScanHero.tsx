@@ -101,11 +101,15 @@ export default function ScanHero() {
 
       </div>
 
-      {/* Pushed down to where the artwork puts it: its icons start at 0.64
-          of the page width from the top of the hero, and with the mascot out
-          of the flow this row was landing at 0.51. The space is not empty —
-          it is where the portrait and the mascot are. */}
-      <ul className="relative mt-[13%] grid grid-cols-4 gap-1 pb-1 md:mt-0 md:gap-4 md:pb-9">
+      {/* Clear of the portrait, not across it.
+          
+          Measured off the reference: her skin ends at 0.581 of the page
+          width below the top of the sky and the icons begin at 0.618, so
+          they sit under her rather than over her — this row was starting at
+          0.499 and running through her shoulder. The padding below is the
+          sky the reference leaves under the labels; without it the hero ends
+          0.68 of the way down where it should end at 0.96. */}
+      <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[18%] md:mt-6 md:gap-4 md:pb-10">
         {REASONS.map(({ Icon, tint, title, body }) => (
           <li key={title} className="flex flex-col items-center text-center">
             <span className={`grid size-10 place-items-center rounded-full md:size-14 ${tint}`}>
