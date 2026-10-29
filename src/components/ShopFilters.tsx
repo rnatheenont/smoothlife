@@ -5,8 +5,9 @@ import { categories, concerns } from "@/data/categories";
 import type { BrandOption } from "@/lib/brand-options";
 import { multi, PROMO_FILTERS, RATING_STEPS, type FilterCounts, ShopSearchParams } from "@/lib/shop-params";
 import { SlidersHorizontal, Check, X, ChevronDown, Search, Star } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
+import { createPortal } from "react-dom";
 import Dropdown from "@/components/shop/Dropdown";
 
 // Fewer than this and there's nothing to collapse — the toggle would just
@@ -97,11 +98,29 @@ export default function ShopFilters({
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  /** Which section of the sheet to land on. A chip names one; the plain
+   *  "ตัวกรอง" button names none and opens at the top. */
+  const [sheetSection, setSheetSection] = useState<string | null>(null);
+  const sheetBody = useRef<HTMLDivElement>(null);
+
+  function openSheet(section?: string) {
+    setSheetSection(section ?? null);
+    setMobileOpen(true);
+  }
 
   // Lock the page while the sheet is up. Without it the page carried on
   // scrolling behind a sheet that covers the whole screen, so closing it put
   // you somewhere you never chose to be — and overscroll-contain on the list
   // inside stops a flick past the last brand from doing the same thing.
+  // Jump to the chip's own section once the sheet is on screen. Instant,
+  // not smooth: the sheet is still sliding up, and a second animation
+  // underneath it reads as the content having been knocked loose.
+  useEffect(() => {
+    if (!mobileOpen || !sheetSection) return;
+    const el = sheetBody.current?.querySelector(`[data-sec="${sheetSection}"]`);
+    el?.scrollIntoView({ block: "start" });
+  }, [mobileOpen, sheetSection]);
+
   useEffect(() => {
     if (!mobileOpen) return;
     const prev = document.body.style.overflow;
@@ -327,8 +346,10 @@ export default function ShopFilters({
     </div>
   );
 
-  const pricePanel = (
-    <div className="w-72">
+  /** Takes its width from the caller: w-72 in the dropdown, the full
+   *  column in the phone sheet. */
+  const pricePanel = (width: string) => (
+    <div className={width}>
       <div>
         <div className="flex items-center gap-2">
           <label className="flex flex-1 items-center gap-1 rounded-lg border border-surface-line px-2.5 py-1.5 text-sm">
@@ -366,8 +387,10 @@ export default function ShopFilters({
     </div>
   );
 
-  const promoPanel = (
-    <div className="w-64">
+  /** Takes its width from the caller: w-64 in the dropdown, the full
+   *  column in the phone sheet. */
+  const promoPanel = (width: string) => (
+    <div className={width}>
       <div>
         <div className="flex flex-col gap-0.5">
           {PROMO_FILTERS.map((f) => {
@@ -406,8 +429,10 @@ export default function ShopFilters({
     </div>
   );
 
-  const ratingPanel = (
-    <div className="w-56">
+  /** Takes its width from the caller: w-56 in the dropdown, the full
+   *  column in the phone sheet. */
+  const ratingPanel = (width: string) => (
+    <div className={width}>
       <div>
         <div className="flex flex-col gap-0.5">
           {RATING_STEPS.map((min) => {
@@ -522,6 +547,17 @@ export default function ShopFilters({
   // range set on desktop and carried to a phone by the URL was invisible
   // here, and an unexplained short list is how a shopper decides the shop is
   // out of stock.
+  /** The same facets the desktop row has, in the same order, each carrying
+   *  the count its own dropdown shows. */
+  const mobileFacets = [
+    { key: "category", label: "หมวดหมู่", count: current.category ? 1 : 0 },
+    { key: "brand", label: "แบรนด์", count: activeBrands.length },
+    { key: "price", label: "ช่วงราคา", count: current.minPrice || current.maxPrice ? 1 : 0 },
+    { key: "promo", label: "โปรโมชัน", count: activePromos.length },
+    { key: "rating", label: "คะแนนสินค้า", count: current.rating ? 1 : 0 },
+    { key: "concern", label: "ปัญหาผิวที่กังวล", count: activeConcerns.length },
+  ];
+
   const appliedCount =
     activeSecondaryCount +
     activePromos.length +
@@ -534,7 +570,7 @@ export default function ShopFilters({
           used to carry the categories are gone, and this sheet is the only
           thing a phone has. A category nobody can reach is a seventh of the
           shop nobody can reach. */}
-      <div>
+      <div data-sec="category">
         <h4 className="mb-3 text-xs font-bold text-slate-500">หมวดหมู่</h4>
         <div className="flex flex-col rounded-xl border border-slate-200">
           {[{ slug: null as string | null, nameTh: "ทั้งหมด" }, ...categories].map((c) => {
@@ -554,7 +590,7 @@ export default function ShopFilters({
           })}
         </div>
       </div>
-      <div>
+      <div data-sec="brand">
         <h4 className="text-xs font-bold text-slate-500 mb-3">แบรนด์ในเครือ · Life So Smooth</h4>
         <div className="flex flex-col rounded-xl border border-brand-emerald/30 mb-4">
           {houseBrands.map((b) => {
@@ -598,7 +634,7 @@ export default function ShopFilters({
           })}
         </div>
       </div>
-      <div>
+      <div data-sec="concern">
         <h4 className="text-xs font-bold text-slate-500 mb-3">ปัญหาผิวที่กังวล</h4>
         <div className="flex flex-wrap gap-2">
           {concerns.map((c) => {
@@ -622,6 +658,22 @@ export default function ShopFilters({
           })}
         </div>
       </div>
+      {/* These three had nowhere to live on a phone. They were built as
+          dropdown panels and the dropdowns are desktop-only, so price,
+          promotion and rating were filters the shop offered and half its
+          visitors could not reach. */}
+      <div data-sec="price">
+        <h4 className="text-xs font-bold text-slate-500 mb-3">ช่วงราคา</h4>
+        {pricePanel("w-full")}
+      </div>
+      <div data-sec="promo">
+        <h4 className="text-xs font-bold text-slate-500 mb-3">โปรโมชัน</h4>
+        {promoPanel("w-full")}
+      </div>
+      <div data-sec="rating">
+        <h4 className="text-xs font-bold text-slate-500 mb-3">คะแนนสินค้า</h4>
+        {ratingPanel("w-full")}
+      </div>
       {activeSecondaryCount > 0 && (
         <button
           onClick={clearSecondaryFilters}
@@ -635,21 +687,48 @@ export default function ShopFilters({
 
   return (
     <>
-      <div className="lg:hidden flex items-center gap-3">
-        <div className="min-w-0 flex-1">
+      {/* One scrollable row of chips instead of two half-width buttons.
+          Two buttons split the width whatever was in them and said nothing
+          about what could be filtered — everything was behind one word.
+          A chip per facet says what the shop sorts by before anything is
+          tapped, and the ones that are doing something carry their count.
+          It bleeds to the gutters so the row scrolls under the edge rather
+          than stopping short of it. */}
+      <div className="lg:hidden bleed-page scrollbar-none flex items-center gap-2 overflow-x-auto">
+        <button
+          onClick={() => openSheet()}
+          className="glass-pill relative flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-transform active:scale-95"
+        >
+          <SlidersHorizontal size={15} aria-hidden="true" /> ตัวกรอง
+          {appliedCount > 0 && (
+            <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-gradient px-1 text-[10px] font-bold text-white">
+              {appliedCount}
+            </span>
+          )}
+        </button>
+        {mobileFacets.map((f) => (
           <button
-            onClick={() => setMobileOpen(true)}
-            className="glass-pill relative h-10 w-full flex items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium active:scale-95 transition-transform"
+            key={f.key}
+            onClick={() => openSheet(f.key)}
+            className={clsx(
+              "flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm transition-transform active:scale-95",
+              f.count > 0
+                ? "border-brand-emerald bg-brand-gradient-soft font-semibold text-brand-800"
+                : "glass-pill font-medium text-slate-700",
+            )}
           >
-            <SlidersHorizontal size={15} /> ตัวกรอง
-            {appliedCount > 0 && (
+            {f.label}
+            {f.count > 0 && (
               <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-gradient px-1 text-[10px] font-bold text-white">
-                {appliedCount}
+                {f.count}
               </span>
             )}
+            <ChevronDown size={13} aria-hidden="true" className="text-slate-400" />
           </button>
-        </div>
-        <div className="min-w-0 flex-1">{mobileExtra}</div>
+        ))}
+        {/* Last, and kept whole: ordering is not a filter, and the sort
+            control is a select of its own. */}
+        <div className="shrink-0">{mobileExtra}</div>
       </div>
       {/* Desktop: the same filters as a row above the grid. The phone keeps
           its sheet — a row of five menus is a sidebar again on a 375px
@@ -674,21 +753,21 @@ export default function ShopFilters({
           openMenu={openMenu}
           setOpenMenu={setOpenMenu}
           count={current.minPrice || current.maxPrice ? 1 : 0}>
-          {pricePanel}
+          {pricePanel("w-72")}
         </FilterMenu>
         <FilterMenu
           label="โปรโมชัน"
           openMenu={openMenu}
           setOpenMenu={setOpenMenu}
           count={activePromos.length}>
-          {promoPanel}
+          {promoPanel("w-64")}
         </FilterMenu>
         <FilterMenu
           label="คะแนนสินค้า"
           openMenu={openMenu}
           setOpenMenu={setOpenMenu}
           count={current.rating ? 1 : 0}>
-          {ratingPanel}
+          {ratingPanel("w-56")}
         </FilterMenu>
         <FilterMenu
           label="ปัญหาผิวที่กังวล"
@@ -706,7 +785,17 @@ export default function ShopFilters({
           </button>
         )}
       </div>
-      {mobileOpen && (
+      {/* Portalled to the body, and it has to be.
+          
+          The toolbar above is a glass bar, and an element with a
+          backdrop-filter becomes the containing block for every fixed
+          descendant — so "fixed inset-0" stopped meaning the window and
+          started meaning the bar, which is 56 pixels tall and scrolls. The
+          sheet opened mostly off the top of the screen with only its
+          footer showing. Nothing about the sheet was wrong; it was being
+          measured against the wrong box. */}
+      {mobileOpen &&
+        createPortal(
         <div className="fixed inset-0 z-100 lg:hidden">
           <div aria-hidden="true" className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
           <div className="absolute inset-x-0 bottom-0 max-h-[85vh] flex flex-col rounded-t-2xl bg-white shadow-xl animate-slideUp">
@@ -723,7 +812,9 @@ export default function ShopFilters({
                 <X size={16} />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto overscroll-contain px-5">{mobileContent}</div>
+            <div ref={sheetBody} className="flex-1 overflow-y-auto overscroll-contain px-5">
+              {mobileContent}
+            </div>
             <div className="p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shrink-0">
               {/* The count belongs on the button, not only behind it. Filters
                   here apply the moment they are tapped, so this number is the
@@ -740,8 +831,9 @@ export default function ShopFilters({
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </>
   );
 }
