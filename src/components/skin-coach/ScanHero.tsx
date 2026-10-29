@@ -101,36 +101,6 @@ export default function ScanHero() {
 
       </div>
 
-      {/* The mascot takes no space of its own.
-          
-          This had a row to itself, and that row was most of why the hero ran
-          about seventy pixels taller than the artwork's. Measuring the
-          artwork settled it: the mascot's bottom edge is at 0.713 of the page
-          width and the reasons' icons start at 0.64 — it is standing among
-          them, between รับคำแนะนำ and เข้าใจปัญหาผิว, not above them. Out of
-          the flow, so the reasons row sits where it does in the artwork and
-          the mascot overlaps it.
-          
-          Sizes are the artwork's too: 0.263 of the page width across, its
-          left edge at 0.521. */}
-      <div className="pointer-events-none absolute bottom-[14%] left-[52%] z-20 w-[26%] max-w-[190px]">
-        <p className="absolute bottom-[58%] right-[86%] w-max rounded-[14px] rounded-br-sm bg-white px-2.5 py-1.5 text-center text-[11px] font-bold leading-tight text-brand-ink shadow-product md:text-[13px]">
-          มาสแกน
-          <br />
-          ผิวกันเถอะ!
-        </p>
-        <Image
-          src="/skin-coach/mascot-camera.webp"
-          alt="น้อง Smoothie"
-          width={380}
-          height={398}
-          sizes="(max-width: 768px) 112px, 190px"
-          className="h-auto w-full"
-        />
-      </div>
-
-      {/* Four across at every width: each is an icon and two short lines, not
-          a sentence, so they fit even on the narrowest phone. */}
       {/* Pushed down to where the artwork puts it: its icons start at 0.64
           of the page width from the top of the hero, and with the mascot out
           of the flow this row was landing at 0.51. The space is not empty —
