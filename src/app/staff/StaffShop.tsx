@@ -1040,7 +1040,7 @@ export default function StaffShop() {
               <div
                 ref={toolbar}
                 className={clsx(
-                  "scrollbar-none sticky top-[calc(var(--app-header-h,0px)+1rem)] z-30 mb-5 space-y-3 rounded-xl2 bg-white p-3 ring-1 ring-surface-line transition-[top,background-color,box-shadow] duration-300",
+                  "scrollbar-none sticky top-[calc(var(--app-header-h,0px)+1rem)] z-30 mb-5 rounded-xl2 bg-white p-3 ring-1 ring-surface-line transition-[top,background-color,box-shadow] duration-300",
                   // Glass only once it is actually floating over the grid.
                   // The blur is lighter on a phone than on a laptop; see
                   // .glass-card in globals.css for why, and for what to
@@ -1138,7 +1138,7 @@ export default function StaffShop() {
                         mouse's way to the end of it. On a 375px screen it is
                         eight brands behind a one-brand window, so the phone
                         gets the menu beside the search box instead. */}
-                    <div className="hidden sm:block">
+                    <div className="hidden sm:mt-3 sm:block">
                       <BrandTabs
                         current={brand}
                         onPick={setBrand}
