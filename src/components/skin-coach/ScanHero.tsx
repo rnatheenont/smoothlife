@@ -85,7 +85,11 @@ export default function ScanHero({ aside }: { aside?: React.ReactNode }) {
           was otherwise empty there. See page.tsx, which decides where that
           card is rendered. */}
       <div className="md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,34rem)] md:items-center md:gap-12">
-      <div className="relative">
+      {/* Pushed down on a desktop so the words and the reasons sit lower in
+          the band than the card beside them, which is where TOP's boxes put
+          them. On a phone there is no second column to sit against and the
+          sky's own top padding already places it. */}
+      <div className="relative md:pt-12">
         {/* The portrait. A transparent cut-out, so it needs no mask to hide
             a background — the first attempt at this page used a rectangle
             cropped out of the mockup and spent an elliptical mask hiding its
