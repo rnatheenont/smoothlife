@@ -128,32 +128,35 @@ export default function ScanHero({ aside }: { aside?: React.ReactNode }) {
           </p>
         </div>
 
+        {/* Inside this column, not across the whole band.
+            
+            Clear of the portrait: measured off the reference, her skin ends
+            at 0.581 of the page width below the top of the sky and the icons
+            begin at 0.618, so they sit under her rather than over her — this
+            row was starting at 0.499 and running through her shoulder.
+            
+            And on a desktop it belongs to the words beside it, not to the
+            whole band: run full width it passed under the scan card as well,
+            which made four reasons look like a caption for a card they have
+            nothing to do with. */}
+        <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[3%] md:mt-8 md:gap-4 md:pb-9">
+          {REASONS.map(({ Icon, tint, title, body }) => (
+            <li key={title} className="flex flex-col items-center text-center">
+              <span className={`grid size-[3.1rem] place-items-center rounded-full md:size-16 ${tint}`}>
+                <Icon size={25} />
+              </span>
+              <p className="mt-1.5 text-[10.5px] font-bold leading-tight text-brand-ink md:text-sm">{title}</p>
+              <p className="mt-0.5 text-[9.5px] leading-tight text-slate-500 md:text-xs">{body}</p>
+            </li>
+          ))}
+          </ul>
       </div>
 
-      {/* Clear of the portrait, not across it.
-          
-          Measured off the reference: her skin ends at 0.581 of the page
-          width below the top of the sky and the icons begin at 0.618, so
-          they sit under her rather than over her — this row was starting at
-          0.499 and running through her shoulder. The padding below is the
-          sky the reference leaves under the labels; without it the hero ends
-          0.68 of the way down where it should end at 0.96. */}
       {/* The card that starts a scan, when a desktop has room for it beside
           the words. Empty on a phone, where it stays in the flow below. */}
       {aside && <div className="hidden md:block">{aside}</div>}
       </div>
 
-      <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[3%] md:mt-8 md:gap-4 md:pb-9">
-        {REASONS.map(({ Icon, tint, title, body }) => (
-          <li key={title} className="flex flex-col items-center text-center">
-            <span className={`grid size-[3.1rem] place-items-center rounded-full md:size-16 ${tint}`}>
-              <Icon size={25} />
-            </span>
-            <p className="mt-1.5 text-[10.5px] font-bold leading-tight text-brand-ink md:text-sm">{title}</p>
-            <p className="mt-0.5 text-[9.5px] leading-tight text-slate-500 md:text-xs">{body}</p>
-          </li>
-        ))}
-        </ul>
       </div>
     </section>
   );
