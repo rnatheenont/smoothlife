@@ -649,7 +649,15 @@ export default function LiveScanStep({
             {/* Beside the phone where there is room, above it where there is
                 not: on a 375px screen a note floated over the phone's corner
                 lands on the face it is telling you how to photograph. */}
-            <p className="mb-1 flex items-end gap-0.5 text-[10px] font-bold leading-tight text-brand-800 md:absolute md:-left-8 md:top-5 md:z-10 md:mb-0 md:max-w-[6.5rem] md:-rotate-6 md:text-[11px]">
+            {/* A white stroke behind the letters, drawn under the fill.
+                On a desktop this note is rotated over the corner of the
+                phone, so part of it lands on the photograph and part on the
+                card — two backgrounds, one of them dark hair. Without the
+                stroke the half over the hair is unreadable. */}
+            <p
+              style={{ WebkitTextStroke: "3px #ffffff", paintOrder: "stroke" }}
+              className="mb-1 flex items-end gap-0.5 text-[10px] font-bold leading-tight text-brand-800 md:absolute md:-left-8 md:top-5 md:z-10 md:mb-0 md:max-w-[6.5rem] md:-rotate-6 md:text-[11px]"
+            >
               ถ่ายหน้าตรงในที่แสงสว่าง
               <svg viewBox="0 0 40 30" aria-hidden className="h-5 w-8 shrink-0 text-brand-teal md:mt-0.5">
                 <path d="M2 2c10 2 18 9 24 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />

@@ -89,19 +89,23 @@ export default function ScanHero({ aside }: { aside?: React.ReactNode }) {
           the band than the card beside them, which is where TOP's boxes put
           them. On a phone there is no second column to sit against and the
           sky's own top padding already places it. */}
-      <div className="relative md:pt-36">
+      <div className="relative md:pt-16">
         {/* The portrait. A transparent cut-out, so it needs no mask to hide
             a background — the first attempt at this page used a rectangle
             cropped out of the mockup and spent an elliptical mask hiding its
             corners. */}
-        <div className="pointer-events-none absolute -right-5 -top-2 w-[66%] max-w-[430px] md:-right-3 md:w-[56%]">
+        {/* The 430px cap is a phone's cap: at 66% of a 430-wide column it
+            never bites there, and it was silently holding her to 430 on a
+            desktop where 66% of the left column is over 500 — which is why
+            "bigger" did nothing until the cap came off. */}
+        <div className="pointer-events-none absolute -right-5 -top-2 w-[66%] max-w-[430px] md:-right-6 md:w-[70%] md:max-w-none">
           <Image
             src="/skin-coach/hero-woman.webp"
             alt=""
             width={720}
             height={769}
             priority
-            sizes="(max-width: 768px) 66vw, 30rem"
+            sizes="(max-width: 768px) 66vw, 36rem"
             className="h-auto w-full"
           />
         </div>
