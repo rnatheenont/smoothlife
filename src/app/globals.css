@@ -578,3 +578,34 @@
 @media (prefers-reduced-motion: reduce) {
   .skip-link { transition: none; }
 }
+
+/* A long grid that only pays for what is on screen.
+ *
+ * /shop loads more as you scroll, and after the automatic pages it holds a
+ * few hundred cards in one document — forty-odd thousand pixels of page, or
+ * about fifty phone screens. The browser keeps the painted result of all of
+ * it, and on iOS that is what finally gets the tab killed: the renderer is
+ * jetsammed, Chrome shows "Can't open this page", and everything scrolled
+ * past is gone. Reported from a phone with seventy-six tabs open, which is
+ * the other half of the story, but a shop should survive a full phone.
+ *
+ * content-visibility lets the browser skip layout and paint for the cards
+ * that are not near the viewport and throw their rendered tiles away. The
+ * card still exists, is still in the DOM, is still found by in-page search
+ * and still read by a crawler — only its pixels are deferred.
+ *
+ * The intrinsic size keeps the scrollbar honest for cards that have not been
+ * rendered yet: 380px is the median card at phone width (measured on the
+ * live grid: 323 shortest, 411 tallest, varying with how long a product name
+ * runs). `auto` means the browser replaces that guess with the real height
+ * once a card has been on screen even once, so the estimate only matters on
+ * the way down and never twice.
+ *
+ * Written here rather than as a Tailwind arbitrary variant on purpose: this
+ * file already carries one note about `[&_header]:bg-white/70` compiling to
+ * no CSS at all, which looks exactly like working code until you grep the
+ * stylesheet for it. */
+.grid-virtualized > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 380px;
+}
