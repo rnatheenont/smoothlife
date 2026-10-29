@@ -615,7 +615,10 @@ export default function LiveScanStep({
             below md was my own addition and it pushed the buttons a screen
             and a half down. */}
         <div className="flex flex-row items-center gap-3 md:gap-8">
-          <div className="relative w-[38%] max-w-[215px] shrink-0">
+          {/* 34% of the card's inside, which lands on 0.29 of the page —
+              measured off the artwork, where the phone is 249px wide on an
+              851px canvas. */}
+          <div className="relative w-[34%] max-w-[190px] shrink-0">
             {/* Beside the phone where there is room, above it where there is
                 not: on a 375px screen a note floated over the phone's corner
                 lands on the face it is telling you how to photograph. */}
@@ -628,12 +631,12 @@ export default function LiveScanStep({
             </p>
 
             {/* The phone. A rounded black shell, a notch, and the screen. */}
-            {/* 1.63 tall for its width, measured off the artwork. It was
-                2.08 — a real phone's proportions — and since the phone is
-                the tallest thing in the card it was setting the card's
-                height on its own, which is most of why the whole block came
-                out half again as tall as the artwork's. */}
-            <div className="relative aspect-[210/342] w-full rounded-[22px] bg-[#1b1f24] p-[4px] shadow-[0_14px_26px_-14px_rgba(16,35,28,0.45)] md:rounded-[26px] md:p-[5px]">
+            {/* 1.93 tall for its width: 249 x 478 on the artwork's 851px
+                canvas, measured off the pixels rather than guessed. An
+                earlier pass put it at 1.63 on an eyeballed reading of the
+                same picture and made the phone visibly squat — the right
+                answer was always to keep it tall and make it narrower. */}
+            <div className="relative aspect-[249/478] w-full rounded-[22px] bg-[#1b1f24] p-[4px] shadow-[0_14px_26px_-14px_rgba(16,35,28,0.45)] md:rounded-[26px] md:p-[5px]">
               <div className="relative h-full w-full overflow-hidden rounded-[18px] bg-[linear-gradient(180deg,#fbfdfd_0%,#eef8f5_100%)] md:rounded-[22px]">
                 <span aria-hidden className="absolute left-1/2 top-1.5 z-20 h-1.5 w-12 -translate-x-1/2 rounded-full bg-[#1b1f24]/85" />
                 <Image
@@ -641,7 +644,7 @@ export default function LiveScanStep({
                   alt="ตัวอย่างหน้าจอตอนสแกน"
                   width={560}
                   height={672}
-                  sizes="(max-width: 768px) 38vw, 215px"
+                  sizes="(max-width: 768px) 30vw, 190px"
                   // The bottom three quarters of the screen, filled and
                   // cropped. Two attempts either side of this: at her own
                   // proportions she is 183x219 in a 391-tall screen and the

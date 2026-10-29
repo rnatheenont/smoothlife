@@ -72,8 +72,8 @@ export default function ScanHero() {
         </div>
 
         <div className="relative max-w-[18.5rem] sm:max-w-[25rem]">
-          <p className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-bold tracking-[0.08em] text-brand-800 shadow-product">
-            <SparkleIcon size={13} />
+          <p className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[9.5px] font-bold tracking-[0.06em] text-brand-800 shadow-product md:gap-1.5 md:px-3 md:py-1.5 md:text-[11px]">
+            <SparkleIcon size={11} />
             AI SKIN ANALYSIS
           </p>
 
@@ -91,35 +91,44 @@ export default function ScanHero() {
           </p>
         </div>
 
-        {/* The mascot, overlapping the portrait, with its line in a bubble
-            up and to its left. Ours, in the lab coat.
+      </div>
 
-            Placed as a share of the hero rather than pushed from an edge:
-            in the artwork it stands just left of centre and overlaps her,
-            and anything measured from the right edge drifts away from her
-            as the column gets wider. Percentages hold the arrangement at
-            every width, which is what "เหมือนรูปตัวอย่าง" has to mean on a
-            screen that is not the one the artwork was drawn at. */}
-        <div className="pointer-events-none relative h-[5.6rem] md:h-40">
-          <p className="absolute bottom-[42%] left-[28%] z-10 rounded-[14px] rounded-br-sm bg-white px-3 py-1.5 text-center text-[11.5px] font-bold leading-tight text-brand-ink shadow-product md:left-[32%] md:text-[13px]">
-            มาสแกน
-            <br />
-            ผิวกันเถอะ!
-          </p>
-          <Image
-            src="/skin-coach/mascot-camera.webp"
-            alt="น้อง Smoothie"
-            width={380}
-            height={398}
-            sizes="(max-width: 768px) 130px, 190px"
-            className="absolute bottom-0 left-1/2 h-full w-auto"
-          />
-        </div>
+      {/* The mascot takes no space of its own.
+          
+          This had a row to itself, and that row was most of why the hero ran
+          about seventy pixels taller than the artwork's. Measuring the
+          artwork settled it: the mascot's bottom edge is at 0.713 of the page
+          width and the reasons' icons start at 0.64 — it is standing among
+          them, between รับคำแนะนำ and เข้าใจปัญหาผิว, not above them. Out of
+          the flow, so the reasons row sits where it does in the artwork and
+          the mascot overlaps it.
+          
+          Sizes are the artwork's too: 0.263 of the page width across, its
+          left edge at 0.521. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden md:block" aria-hidden />
+      <div className="pointer-events-none absolute left-[52%] top-[46%] z-10 w-[26%] max-w-[190px]">
+        <p className="absolute bottom-[58%] right-[86%] w-max rounded-[14px] rounded-br-sm bg-white px-2.5 py-1.5 text-center text-[11px] font-bold leading-tight text-brand-ink shadow-product md:text-[13px]">
+          มาสแกน
+          <br />
+          ผิวกันเถอะ!
+        </p>
+        <Image
+          src="/skin-coach/mascot-camera.webp"
+          alt="น้อง Smoothie"
+          width={380}
+          height={398}
+          sizes="(max-width: 768px) 112px, 190px"
+          className="h-auto w-full"
+        />
       </div>
 
       {/* Four across at every width: each is an icon and two short lines, not
           a sentence, so they fit even on the narrowest phone. */}
-      <ul className="relative grid grid-cols-4 gap-1 pb-4 md:gap-4 md:pb-9">
+      {/* Pushed down to where the artwork puts it: its icons start at 0.64
+          of the page width from the top of the hero, and with the mascot out
+          of the flow this row was landing at 0.51. The space is not empty —
+          it is where the portrait and the mascot are. */}
+      <ul className="relative mt-[13%] grid grid-cols-4 gap-1 pb-1 md:mt-0 md:gap-4 md:pb-9">
         {REASONS.map(({ Icon, tint, title, body }) => (
           <li key={title} className="flex flex-col items-center text-center">
             <span className={`grid size-10 place-items-center rounded-full md:size-14 ${tint}`}>
