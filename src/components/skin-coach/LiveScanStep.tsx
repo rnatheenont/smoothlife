@@ -656,16 +656,19 @@ export default function LiveScanStep({
                 stroke the half over the hair is unreadable. */}
             <p
               style={{ WebkitTextStroke: "3px #ffffff", paintOrder: "stroke" }}
-              className="mb-1 flex items-end gap-0.5 text-[10px] font-bold leading-tight text-brand-800 md:absolute md:-left-8 md:top-5 md:z-10 md:mb-0 md:max-w-[6.5rem] md:-rotate-6 md:text-[11px]"
+              className="relative z-10 mb-1 flex items-end gap-0.5 text-[10px] font-bold leading-tight text-brand-800 md:absolute md:-left-8 md:top-5 md:z-10 md:mb-0 md:max-w-[6.5rem] md:-rotate-6 md:text-[11px]"
             >
-              {/* Capped on a phone so the arrow sits right after the words.
-                  Loose, the text was an anonymous flex item taking every
-                  pixel the arrow did not, which parked the arrow at the far
-                  right of the column — over the phone's top corner, pointing
-                  away from it. On a desktop the <p> itself is already
-                  capped, so this cap gets out of the way there. */}
+              {/* Capped on a phone so the words wrap to two short lines over
+                  the phone rather than running the width of the column. */}
               <span className="block max-w-[6.1rem] md:max-w-none">ถ่ายหน้าตรงในที่แสงสว่าง</span>
-              <svg viewBox="0 0 40 30" aria-hidden className="h-5 w-8 shrink-0 text-brand-teal md:mt-0.5">
+              {/* On a phone the arrow is lifted out of the line and hung
+                  under the words, at the left, so it reaches down into the
+                  phone's top corner — which is the thing it is pointing at.
+                  In the line it sat at the far right of the column, past the
+                  phone, aimed at nothing. Out of the flow rather than on its
+                  own line because the card is short of height on a phone and
+                  a line for one arrow costs more than it is worth. */}
+              <svg viewBox="0 0 40 30" aria-hidden className="absolute left-1.5 top-full h-5 w-8 shrink-0 text-brand-teal md:static md:mt-0.5">
                 <path d="M2 2c10 2 18 9 24 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                 <path d="M20 22l7 1 -2-7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
