@@ -49,7 +49,7 @@ export default function ScanHero() {
     // whole thing. A block element that is simply full width has neither
     // problem.
     <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#e9f5fb_0%,#f1fbfa_52%,#ffffff_100%)]">
-      <div className="container-page relative pt-4 [--page-max:900px] md:pt-9">
+      <div className="container-page relative pt-8 [--page-max:900px] md:pt-10">
       <Sparkle className="left-[53%] top-4 text-[#9fd4f2]" size={22} />
       <Sparkle className="right-[8%] top-12 text-[#bfe4f7]" size={30} />
       <Sparkle className="left-[47%] top-[34%] text-[#7ec8ec]" size={18} />
@@ -94,8 +94,14 @@ export default function ScanHero() {
             </span>
           </h1>
 
+          {/* Broken by hand, because the two halves are two different
+              things: what this does, and what it is not. Left to wrap on its
+              own it split as "…ไม่ใช่การ / วินิจฉัยทางการแพทย์", which cuts
+              the disclaimer in half at the least useful point. */}
           <p className="mt-1.5 text-[11.5px] leading-snug text-slate-500 md:text-[15px] md:leading-relaxed">
-            ประเมินผิวจากรูปถ่าย เพื่อความสวยงาม ไม่ใช่การวินิจฉัยทางการแพทย์
+            ประเมินผิวจากรูปถ่าย เพื่อความสวยงาม
+            <br />
+            ไม่ใช่การวินิจฉัยทางการแพทย์
           </p>
         </div>
 
@@ -109,7 +115,7 @@ export default function ScanHero() {
           0.499 and running through her shoulder. The padding below is the
           sky the reference leaves under the labels; without it the hero ends
           0.68 of the way down where it should end at 0.96. */}
-      <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[18%] md:mt-6 md:gap-4 md:pb-10">
+      <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[6%] md:mt-6 md:gap-4 md:pb-8">
         {REASONS.map(({ Icon, tint, title, body }) => (
           <li key={title} className="flex flex-col items-center text-center">
             <span className={`grid size-10 place-items-center rounded-full md:size-14 ${tint}`}>
