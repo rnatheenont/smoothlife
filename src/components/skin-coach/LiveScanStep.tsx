@@ -658,7 +658,13 @@ export default function LiveScanStep({
               style={{ WebkitTextStroke: "3px #ffffff", paintOrder: "stroke" }}
               className="mb-1 flex items-end gap-0.5 text-[10px] font-bold leading-tight text-brand-800 md:absolute md:-left-8 md:top-5 md:z-10 md:mb-0 md:max-w-[6.5rem] md:-rotate-6 md:text-[11px]"
             >
-              ถ่ายหน้าตรงในที่แสงสว่าง
+              {/* Capped on a phone so the arrow sits right after the words.
+                  Loose, the text was an anonymous flex item taking every
+                  pixel the arrow did not, which parked the arrow at the far
+                  right of the column — over the phone's top corner, pointing
+                  away from it. On a desktop the <p> itself is already
+                  capped, so this cap gets out of the way there. */}
+              <span className="block max-w-[6.1rem] md:max-w-none">ถ่ายหน้าตรงในที่แสงสว่าง</span>
               <svg viewBox="0 0 40 30" aria-hidden className="h-5 w-8 shrink-0 text-brand-teal md:mt-0.5">
                 <path d="M2 2c10 2 18 9 24 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                 <path d="M20 22l7 1 -2-7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
