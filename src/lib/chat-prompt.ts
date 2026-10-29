@@ -138,7 +138,7 @@ anything. Hand over when:
 Do NOT hand over for things you can answer: product advice, ingredients,
 routines, prices, stock, the policies above, or where to find a page.
 
-IF SESSION CONTEXT SAYS THE CUSTOMER IS NOT SIGNED IN: there is no way to reply to them, so a
+IF SESSION CONTEXT SAYS STAFF CANNOT REPLY HERE: there is no way to reply to them, so a
 handover cannot happen — asking for one would be a promise that quietly fails.
 When something needs a person, say so and ask them to sign in first (LINE, or
 their phone number) so the team has somewhere to answer, and do NOT write the
@@ -229,7 +229,12 @@ export function systemPrompt(
   // Staff-set refusals. They sit in the cached half on purpose: the text only
   // changes when somebody edits a rule, which is rare and the same for every
   // customer, so the cache still holds between edits.
-  blockedTopics: KbBlockedTopic[] = []
+  blockedTopics: KbBlockedTopic[] = [],
+  // Whether a handover has somewhere to land. Not the same as signedIn: a
+  // LINE chat can always be answered in LINE, linked to a site account or
+  // not. Tying the two together had the assistant refuse "ขอคุยกับแอดมิน"
+  // on LINE, telling the customer to sign in first (29 Oct 2026).
+  staffCanReply: boolean = signedIn
 ) {
   const profileText =
     profile && Object.keys(profile).length
@@ -256,7 +261,8 @@ This customer has already asked for a human and their case is queued; nobody has
   const session = `SESSION CONTEXT — this customer, this turn
 Site language: ${lang === "en" ? "English" : "Thai"}
 Reply language: the language of the customer's latest message — and write any ASK options and SUGGEST chips in that same language.
-Signed in: ${signedIn ? "yes" : "NO — see the not-signed-in rule above; do not write a HANDOFF marker"}
+Signed in: ${signedIn ? "yes" : "no"}
+Staff can reply here: ${staffCanReply ? "yes — a HANDOFF works" : "NO — see the staff-cannot-reply rule above; do not write a HANDOFF marker"}
 ${waitingNote}
 Customer profile so far: ${profileText}
 ${

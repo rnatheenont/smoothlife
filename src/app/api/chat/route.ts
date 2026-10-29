@@ -476,7 +476,9 @@ export async function POST(req: NextRequest) {
     caseWaiting,
     Boolean(uid),
     loyalty,
-    blockedTopics
+    blockedTopics,
+    // LINE is answerable without a site account: staff reply in LINE.
+    Boolean(uid) || channel === "line"
   );
 
   // What the customer just asked, for the AI answer log.
