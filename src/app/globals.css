@@ -637,6 +637,8 @@
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass-pill { background-color: rgb(255 255 255 / 0.96); }
   .glass-bar { background-color: rgb(247 250 252 / 0.97); }
+}
+
 /* A long grid that only pays for what is on screen.
  *
  * /shop loads more as you scroll, and after the automatic pages it holds a
