@@ -144,11 +144,11 @@ export default function ScanHero({ aside }: { aside?: React.ReactNode }) {
             which made four reasons look like a caption for a card they have
             nothing to do with. */}
         {/* Four equal columns across the width on a phone, because that is
-            the artwork. On a desktop they close up and sit to the right of
+            the artwork. On a desktop they close up and sit at the left of
             the column instead: spread over a 700px half they read as four
-            separate things with a lot of air between them, and the right
-            edge is where the card beside them starts. */}
-        <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[3%] md:mt-8 md:flex md:justify-end md:gap-x-9 md:pb-9">
+            separate things with a lot of air between them, and the left edge
+            is the one the headline above them already sits on. */}
+        <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[3%] md:mt-8 md:flex md:justify-start md:gap-x-9 md:pb-9">
           {REASONS.map(({ Icon, tint, title, body }) => (
             <li key={title} className="flex flex-col items-center text-center md:max-w-[8.5rem]">
               <span className={`grid size-[3.1rem] place-items-center rounded-full md:size-16 ${tint}`}>
