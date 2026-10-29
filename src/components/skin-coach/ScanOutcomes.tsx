@@ -20,14 +20,18 @@ export default function ScanOutcomes() {
     <div className="mt-7 space-y-5">
       <section>
         <h2 className="mb-3 text-lg font-bold text-brand-ink">สแกนแล้วได้อะไรบ้าง?</h2>
-        <ul className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-4">
+        {/* Four across at every width, as the artwork has them. Two-by-two
+            was my own doing and it made the row twice as tall for no gain:
+            each card is an icon, a short title and one line of examples,
+            which fits a quarter of a phone. */}
+        <ul className="grid grid-cols-4 gap-1.5 md:gap-4">
           {OUTCOMES.map(({ Icon, title, body }) => (
-            <li key={title} className="rounded-2xl bg-white p-3.5 shadow-product md:p-4">
-              <span className="grid size-10 place-items-center rounded-full bg-[#eaf6fb] text-[#1d7fa8]">
-                <Icon size={19} />
+            <li key={title} className="rounded-2xl bg-white p-2 shadow-product md:p-4">
+              <span className="grid size-9 place-items-center rounded-full bg-[#eaf6fb] text-[#1d7fa8] md:size-10">
+                <Icon size={17} />
               </span>
-              <p className="mt-2.5 text-[13px] font-bold leading-tight text-brand-ink">{title}</p>
-              <p className="mt-1 text-[11px] leading-snug text-slate-500">{body}</p>
+              <p className="mt-2 text-[11px] font-bold leading-tight text-brand-ink md:text-[13px]">{title}</p>
+              <p className="mt-0.5 text-[10px] leading-snug text-slate-500 md:mt-1 md:text-[11px]">{body}</p>
             </li>
           ))}
         </ul>

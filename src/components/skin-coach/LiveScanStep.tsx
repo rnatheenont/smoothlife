@@ -609,12 +609,17 @@ export default function LiveScanStep({
   if (phase === "intro" || phase === "error") {
     return (
       <section className="rounded-[22px] bg-[linear-gradient(135deg,#f2faf7_0%,#ffffff_52%,#edf7fc_100%)] p-4 shadow-product md:p-7">
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-8">
-          <div className="relative mx-auto w-[62%] max-w-[215px] shrink-0 md:mx-0 md:w-[38%]">
+        {/* Two columns at every width, phone left, because that is what the
+            artwork does — and the artwork is a phone screen, so this is not
+            a desktop arrangement being forced onto a small one. Stacking it
+            below md was my own addition and it pushed the buttons a screen
+            and a half down. */}
+        <div className="flex flex-row items-center gap-3.5 md:gap-8">
+          <div className="relative w-[38%] max-w-[215px] shrink-0">
             {/* Beside the phone where there is room, above it where there is
                 not: on a 375px screen a note floated over the phone's corner
                 lands on the face it is telling you how to photograph. */}
-            <p className="mb-1.5 flex max-w-[12rem] items-end gap-1 text-[11px] font-bold leading-tight text-brand-800 md:absolute md:-left-8 md:top-5 md:z-10 md:mb-0 md:max-w-[6.5rem] md:-rotate-6">
+            <p className="mb-1 flex items-end gap-0.5 text-[10px] font-bold leading-tight text-brand-800 md:absolute md:-left-8 md:top-5 md:z-10 md:mb-0 md:max-w-[6.5rem] md:-rotate-6 md:text-[11px]">
               ถ่ายหน้าตรงในที่แสงสว่าง
               <svg viewBox="0 0 40 30" aria-hidden className="h-5 w-8 shrink-0 text-brand-teal md:mt-0.5">
                 <path d="M2 2c10 2 18 9 24 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
@@ -631,7 +636,7 @@ export default function LiveScanStep({
                   alt="ตัวอย่างหน้าจอตอนสแกน"
                   width={560}
                   height={672}
-                  sizes="(max-width: 768px) 62vw, 215px"
+                  sizes="(max-width: 768px) 38vw, 215px"
                   // The bottom three quarters of the screen, filled and
                   // cropped. Two attempts either side of this: at her own
                   // proportions she is 183x219 in a 391-tall screen and the
@@ -688,22 +693,33 @@ export default function LiveScanStep({
             <button
               type="button"
               onClick={start}
-              className="group mt-5 flex min-h-13 w-full items-center justify-center gap-2.5 rounded-full bg-brand-gradient px-6 text-[15px] font-bold text-white shadow-product transition-[filter] hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2"
+              // 13px and a tighter gutter below md. The artwork is drawn at
+              // roughly twice a phone's width, so its text column is 460px
+              // and these labels sit on one line; the same proportions on a
+              // real 390px phone leave 188px, and at 15px both buttons broke
+              // into two lines. Shrinking the type keeps the arrangement the
+              // artwork has, which is what was asked for, rather than moving
+              // the buttons somewhere it does not put them.
+              className="group mt-4 flex min-h-12 w-full items-center justify-center gap-1.5 rounded-full bg-brand-gradient px-3 text-[13px] font-bold text-white shadow-product transition-[filter] hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 md:mt-5 md:min-h-13 md:gap-2.5 md:px-6 md:text-[15px]"
             >
-              <CameraIcon size={19} />
-              {phase === "error" ? "ลองเปิดกล้องอีกครั้ง" : "เริ่มสแกนผิว"}
-              <span className="grid size-6 place-items-center rounded-full bg-white/25 transition-transform group-hover:translate-x-0.5">
-                <ArrowRightIcon size={14} />
+              <CameraIcon size={16} className="shrink-0 md:hidden" />
+              <CameraIcon size={19} className="hidden shrink-0 md:block" />
+              <span className="whitespace-nowrap">
+                {phase === "error" ? "ลองเปิดกล้องอีกครั้ง" : "เริ่มสแกนผิว"}
+              </span>
+              <span className="grid size-5 shrink-0 place-items-center rounded-full bg-white/25 transition-transform group-hover:translate-x-0.5 md:size-6">
+                <ArrowRightIcon size={13} />
               </span>
             </button>
 
             <button
               type="button"
               onClick={abandon}
-              className="mt-2.5 flex min-h-13 w-full items-center justify-center gap-2.5 rounded-full border border-surface-line bg-white px-6 text-[15px] font-bold text-brand-ink transition-colors hover:border-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2"
+              className="mt-2 flex min-h-12 w-full items-center justify-center gap-1.5 rounded-full border border-surface-line bg-white px-3 text-[13px] font-bold text-brand-ink transition-colors hover:border-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 md:mt-2.5 md:min-h-13 md:gap-2.5 md:px-6 md:text-[15px]"
             >
-              <PictureIcon size={18} />
-              อัปโหลดรูปจากแกลเลอรี
+              <PictureIcon size={16} className="shrink-0 md:hidden" />
+              <PictureIcon size={18} className="hidden shrink-0 md:block" />
+              <span className="whitespace-nowrap">อัปโหลดรูปจากแกลเลอรี</span>
             </button>
 
             <p className="mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
