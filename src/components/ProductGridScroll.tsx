@@ -25,6 +25,22 @@ import type { ProductCardData } from "@/data/card";
  *  a whole number of rows at every width the grid has. */
 const BATCH = 20;
 
+/** Batches the observer fills on its own before the button takes over.
+ *
+ *  /shop learned this the hard way: a grid that keeps appending while a
+ *  thumb keeps moving ends with a few hundred cards in one document, and on
+ *  iOS the tab gets killed for it — Chrome shows "Can't open this page" and
+ *  everything scrolled past is gone. This grid has the same shape and a
+ *  smaller ceiling, since it holds one brand rather than the catalogue, but
+ *  Smooth E is nearly 200 products and that is the same order of magnitude
+ *  as the shop page that died.
+ *
+ *  Six batches is 140 products with the first one, which is further than
+ *  anybody reads in a sitting. Past that the button is still there, and
+ *  going further becomes a decision rather than a side effect of not having
+ *  put the phone down. */
+const AUTO_BATCHES = 6;
+
 export default function ProductGridScroll({
   items,
   className,
@@ -34,6 +50,7 @@ export default function ProductGridScroll({
   className: string;
 }) {
   const [shown, setShown] = useState(BATCH);
+  const [autoUsed, setAutoUsed] = useState(0);
   const sentinel = useRef<HTMLDivElement>(null);
   const remaining = items.length - shown;
   const total = items.length;
@@ -43,24 +60,31 @@ export default function ProductGridScroll({
   // changes — the one shape of this that does not cascade a render off an
   // effect body. It re-observes after each batch, so a sentinel still on
   // screen (a short list, or a fast flick to the bottom) fills again until
-  // it is not. 400px of margin means the next batch is built while the end
-  // of this one is still below the fold, and scrolling never stops at a gap.
+  // it is not, or until AUTO_BATCHES is spent. 400px of margin means the
+  // next batch is built while the end of this one is still below the fold,
+  // and scrolling never stops at a gap.
   useEffect(() => {
+    if (autoUsed >= AUTO_BATCHES) return;
     const el = sentinel.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) setShown((n) => Math.min(n + BATCH, total));
+        if (!entry.isIntersecting) return;
+        setShown((n) => Math.min(n + BATCH, total));
+        setAutoUsed((n) => n + 1);
       },
       { rootMargin: "400px" }
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [shown, total]);
+  }, [shown, total, autoUsed]);
 
   return (
     <>
-      <div className={className}>
+      {/* grid-virtualized: the cards past the viewport cost nothing to paint.
+          See globals.css. A brand's whole shelf is up to two hundred cards
+          and this is what keeps holding them cheap. */}
+      <div className={`grid-virtualized ${className}`}>
         {items.slice(0, shown).map((p) => (
           <ProductCard key={p.slug} product={p} />
         ))}

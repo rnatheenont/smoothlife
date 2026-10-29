@@ -26,13 +26,21 @@ import type { ShopSearchParams } from "@/lib/filter-products";
  *  past gone. The brake was not the fix and it did not work: the cause was
  *  the card images, which were being served at 560px for a 163px slot and
  *  came to 147 MB of decoded image on a phone. Square crops and a real
- *  srcset took the same hundred cards to 15 MB, so the ceiling could go back
- *  up.
+ *  srcset took the same hundred cards to 15 MB, so the ceiling went back up
+ *  to eight.
  *
- *  Not removed, though. Eight pages is 192 products, which is further than
- *  anybody reads in one sitting, and a list that loads for ever because a
- *  phone is face down in a pocket is still a list nobody asked for. */
-const AUTO_PAGES = 8;
+ *  Back down to four, because a tab died again on 29 Oct — Chrome on iOS
+ *  this time. Eight pages plus the first is 216 products: measured on the
+ *  live grid that is 42,600px of page, about fifty phone screens, 247 images
+ *  and some 32 MB of decoded image at the pixel ratio of a real phone. The
+ *  images are no longer the scandal they were, but that is still a lot to
+ *  ask a browser to hold because somebody kept a thumb on the screen.
+ *
+ *  Four is 120 products, around 23,000px — further than anybody reads in one
+ *  sitting, and the button is right there for whoever does. Paired with
+ *  content-visibility on the grid (see globals.css), which is what stops the
+ *  cards already loaded from costing anything to keep. */
+const AUTO_PAGES = 4;
 
 export default function InfiniteProducts({
   initial,
@@ -108,7 +116,10 @@ export default function InfiniteProducts({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4 2xl:grid-cols-5">
+      {/* grid-virtualized: the cards past the viewport cost nothing to
+          paint. See globals.css — it is what keeps a few hundred of them in
+          one document from killing the tab on a phone. */}
+      <div className="grid-virtualized grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4 2xl:grid-cols-5">
         {[...initial, ...extra].map((p) => (
           <ProductCard key={p.slug} product={p} />
         ))}
