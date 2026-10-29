@@ -19,11 +19,19 @@ import { SparkleIcon, ChartIcon, FaceIcon, HeartIcon } from "./icons";
 // face.
 
 /** The four reasons, with the kit's icons and the kit's Thai. */
+/* Colours sampled off the reference TOP marked up: everything is the same
+   mint-teal and only the heart is blue, which is what makes the heart read
+   as the odd one out — the free one — rather than as a fourth colour in a
+   row of four. Before this the row ran green, blue, indigo, blue, which was
+   four tints doing no work. */
+const MINT = "bg-[#e4f6f1] text-[#17b095]";
+const SKY = "bg-[#e3f3fb] text-[#2bb0da]";
+
 const REASONS = [
-  { Icon: SparkleIcon, tint: "bg-[#e8f7f1] text-brand-800", title: "รู้สภาพผิว", body: "อย่างละเอียด" },
-  { Icon: ChartIcon, tint: "bg-[#e6f4fb] text-[#1d7fa8]", title: "รับคำแนะนำ", body: "ผลิตภัณฑ์ที่เหมาะกับคุณ" },
-  { Icon: FaceIcon, tint: "bg-[#eef3fd] text-[#4a6fd1]", title: "เข้าใจปัญหาผิว", body: "แบบง่ายๆ" },
-  { Icon: HeartIcon, tint: "bg-[#e6f4fb] text-[#1d7fa8]", title: "ฟรี ไม่มีค่าใช้จ่าย", body: "ใช้งานได้ทันที" },
+  { Icon: SparkleIcon, tint: MINT, title: "รู้สภาพผิว", body: "อย่างละเอียด" },
+  { Icon: ChartIcon, tint: MINT, title: "รับคำแนะนำ", body: "ผลิตภัณฑ์ที่เหมาะกับคุณ" },
+  { Icon: FaceIcon, tint: MINT, title: "เข้าใจปัญหาผิว", body: "แบบง่ายๆ" },
+  { Icon: HeartIcon, tint: SKY, title: "ฟรี ไม่มีค่าใช้จ่าย", body: "ใช้งานได้ทันที" },
 ];
 
 /** A four-pointed star, the shape the artwork scatters through the sky. */

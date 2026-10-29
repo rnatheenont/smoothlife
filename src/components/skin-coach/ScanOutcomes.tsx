@@ -8,11 +8,16 @@ import { SearchIcon, FaceIcon, BulbIcon, HeartIcon } from "./icons";
 // photographing their face has decided; a list of reasons under the camera
 // is an argument with a person who has stopped arguing.
 
+/* Same two tints as the reasons row above: mint for three, blue for the
+   heart. See ScanHero for where the values came from. */
+const MINT = "bg-[#e4f6f1] text-[#17b095]";
+const SKY = "bg-[#e3f3fb] text-[#2bb0da]";
+
 const OUTCOMES = [
-  { Icon: SearchIcon, title: "สภาพผิวโดยรวม", body: "เช่น ความชุ่มชื้น รูขุมขน ความมัน" },
-  { Icon: FaceIcon, title: "ปัญหาผิวที่พบ", body: "เช่น สิว รอยดำ จุดด่างดำ" },
-  { Icon: BulbIcon, title: "คำแนะนำการดูแล", body: "และผลิตภัณฑ์ที่เหมาะกับคุณ" },
-  { Icon: HeartIcon, title: "ติดตามพัฒนาการ", body: "สแกนซ้ำเพื่อดูผลลัพธ์" },
+  { Icon: SearchIcon, tint: MINT, title: "สภาพผิวโดยรวม", body: "เช่น ความชุ่มชื้น รูขุมขน ความมัน" },
+  { Icon: FaceIcon, tint: MINT, title: "ปัญหาผิวที่พบ", body: "เช่น สิว รอยดำ จุดด่างดำ" },
+  { Icon: BulbIcon, tint: MINT, title: "คำแนะนำการดูแล", body: "และผลิตภัณฑ์ที่เหมาะกับคุณ" },
+  { Icon: HeartIcon, tint: SKY, title: "ติดตามพัฒนาการ", body: "สแกนซ้ำเพื่อดูผลลัพธ์" },
 ];
 
 export default function ScanOutcomes() {
@@ -25,13 +30,13 @@ export default function ScanOutcomes() {
             each card is an icon, a short title and one line of examples,
             which fits a quarter of a phone. */}
         <ul className="grid grid-cols-4 gap-1.5 md:gap-4">
-          {OUTCOMES.map(({ Icon, title, body }) => (
+          {OUTCOMES.map(({ Icon, tint, title, body }) => (
             // Centred, not ranged left: the artwork stacks the icon over the
             // words down the middle of each card, and at a quarter of a
             // phone's width a left-ranged icon with centred-looking text
             // under it just reads as misaligned.
             <li key={title} className="flex flex-col items-center rounded-2xl bg-white p-1.5 text-center shadow-product md:p-4">
-              <span className="grid size-7 place-items-center rounded-full bg-[#eaf6fb] text-[#1d7fa8] md:size-10">
+              <span className={`grid size-7 place-items-center rounded-full md:size-10 ${tint}`}>
                 <Icon size={15} />
               </span>
               <p className="mt-1.5 text-[10.5px] font-bold leading-tight text-brand-ink md:text-[13px]">{title}</p>
