@@ -49,7 +49,11 @@ export default function ScanHero() {
     // whole thing. A block element that is simply full width has neither
     // problem.
     <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#e9f5fb_0%,#f1fbfa_52%,#ffffff_100%)]">
-      <div className="container-page relative pt-8 [--page-max:900px] md:pt-10">
+      {/* The words start a little further down the sky than they did — it
+            sat high against the top edge with a lot of empty tint under it.
+            Measured off the box TOP drew: about 25px lower on a 445px-wide
+            page. */}
+      <div className="container-page relative pt-14 [--page-max:900px] md:pt-12">
       <Sparkle className="left-[53%] top-4 text-[#9fd4f2]" size={22} />
       <Sparkle className="right-[8%] top-12 text-[#bfe4f7]" size={30} />
       <Sparkle className="left-[47%] top-[34%] text-[#7ec8ec]" size={18} />
