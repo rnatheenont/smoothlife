@@ -1040,18 +1040,51 @@ export default function StaffShop() {
                     tab promising 387 next to 240 cards is a tab that looks
                     broken. */}
                 {!q && brands.length > 1 && (
-                  <BrandTabs
-                    current={brand}
-                    onPick={setBrand}
-                    tabs={[
-                      {
-                        key: "all",
-                        label: "ทั้งหมด",
-                        count: new Set(inCategory.map((i) => i.product_slug)).size,
-                      },
-                      ...brands.map((b) => ({ key: b.key, label: b.name, count: b.count })),
-                    ]}
-                  />
+                  <>
+                    {/* On a phone the same brands are a menu.
+                        
+                        The row works on a laptop, where the arrows are a
+                        mouse's way to the end of it. On a 375px screen it is
+                        eight brands behind a one-brand window, and finding
+                        the one you came in asking for means swiping a strip
+                        of text and reading it as it goes past. A select
+                        shows all eight at once, in the operating system's
+                        own picker, with the counts intact. */}
+                    <select
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                      aria-label="กรองตามแบรนด์"
+                      className={`h-11 w-full rounded-xl2 border bg-white px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 sm:hidden ${
+                        brand === "all"
+                          ? "border-slate-200 text-slate-600"
+                          : "border-brand-800 font-semibold text-brand-800"
+                      }`}
+                    >
+                      <option value="all">
+                        ทุกแบรนด์ ({new Set(inCategory.map((i) => i.product_slug)).size})
+                      </option>
+                      {brands.map((b) => (
+                        <option key={b.key} value={b.key}>
+                          {b.name} ({b.count})
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="hidden sm:block">
+                      <BrandTabs
+                        current={brand}
+                        onPick={setBrand}
+                        tabs={[
+                          {
+                            key: "all",
+                            label: "ทั้งหมด",
+                            count: new Set(inCategory.map((i) => i.product_slug)).size,
+                          },
+                          ...brands.map((b) => ({ key: b.key, label: b.name, count: b.count })),
+                        ]}
+                      />
+                    </div>
+                  </>
                 )}
 
                 {q && (
