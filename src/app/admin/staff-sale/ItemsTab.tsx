@@ -599,22 +599,26 @@ export default function ItemsTab({
         )}
 
         <div className={`${adminTable.scroll} max-h-[560px]`}>
-          <table className={`${adminTable.table} min-w-[940px] table-fixed`}>
+          <table className={`${adminTable.table} min-w-[1040px] table-fixed`}>
             {/* Fixed widths, because the browser's own sizing gave the
                 product column whatever the three price columns did not want
                 and then wrapped every name onto four lines. The product name
                 is the one thing here that benefits from room; the prices are
                 all four digits or fewer and never need more than their box. */}
+            {/* One <col> per column. Two switches were added without their
+                own widths and the table ran off the right edge. */}
             <colgroup>
-              <col className="w-[34%]" />
-              <col className="w-[13%]" />
-              <col className="w-[13%]" />
-              <col className="w-[13%]" />
+              <col className="w-[28%]" />
               <col className="w-[9%]" />
-              <col className="w-[9%]" />
-              <col className="w-[9%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+              <col className="w-[7%]" />
+              <col className="w-[7%]" />
+              <col className="w-[8%]" />
+              <col className="w-[10%]" />
+              <col className="w-[11%]" />
             </colgroup>
-            <thead className={adminTable.thead}>
+            <thead className={`${adminTable.thead} [&_th]:whitespace-nowrap`}>
               <tr>
                 <th>สินค้า</th>
                 <th>ราคา RP +{Math.round((RP_MARKUP - 1) * 100)}%</th>
@@ -626,7 +630,7 @@ export default function ItemsTab({
                     in place of two text buttons that read as labels. */}
                 <th>เปิดขาย</th>
                 <th title="ซื้อได้แม้ราคาเกินวงเงิน แต่ซื้อเดี่ยว 1 ชิ้น และใช้วงเงินที่เหลือทั้งหมด">
-                  ซื้อเกินวงเงินได้
+                  เกินวงเงินได้
                 </th>
                 <th />
               </tr>
@@ -678,7 +682,7 @@ export default function ItemsTab({
                           )}
                         </span>
                         <div className="min-w-0">
-                          <p className="font-medium leading-snug text-brand-ink">
+                          <p className="line-clamp-2 font-medium leading-snug text-brand-ink" title={item.name ?? undefined}>
                             {item.name ?? item.product_slug}
                           </p>
                           <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-500">
@@ -692,8 +696,12 @@ export default function ItemsTab({
                           <p className="font-mono text-[10px] text-slate-300">
                             {item.product_slug} · {item.variant_id.split("/").pop()}
                           </p>
-                          {!item.enabled && <Badge tone="neutral">ปิดการขายรายการนี้</Badge>}
-                          {item.fills_allowance && <Badge tone="warning">ซื้อเกินวงเงินได้ · ซื้อเดี่ยว 1 ชิ้น</Badge>}
+                          {(!item.enabled || item.fills_allowance) && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {!item.enabled && <Badge tone="neutral">ปิดการขายรายการนี้</Badge>}
+                              {item.fills_allowance && <Badge tone="warning">เกินวงเงินได้ · ซื้อเดี่ยว 1 ชิ้น</Badge>}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
