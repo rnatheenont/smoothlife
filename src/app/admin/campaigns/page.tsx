@@ -28,6 +28,8 @@ import { csvDocument, csvSlug } from "@/lib/csv";
 import { formatTHB } from "@/lib/format";
 import { Button, Spinner } from "@heroui/react";
 import AdminSearch from "@/components/admin/AdminSearch";
+import Link from "next/link";
+import DrawRehearsal from "./lucky-draw/DrawRehearsal";
 
 type Vip = {
   rank: number;
@@ -125,6 +127,12 @@ const TABS = [
   ["fan", "สิทธิ์ Lucky Fan"],
   ["decided", "ตรวจแล้ว"],
   ["draw", "ประกาศผล"],
+  // The rehearsal, where the campaign is actually being run from. It was a
+  // page of its own and stayed one — the night wants a screen with nothing
+  // on it but the machine — but nobody goes looking for a URL nobody
+  // linked, and this is the screen the people running the campaign have
+  // open anyway.
+  ["rehearsal", "ซ้อมจับรางวัล"],
   ["settings", "เงื่อนไข"],
 ] as const;
 
@@ -936,6 +944,23 @@ export default function Page() {
                 </p>
               )}
             </Panel>
+          )}
+
+          {tab === "rehearsal" && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[12px] text-slate-500">
+                  ซ้อมได้ไม่จำกัด ไม่บันทึกผลลงฐานข้อมูล — ผลจริงอยู่ที่แท็บ “ประกาศผล”
+                </p>
+                <Link
+                  href={`/admin/campaigns/lucky-draw${campaignQuery}`}
+                  className="text-[12px] font-semibold text-brand-800 underline-offset-2 hover:underline"
+                >
+                  เปิดเต็มจอ ↗
+                </Link>
+              </div>
+              <DrawRehearsal campaign={campaign ?? undefined} />
+            </div>
           )}
 
           {tab === "draw" && (
