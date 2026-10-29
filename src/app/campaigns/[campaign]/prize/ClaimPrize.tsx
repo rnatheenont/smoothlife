@@ -14,9 +14,13 @@ import { Check, Loader2 } from "lucide-react";
 export default function ClaimPrize({
   campaign,
   prizeId,
+  demo = false,
 }: {
   campaign: string;
   prizeId: string;
+  /** In the preview there is no prize to accept, so the button only shows
+   *  what accepting looks like. */
+  demo?: boolean;
 }) {
   const [state, setState] = useState<"idle" | "sending" | "done">("idle");
   const [error, setError] = useState("");
@@ -24,6 +28,10 @@ export default function ClaimPrize({
   async function claim() {
     setState("sending");
     setError("");
+    if (demo) {
+      setTimeout(() => setState("done"), 600);
+      return;
+    }
     try {
       const res = await fetch(`/api/campaigns/${encodeURIComponent(campaign)}/prizes`, {
         method: "POST",

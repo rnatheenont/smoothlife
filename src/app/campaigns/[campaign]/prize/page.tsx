@@ -3,8 +3,9 @@ import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { Gift, PartyPopper, Ticket } from "lucide-react";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
+import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
-import { holdsPrize } from "@/lib/receipt-campaign";
+import { CONFIRM_DEADLINE, holdsPrize } from "@/lib/receipt-campaign";
 import { loadCampaignContent } from "@/lib/receipt-campaign-content";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 import ClaimPrize from "./ClaimPrize";
@@ -50,19 +51,46 @@ function thaiDate(iso: string) {
   });
 }
 
-export default async function PrizePage({ params }: { params: Promise<{ campaign: string }> }) {
+/** The states this page can be in, so the team can look at each of them
+ *  before anybody is in one. */
+const DEMOS = ["won", "confirmed", "reserve", "none"] as const;
+type Demo = (typeof DEMOS)[number];
+
+export default async function PrizePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ campaign: string }>;
+  searchParams: Promise<{ demo?: string }>;
+}) {
   const campaign = campaignKeyFrom((await params).campaign);
-  const content = await loadCampaignContent(campaign);
+  const [{ demo: demoParam }, content] = await Promise.all([
+    searchParams,
+    loadCampaignContent(campaign),
+  ]);
   if (!content.published) notFound();
+
+  const jar = await cookies();
+
+  // A preview of each state, for the people running the campaign.
+  //
+  // Behind the admin cookie, and that is the whole of the security: a page
+  // that will tell somebody they have won ฿55,000 must not be able to say
+  // so because of a word in the address bar. Marked on screen as well, so a
+  // screenshot of it cannot be mistaken for the real thing later.
+  const demo =
+    DEMOS.includes(demoParam as Demo) && verifyAdminToken(jar.get(ADMIN_COOKIE)?.value)
+      ? (demoParam as Demo)
+      : null;
 
   // Signed out, they are sent to sign in and brought straight back here —
   // not dropped on the home page to find their way again.
-  const uid = verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
-  if (!uid) {
+  const uid = verifySessionToken(jar.get(SESSION_COOKIE)?.value);
+  if (!uid && !demo) {
     redirect(`/account/login?returnTo=${encodeURIComponent(`/campaigns/${campaign}/prize`)}`);
   }
 
-  const all = supabaseConfigured()
+  const all = !demo && supabaseConfigured()
     ? await supabaseRest<Row[]>(
         `receipt_campaign_winners?campaign_key=eq.${campaign}` +
           `&select=id,user_id,prize_type,rank,status,confirm_deadline&order=rank`,
@@ -76,12 +104,36 @@ export default async function PrizePage({ params }: { params: Promise<{ campaign
     for (const w of holdsPrize(all.filter((p) => p.prize_type === type))) holding.add(w.id);
   }
 
-  const mine = all.filter((w) => w.user_id === uid);
-  const won = mine.filter((w) => holding.has(w.id) && w.status !== "forfeited");
-  const reserve = mine.filter((w) => !holding.has(w.id) && w.status !== "forfeited");
+  const sample: Row = {
+    id: "demo",
+    user_id: uid ?? "demo",
+    prize_type: "lucky_fan",
+    rank: 7,
+    status: demo === "confirmed" ? "confirmed" : "pending_confirm",
+    confirm_deadline: CONFIRM_DEADLINE,
+  };
+
+  const mine = demo ? [sample] : all.filter((w) => w.user_id === uid);
+  const won = demo
+    ? demo === "won" || demo === "confirmed"
+      ? [sample]
+      : []
+    : mine.filter((w) => holding.has(w.id) && w.status !== "forfeited");
+  const reserve = demo
+    ? demo === "reserve"
+      ? [sample]
+      : []
+    : mine.filter((w) => !holding.has(w.id) && w.status !== "forfeited");
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
+      {demo && (
+        <p className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-900">
+          ตัวอย่างหน้าจอ — ข้อมูลสมมติ ไม่ใช่สิทธิ์จริง · เปลี่ยนสถานะได้ที่ท้าย URL:
+          ?demo=won · confirmed · reserve · none
+        </p>
+      )}
+
       <p className="text-[13px] font-semibold uppercase tracking-wide text-[var(--rc-ink)]">
         {content.eyebrow}
       </p>
@@ -117,7 +169,7 @@ export default async function PrizePage({ params }: { params: Promise<{ campaign
                       ถ้าไม่ยืนยันภายในกำหนด สิทธิ์จะถูกส่งต่อให้ลำดับสำรอง
                     </p>
                     <div className="mt-5">
-                      <ClaimPrize campaign={campaign} prizeId={w.id} />
+                      <ClaimPrize campaign={campaign} prizeId={w.id} demo={Boolean(demo)} />
                     </div>
                     <p className="mt-3 text-[12px] text-black/45">
                       ถ้าไม่ต้องการรับรางวัลนี้ กรุณาแจ้งทีมงานผ่านช่องทางติดต่อของร้าน
@@ -144,7 +196,7 @@ export default async function PrizePage({ params }: { params: Promise<{ campaign
             ยังไม่มีรางวัลในชื่อของคุณ
           </h1>
           <p className="mt-3 text-[15px] leading-relaxed text-black/70">
-            {all.length === 0
+            {demo || all.length === 0
               ? "ยังไม่ถึงเวลาประกาศผล — เมื่อประกาศแล้ว หน้านี้จะบอกคุณเองว่าได้รางวัลหรือไม่"
               : "ประกาศผลไปแล้วและรอบนี้ยังไม่ใช่ของคุณ ขอบคุณที่ร่วมสนุกนะคะ"}
           </p>
