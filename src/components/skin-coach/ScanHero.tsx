@@ -127,7 +127,7 @@ export default function ScanHero() {
           0.499 and running through her shoulder. The padding below is the
           sky the reference leaves under the labels; without it the hero ends
           0.68 of the way down where it should end at 0.96. */}
-      <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[3%] md:mt-6 md:gap-4 md:pb-7">
+      <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[3%] md:mt-[28%] md:gap-4 md:pb-7">
         {REASONS.map(({ Icon, tint, title, body }) => (
           <li key={title} className="flex flex-col items-center text-center">
             <span className={`grid size-[3.1rem] place-items-center rounded-full md:size-16 ${tint}`}>
