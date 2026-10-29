@@ -151,12 +151,17 @@ export default function SkinCoachPage() {
     // The flow after it is narrower still: a camera view, four questions and
     // a result are reading and tapping, and a 900px line of Thai body text
     // is a long way for an eye to travel back.
-    <div
-      className={`container-page py-8 md:py-10 ${opening ? "[--page-max:900px]" : "[--page-max:760px]"}`}
-    >
-      {opening ? (
-        <ScanHero />
-      ) : (
+    <>
+      {/* Outside the column on purpose: its sky runs to the window's edges,
+          which a child of a centred, max-width column cannot do without
+          a 100vw trick that overshoots by the width of the scrollbar. It
+          carries its own column inside. */}
+      {opening && <ScanHero />}
+
+      <div
+        className={`container-page py-8 md:py-10 ${opening ? "[--page-max:900px] pt-5 md:pt-6" : "[--page-max:760px]"}`}
+      >
+      {!opening && (
         <header className="mb-6 flex items-center gap-3">
           <div className="relative h-14 w-14 shrink-0">
             <Image src="/mascot/rig/still.webp" alt="" fill sizes="56px" className="object-contain" priority />
@@ -244,6 +249,7 @@ export default function SkinCoachPage() {
           <ChevronLeft size={16} aria-hidden="true" /> ย้อนกลับ
         </button>
       )}
-    </div>
+      </div>
+    </>
   );
 }

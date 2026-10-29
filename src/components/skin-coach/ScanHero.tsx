@@ -38,10 +38,18 @@ function Sparkle({ className, size }: { className: string; size: number }) {
 
 export default function ScanHero() {
   return (
-    // Bled to the window's edges, which the rest of this page is not: the
-    // sky is the page's background here, and a tinted band with a 16px white
-    // margin down each side reads as a card that failed to fit.
-    <section className="relative isolate -mx-4 -mt-8 overflow-hidden bg-[linear-gradient(180deg,#e9f5fb_0%,#f1fbfa_52%,#ffffff_100%)] px-4 pt-4 md:-mx-6 md:-mt-10 md:px-6 md:pt-9">
+    // Full width because it is not inside the page's column — see page.tsx,
+    // which renders this as a sibling of the column rather than a child.
+    //
+    // Two earlier attempts at the same thing, both worse: breaking out with
+    // a negative margin of calc(50% - 50vw), which works but is a few pixels
+    // wider than the window on any desktop with a scrollbar because 100vw
+    // counts it; and then adding overflow-x-clip to the column to absorb
+    // that, which clipped the background back to the column and undid the
+    // whole thing. A block element that is simply full width has neither
+    // problem.
+    <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#e9f5fb_0%,#f1fbfa_52%,#ffffff_100%)]">
+      <div className="container-page relative pt-4 [--page-max:900px] md:pt-9">
       <Sparkle className="left-[53%] top-4 text-[#9fd4f2]" size={22} />
       <Sparkle className="right-[8%] top-12 text-[#bfe4f7]" size={30} />
       <Sparkle className="left-[47%] top-[34%] text-[#7ec8ec]" size={18} />
@@ -137,7 +145,8 @@ export default function ScanHero() {
             <p className="mt-0.5 text-[9.5px] leading-tight text-slate-500 md:text-xs">{body}</p>
           </li>
         ))}
-      </ul>
+        </ul>
+      </div>
     </section>
   );
 }
