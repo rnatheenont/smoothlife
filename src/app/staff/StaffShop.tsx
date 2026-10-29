@@ -105,6 +105,10 @@ function brandKey(brand: string): string {
  * button that the browser scrolls into view by itself, so a second set of
  * controls would only be two more stops on the way to the grid.
  */
+/** Products per page, and pages loaded without being asked — as on /shop. */
+const STAFF_PAGE = 24;
+const STAFF_AUTO_PAGES = 4;
+
 function BrandTabs({
   tabs,
   current,
@@ -508,6 +512,46 @@ export default function StaffShop() {
   }, [shownItems]);
 
   const shownCount = shownProducts.length;
+
+  // Paged like /shop (InfiniteProducts): 24 at a time, four more pages on
+  // their own as the bottom comes near, then a button. Rendering the whole
+  // round at once — 200-odd cards — blacked the screen out on a phone
+  // scrolled fast, even with the cards virtualised; this is what /shop does
+  // and /shop survives. Tied to the list it was counted for, so a new tab,
+  // category or search starts again from the first page.
+  const [paging, setPaging] = useState<{ of: unknown; limit: number; auto: number }>({
+    of: null,
+    limit: STAFF_PAGE,
+    auto: 0,
+  });
+  const page = paging.of === shownProducts ? paging : { of: shownProducts, limit: STAFF_PAGE, auto: 0 };
+  const visibleProducts = shownProducts.slice(0, page.limit);
+  const hiddenCount = shownProducts.length - visibleProducts.length;
+  const autoOff = page.auto >= STAFF_AUTO_PAGES;
+  const showMore = useCallback(
+    (auto: boolean) =>
+      setPaging((p) => {
+        const base = p.of === shownProducts ? p : { of: shownProducts, limit: STAFF_PAGE, auto: 0 };
+        return { of: shownProducts, limit: base.limit + STAFF_PAGE, auto: base.auto + (auto ? 1 : 0) };
+      }),
+    [shownProducts],
+  );
+  const moreSentinel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (hiddenCount <= 0 || autoOff) return;
+    const el = moreSentinel.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    // 600px of warning, as on /shop, so the next rows are usually there
+    // before the last one is read.
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) showMore(true);
+      },
+      { rootMargin: "600px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [showMore, hiddenCount, autoOff]);
 
   /**
    * Whether "ไม่เกิน N ชิ้นต่อสินค้า" is the whole truth.
@@ -1123,13 +1167,10 @@ export default function StaffShop() {
                     Plain breakpoints rather than a container query: the main
                     card uses @container because it is dropped into shelves
                     of wildly different widths, and this grid has one home. */}
-                {/* grid-virtualized, as on /shop (globals.css): every product
-                    in the round is rendered at once — 200-odd cards, no
-                    paging — and a phone keeping all of them painted is what
-                    blacked the screen out on a fast scroll. Cards away from
-                    the viewport now cost no layout or paint. */}
+                {/* grid-virtualized, as on /shop (globals.css): cards away
+                    from the viewport cost no layout or paint. */}
                 <div className="grid-virtualized grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
-                  {shownProducts.map((product) => {
+                  {visibleProducts.map((product) => {
                     const item = variantOf(product);
                     const qty = cart[item.variant_id] ?? 0;
                     // Out of stock in Shopify counts as sold out even when
@@ -1378,6 +1419,14 @@ export default function StaffShop() {
                       </div>
                     );
                   })}
+                </div>
+
+                <div ref={moreSentinel} className="mt-6 flex justify-center">
+                  {hiddenCount > 0 && autoOff && (
+                    <Button variant="secondary" onPress={() => showMore(false)}>
+                      ดูสินค้าเพิ่ม (อีก {hiddenCount} รายการ)
+                    </Button>
+                  )}
                 </div>
             </section>
           </div>
