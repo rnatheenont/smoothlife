@@ -8,6 +8,7 @@ import ProductCard from "@/components/ProductCard";
 import ShopHero from "@/components/shop/ShopHero";
 import ShopFilters from "@/components/ShopFilters";
 import SortMenu from "@/components/shop/SortMenu";
+import StickyToolbar from "@/components/shop/StickyToolbar";
 import CategoryChips from "@/components/CategoryChips";
 import SortSelect from "@/components/SortSelect";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -114,7 +115,7 @@ async function CategoryPageWritten({
           {/* The same sticky glass bar as /shop: the two pages are the same
               screen with a different heading, and one of them scrolling its
               filters away reads as a bug on whichever you saw second. */}
-          <div className="glass-bar bleed-page sticky top-(--app-header-h) z-30 mb-4 py-2.5">
+          <StickyToolbar>
             <div className="flex flex-wrap items-center justify-between gap-2">
             <ShopFilters
               current={current}
@@ -126,7 +127,7 @@ async function CategoryPageWritten({
               <SortMenu current={current} />
             </div>
             </div>
-          </div>
+          </StickyToolbar>
           {items.length === 0 ? (
             <div className="text-center py-20 text-slate-500">ไม่พบสินค้าในหมวดนี้</div>
           ) : (

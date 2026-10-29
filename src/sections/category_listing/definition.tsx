@@ -2,6 +2,7 @@ import { z } from "zod";
 import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
 import SortMenu from "@/components/shop/SortMenu";
+import StickyToolbar from "@/components/shop/StickyToolbar";
 import SortSelect from "@/components/SortSelect";
 import { categories } from "@/data/categories";
 import { toCardData, type ProductCardData } from "@/data/card";
@@ -65,7 +66,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
           {/* The same sticky glass bar as /shop: the two pages are the same
               screen with a different heading, and one of them scrolling its
               filters away reads as a bug on whichever you saw second. */}
-          <div className="glass-bar bleed-page sticky top-(--app-header-h) z-30 mb-4 py-2.5">
+          <StickyToolbar>
             <div className="flex flex-wrap items-center justify-between gap-2">
             <ShopFilters
               current={data.params}
@@ -77,7 +78,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
               <SortMenu current={data.params} />
             </div>
             </div>
-          </div>
+          </StickyToolbar>
           {data.cards.length === 0 ? (
             <div className="py-20 text-center text-slate-500">{settings.emptyText}</div>
           ) : (

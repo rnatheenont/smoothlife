@@ -5,6 +5,7 @@ import ShopFilters from "@/components/ShopFilters";
 import ActiveFilterChips from "@/components/shop/ActiveFilterChips";
 import SortSelect from "@/components/SortSelect";
 import SortMenu from "@/components/shop/SortMenu";
+import StickyToolbar from "@/components/shop/StickyToolbar";
 import Pagination from "@/components/Pagination";
 import InfiniteProducts from "@/components/shop/InfiniteProducts";
 import ShopHero from "@/components/shop/ShopHero";
@@ -60,7 +61,7 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
                 gutters either side of it is not a bar. Its parent has to be
                 the tall column, not a wrapper the height of the toolbar:
                 sticky can only travel inside its own parent. */}
-            <div className="glass-bar bleed-page sticky top-(--app-header-h) z-30 mb-4 py-2.5">
+            <StickyToolbar>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <ShopFilters
                   houseBrands={brandOptions().house}
@@ -75,7 +76,7 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
                   <ViewToggle current={searchParams} />
                 </div>
               </div>
-            </div>
+            </StickyToolbar>
 
             <ActiveFilterChips current={searchParams} brandNames={brandNames()} />
 
