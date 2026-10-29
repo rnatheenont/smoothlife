@@ -36,8 +36,8 @@ export default function ScanOutcomes() {
             // phone's width a left-ranged icon with centred-looking text
             // under it just reads as misaligned.
             <li key={title} className="flex flex-col items-center rounded-2xl bg-white p-1.5 text-center shadow-product md:p-4">
-              <span className={`grid size-7 place-items-center rounded-full md:size-10 ${tint}`}>
-                <Icon size={15} />
+              <span className={`grid size-9 place-items-center rounded-full md:size-12 ${tint}`}>
+                <Icon size={20} />
               </span>
               <p className="mt-1.5 text-[10.5px] font-bold leading-tight text-brand-ink md:text-[13px]">{title}</p>
               <p className="mt-0.5 text-[9px] leading-tight text-slate-500 md:mt-1 md:text-[11px]">{body}</p>

@@ -130,8 +130,8 @@ export default function ScanHero() {
       <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[6%] md:mt-6 md:gap-4 md:pb-8">
         {REASONS.map(({ Icon, tint, title, body }) => (
           <li key={title} className="flex flex-col items-center text-center">
-            <span className={`grid size-10 place-items-center rounded-full md:size-14 ${tint}`}>
-              <Icon size={19} />
+            <span className={`grid size-[3.1rem] place-items-center rounded-full md:size-16 ${tint}`}>
+              <Icon size={25} />
             </span>
             <p className="mt-1.5 text-[10.5px] font-bold leading-tight text-brand-ink md:text-sm">{title}</p>
             <p className="mt-0.5 text-[9.5px] leading-tight text-slate-500 md:text-xs">{body}</p>
