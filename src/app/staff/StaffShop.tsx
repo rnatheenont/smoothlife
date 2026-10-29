@@ -1052,6 +1052,35 @@ export default function StaffShop() {
                       for second — the brand is what they come in asking for.
                       It narrows the tabs' counts as well as the grid, so the
                       two always agree. */}
+                  {/* On a phone this slot is the brand, and the category is
+                      not here at all.
+                      
+                      One control fits beside the search box, and a staff
+                      round is shopped brand-first — the code below has said
+                      so since the tabs and the select swapped places. Given
+                      the choice of which of the two gets the slot, the brand
+                      wins the same argument twice. */}
+                  {!q && brands.length > 1 && (
+                    <select
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                      aria-label="กรองตามแบรนด์"
+                      className={`h-11 max-w-[56%] shrink-0 rounded-xl2 border bg-white pl-3 pr-7 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 sm:hidden ${
+                        brand === "all"
+                          ? "border-slate-200 text-slate-600"
+                          : "border-brand-800 font-semibold text-brand-800"
+                      }`}
+                    >
+                      <option value="all">
+                        ทุกแบรนด์ ({new Set(inCategory.map((i) => i.product_slug)).size})
+                      </option>
+                      {brands.map((b) => (
+                        <option key={b.key} value={b.key}>
+                          {b.name} ({b.count})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   {categoryOptions.length > 1 && (
                     <select
                       value={category}
@@ -1064,7 +1093,7 @@ export default function StaffShop() {
                         setBrand("all");
                       }}
                       aria-label="กรองตามหมวดสินค้า"
-                      className={`h-11 max-w-[45%] shrink-0 rounded-xl2 border bg-white px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 ${
+                      className={`hidden h-11 max-w-[45%] shrink-0 rounded-xl2 border bg-white px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 sm:block ${
                         category === "all"
                           ? "border-slate-200 text-slate-600"
                           : "border-brand-800 font-semibold text-brand-800"
@@ -1086,35 +1115,10 @@ export default function StaffShop() {
                     broken. */}
                 {!q && brands.length > 1 && (
                   <>
-                    {/* On a phone the same brands are a menu.
-                        
-                        The row works on a laptop, where the arrows are a
+                    {/* The row works on a laptop, where the arrows are a
                         mouse's way to the end of it. On a 375px screen it is
-                        eight brands behind a one-brand window, and finding
-                        the one you came in asking for means swiping a strip
-                        of text and reading it as it goes past. A select
-                        shows all eight at once, in the operating system's
-                        own picker, with the counts intact. */}
-                    <select
-                      value={brand}
-                      onChange={(e) => setBrand(e.target.value)}
-                      aria-label="กรองตามแบรนด์"
-                      className={`h-11 w-full rounded-xl2 border bg-white px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 sm:hidden ${
-                        brand === "all"
-                          ? "border-slate-200 text-slate-600"
-                          : "border-brand-800 font-semibold text-brand-800"
-                      }`}
-                    >
-                      <option value="all">
-                        ทุกแบรนด์ ({new Set(inCategory.map((i) => i.product_slug)).size})
-                      </option>
-                      {brands.map((b) => (
-                        <option key={b.key} value={b.key}>
-                          {b.name} ({b.count})
-                        </option>
-                      ))}
-                    </select>
-
+                        eight brands behind a one-brand window, so the phone
+                        gets the menu beside the search box instead. */}
                     <div className="hidden sm:block">
                       <BrandTabs
                         current={brand}
