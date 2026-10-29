@@ -1123,7 +1123,12 @@ export default function StaffShop() {
                     Plain breakpoints rather than a container query: the main
                     card uses @container because it is dropped into shelves
                     of wildly different widths, and this grid has one home. */}
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
+                {/* grid-virtualized, as on /shop (globals.css): every product
+                    in the round is rendered at once — 200-odd cards, no
+                    paging — and a phone keeping all of them painted is what
+                    blacked the screen out on a fast scroll. Cards away from
+                    the viewport now cost no layout or paint. */}
+                <div className="grid-virtualized grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
                   {shownProducts.map((product) => {
                     const item = variantOf(product);
                     const qty = cart[item.variant_id] ?? 0;
