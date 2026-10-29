@@ -292,6 +292,10 @@
      the top, which is wrong by the height of the bar for one frame and never
      wrong in a way that hides content. */
   --app-header-h: 0px;
+  /* The side gutter, named so that something bleeding out of the container
+     can undo exactly what the container put there. See .container-page for
+     where the numbers come from. */
+  --page-gutter: clamp(1rem, 3.5vw, 3.25rem);
 }
 
 .container-page {
@@ -319,7 +323,7 @@
        so from a 14-inch MacBook upwards every screen shows the same
        1408px of content with the same air beside it, and only the empty
        margin outside changes. */
-  padding-inline: clamp(1rem, 3.5vw, 3.25rem);
+  padding-inline: var(--page-gutter);
 }
 
 /* Campaign colours, scoped to the campaign page and nowhere else.
@@ -577,4 +581,60 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .skip-link { transition: none; }
+}
+
+
+/* Full width of the container's box, gutters included.
+
+   For a bar that has to look like a bar: without this it stops at the text
+   column and the page slides past in the gutters either side of it. */
+.bleed-page {
+  margin-inline: calc(-1 * var(--page-gutter));
+  padding-inline: var(--page-gutter);
+}
+
+/* Liquid glass, after Apple's.
+
+   Four things make it read as glass rather than as a translucent box: the
+   blur, the saturation lift (what is behind keeps its colour instead of
+   going grey), a hairline that is lighter than the fill, and a one-pixel
+   highlight inset along the top edge, which is the only part of it that
+   suggests thickness.
+
+   Deliberately CSS and not the liquid-glass package: that one gets its
+   refraction from an SVG displacement filter applied to the page content
+   behind the glass, which means wrapping the whole shop in its scene
+   component and running a filter over a product grid that scrolls for
+   hundreds of rows. This is the look without that bargain. */
+.glass-pill,
+.glass-bar {
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+}
+.glass-pill {
+  background-color: rgb(255 255 255 / 0.55);
+  border-color: rgb(255 255 255 / 0.7);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    inset 0 -1px 0 rgb(255 255 255 / 0.3),
+    0 1px 2px rgb(16 24 40 / 0.06),
+    0 8px 20px -12px rgb(16 24 40 / 0.25);
+}
+.glass-pill:hover {
+  background-color: rgb(255 255 255 / 0.78);
+}
+.glass-bar {
+  background-color: rgb(247 250 252 / 0.7);
+  /* An edge, so the bar ends somewhere. Without it the blur just stops
+     mid-grid and the products below look out of focus by accident. */
+  border-bottom: 1px solid rgb(255 255 255 / 0.65);
+  box-shadow: 0 6px 16px -12px rgb(16 24 40 / 0.35);
+}
+
+/* Without backdrop-filter there is nothing behind the glass to look
+   through, and a 55% white pill over a product photo is just hard to read.
+   Those browsers get an opaque pill instead. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-pill { background-color: rgb(255 255 255 / 0.96); }
+  .glass-bar { background-color: rgb(247 250 252 / 0.97); }
 }

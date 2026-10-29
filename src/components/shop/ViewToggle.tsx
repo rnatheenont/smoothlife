@@ -21,7 +21,7 @@ export default function ViewToggle({ current }: { current: ShopSearchParams }) {
   }
 
   return (
-    <div className="flex items-center gap-1 rounded-xl border border-surface-line p-1">
+    <div className="glass-pill flex items-center gap-1 rounded-xl border p-1">
       {(
         [
           ["grid", LayoutGrid, "แสดงแบบตาราง"],

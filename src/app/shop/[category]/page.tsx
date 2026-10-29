@@ -111,7 +111,11 @@ async function CategoryPageWritten({
         <div className="flex-1">
           {/* One toolbar, the same as /shop: filters on the left, ordering
               on the right. */}
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          {/* The same sticky glass bar as /shop: the two pages are the same
+              screen with a different heading, and one of them scrolling its
+              filters away reads as a bug on whichever you saw second. */}
+          <div className="glass-bar bleed-page sticky top-(--app-header-h) z-30 mb-4 py-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
             <ShopFilters
               current={current}
               houseBrands={brandOptions().house}
@@ -120,6 +124,7 @@ async function CategoryPageWritten({
             />
             <div className="hidden lg:flex">
               <SortMenu current={current} />
+            </div>
             </div>
           </div>
           {items.length === 0 ? (

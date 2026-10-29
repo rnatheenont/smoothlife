@@ -62,7 +62,11 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
               on the right. The sort appears twice on this page and never at
               the same time — here from lg, and inside the filter drawer on
               a phone. */}
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          {/* The same sticky glass bar as /shop: the two pages are the same
+              screen with a different heading, and one of them scrolling its
+              filters away reads as a bug on whichever you saw second. */}
+          <div className="glass-bar bleed-page sticky top-(--app-header-h) z-30 mb-4 py-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
             <ShopFilters
               current={data.params}
               houseBrands={data.house}
@@ -71,6 +75,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
             />
             <div className="hidden lg:flex">
               <SortMenu current={data.params} />
+            </div>
             </div>
           </div>
           {data.cards.length === 0 ? (

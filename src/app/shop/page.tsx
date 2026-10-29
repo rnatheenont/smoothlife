@@ -55,7 +55,12 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
                 one row too many. */}
             {/* No heading here any more: the banner above says which
                 category this is and how many there are. */}
-            <div className="mb-4">
+            {/* Sticky, and the full width of the container's box rather than
+                of the text column — a bar with the page sliding past in the
+                gutters either side of it is not a bar. Its parent has to be
+                the tall column, not a wrapper the height of the toolbar:
+                sticky can only travel inside its own parent. */}
+            <div className="glass-bar bleed-page sticky top-(--app-header-h) z-30 mb-4 py-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <ShopFilters
                   houseBrands={brandOptions().house}

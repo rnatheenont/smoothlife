@@ -635,11 +635,11 @@ export default function ShopFilters({
 
   return (
     <>
-      <div className="lg:hidden flex items-center gap-3 mb-4">
+      <div className="lg:hidden flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <button
             onClick={() => setMobileOpen(true)}
-            className="relative h-10 w-full flex items-center justify-center gap-2 rounded-full border border-slate-200 px-4 text-sm font-medium active:scale-95 transition-transform"
+            className="glass-pill relative h-10 w-full flex items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium active:scale-95 transition-transform"
           >
             <SlidersHorizontal size={15} /> ตัวกรอง
             {appliedCount > 0 && (

@@ -76,7 +76,9 @@ export default function Dropdown({
           "flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-4 text-sm transition-colors",
           active
             ? "border-brand-emerald bg-brand-gradient-soft font-semibold text-brand-800"
-            : "border-surface-line font-medium text-slate-600 hover:bg-surface-soft",
+            // Glass only while it is doing nothing. A pill that is holding a
+            // filter has to say so louder than the background it is over.
+            : "glass-pill font-medium text-slate-700",
         )}
       >
         {label}
