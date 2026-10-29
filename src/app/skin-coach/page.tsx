@@ -26,6 +26,12 @@ const STEP_INDEX: Record<Step, number> = { front: 0, angles: 1, questions: 2, an
 export default function SkinCoachPage() {
   const [consented, setConsented] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  /** Whether there is room to put the scan card beside the hero instead of
+   *  under it. Read after mount rather than guessed from a breakpoint class,
+   *  because the card is stateful — a camera, a stream, photos taken so far
+   *  — and rendering it in both places so CSS could hide one would be two of
+   *  it, with the hidden copy holding its own camera. */
+  const [wide, setWide] = useState(false);
   const [step, setStep] = useState<Step>("front");
   const [shots, setShots] = useState<Shots>({});
   const [answers, setAnswers] = useState<ScanAnswers>({});
@@ -40,6 +46,11 @@ export default function SkinCoachPage() {
     setConsented(hasStoredConsent());
     if (liveScanSupported()) setCaptureMode("live");
     setHydrated(true);
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setWide(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
   }, []);
 
   // Each step starts at the top — on a phone the next screen would otherwise
@@ -128,6 +139,38 @@ export default function SkinCoachPage() {
   // face.
   const opening = step === "front";
 
+  /** The first step's own screen — the camera, or the photo picker.
+   *
+   *  Held in a variable because it has two homes: beside the hero on a
+   *  desktop, and under it on a phone. One variable, rendered once, in one
+   *  place or the other. */
+  const front =
+    captureMode === "live" ? (
+      <LiveScanStep
+        notice={frontError}
+        onComplete={(captured) => {
+          setShots(captured);
+          setFrontError(null);
+          // All three angles came from the live scan: straight to the
+          // questions. Fewer, and the add-an-angle step offers the rest.
+          setStep(Object.keys(captured).length >= 3 ? "questions" : captured.front ? "angles" : "front");
+        }}
+        onUsePhoto={() => setCaptureMode("photo")}
+      />
+    ) : (
+      <FrontStep
+        photo={shots.front}
+        error={frontError}
+        onPhoto={(image) => {
+          setShots((prev) => ({ ...prev, front: image }));
+          setFrontError(null);
+        }}
+        onError={setFrontError}
+        onNext={() => setStep("angles")}
+        onUseLive={liveScanSupported() ? () => setCaptureMode("live") : undefined}
+      />
+    );
+
   return (
     // The width, set through --page-max rather than a max-w utility.
     //
@@ -156,10 +199,10 @@ export default function SkinCoachPage() {
           which a child of a centred, max-width column cannot do without
           a 100vw trick that overshoots by the width of the scrollbar. It
           carries its own column inside. */}
-      {opening && <ScanHero />}
+      {opening && <ScanHero aside={wide ? front : undefined} />}
 
       <div
-        className={`container-page py-8 md:py-10 ${opening ? "[--page-max:900px] pt-2 md:pt-5" : "[--page-max:760px]"}`}
+        className={`container-page py-8 md:py-10 ${opening ? "[--page-max:900px] pt-2 md:pt-5 md:[--page-max:1400px]" : "[--page-max:760px]"}`}
       >
       {!opening && (
         <header className="mb-6 flex items-center gap-3">
@@ -178,32 +221,9 @@ export default function SkinCoachPage() {
           twice on the same screen. */}
       {!opening && <Stepper current={STEP_INDEX[step]} />}
 
-      {step === "front" && captureMode === "live" && (
-        <LiveScanStep
-          notice={frontError}
-          onComplete={(captured) => {
-            setShots(captured);
-            setFrontError(null);
-            // All three angles came from the live scan: straight to the
-            // questions. Fewer, and the add-an-angle step offers the rest.
-            setStep(Object.keys(captured).length >= 3 ? "questions" : captured.front ? "angles" : "front");
-          }}
-          onUsePhoto={() => setCaptureMode("photo")}
-        />
-      )}
-      {step === "front" && captureMode === "photo" && (
-        <FrontStep
-          photo={shots.front}
-          error={frontError}
-          onPhoto={(image) => {
-            setShots((prev) => ({ ...prev, front: image }));
-            setFrontError(null);
-          }}
-          onError={setFrontError}
-          onNext={() => setStep("angles")}
-          onUseLive={liveScanSupported() ? () => setCaptureMode("live") : undefined}
-        />
-      )}
+      {/* Rendered here only when it is not beside the hero — see `front`
+          above and the `aside` passed to ScanHero. */}
+      {step === "front" && !wide && front}
       {step === "angles" && (
         <AnglesStep
           shots={shots}

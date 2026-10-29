@@ -44,7 +44,7 @@ function Sparkle({ className, size }: { className: string; size: number }) {
   );
 }
 
-export default function ScanHero() {
+export default function ScanHero({ aside }: { aside?: React.ReactNode }) {
   return (
     // Full width because it is not inside the page's column — see page.tsx,
     // which renders this as a sibling of the column rather than a child.
@@ -61,7 +61,11 @@ export default function ScanHero() {
             sat high against the top edge with a lot of empty tint under it.
             Measured off the box TOP drew: about 25px lower on a 445px-wide
             page. */}
-      <div className="container-page relative pt-14 [--page-max:900px] md:pt-12">
+      {/* The site's full width once the card sits beside the words. Capped at
+          900 it was the artwork's column, which is right when the band holds
+          one thing; holding two it left the words about 430px and a lot of
+          empty sky down both sides of the band. */}
+      <div className="container-page relative pt-14 [--page-max:900px] md:pt-12 md:[--page-max:1400px]">
       <Sparkle className="left-[53%] top-4 text-[#9fd4f2]" size={22} />
       <Sparkle className="right-[8%] top-12 text-[#bfe4f7]" size={30} />
       <Sparkle className="left-[47%] top-[34%] text-[#7ec8ec]" size={18} />
@@ -74,36 +78,31 @@ export default function ScanHero() {
         className="pointer-events-none absolute inset-x-0 bottom-0 h-52 bg-[radial-gradient(60%_78%_at_18%_100%,#fff_0%,transparent_70%),radial-gradient(55%_72%_at_54%_100%,#fff_0%,transparent_72%),radial-gradient(62%_82%_at_88%_100%,#fff_0%,transparent_70%)]"
       />
 
-      {/* One arrangement on a phone, another on a desktop.
-          
-          On a phone the artwork's own: the portrait floats over the top
-          right and the words sit under her, because that is the only way a
-          375px column fits both.
-          
-          On a desktop they stand side by side. The overlap version was
-          scaling up with the column, so at 900px the portrait was 460px tall
-          and the reasons row had to be pushed a quarter of the page down to
-          clear it — which bought a clear row at the price of a very large
-          patch of empty sky beside the words. Two columns use that space
-          instead of leaving it. */}
-      <div className="relative md:grid md:grid-cols-[1fr_auto] md:items-center md:gap-8">
+      {/* The words and the portrait keep the artwork's own arrangement at
+          every width — she floats over the top right and they sit under her.
+          What changes on a desktop is what goes beside them: the card that
+          starts a scan comes up out of the flow below and fills the sky that
+          was otherwise empty there. See page.tsx, which decides where that
+          card is rendered. */}
+      <div className="md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,34rem)] md:items-center md:gap-12">
+      <div className="relative">
         {/* The portrait. A transparent cut-out, so it needs no mask to hide
             a background — the first attempt at this page used a rectangle
             cropped out of the mockup and spent an elliptical mask hiding its
             corners. */}
-        <div className="pointer-events-none absolute -right-5 -top-2 w-[66%] max-w-[430px] md:relative md:right-auto md:top-auto md:order-2 md:w-[20rem] md:max-w-none lg:w-[23rem]">
+        <div className="pointer-events-none absolute -right-5 -top-2 w-[66%] max-w-[430px] md:-right-3 md:w-[56%]">
           <Image
             src="/skin-coach/hero-woman.webp"
             alt=""
             width={720}
             height={769}
             priority
-            sizes="(max-width: 768px) 66vw, 23rem"
+            sizes="(max-width: 768px) 66vw, 30rem"
             className="h-auto w-full"
           />
         </div>
 
-        <div className="relative max-w-[62%] sm:max-w-[25rem] md:order-1 md:max-w-none md:py-6">
+        <div className="relative max-w-[62%] sm:max-w-[25rem]">
           <p className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[9.5px] font-bold tracking-[0.06em] text-brand-800 shadow-product md:gap-1.5 md:px-3 md:py-1.5 md:text-[11px]">
             <SparkleIcon size={11} />
             AI SKIN ANALYSIS
@@ -139,6 +138,11 @@ export default function ScanHero() {
           0.499 and running through her shoulder. The padding below is the
           sky the reference leaves under the labels; without it the hero ends
           0.68 of the way down where it should end at 0.96. */}
+      {/* The card that starts a scan, when a desktop has room for it beside
+          the words. Empty on a phone, where it stays in the flow below. */}
+      {aside && <div className="hidden md:block">{aside}</div>}
+      </div>
+
       <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[3%] md:mt-8 md:gap-4 md:pb-9">
         {REASONS.map(({ Icon, tint, title, body }) => (
           <li key={title} className="flex flex-col items-center text-center">
