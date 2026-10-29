@@ -41,7 +41,7 @@ export default function ScanHero() {
     // Bled to the window's edges, which the rest of this page is not: the
     // sky is the page's background here, and a tinted band with a 16px white
     // margin down each side reads as a card that failed to fit.
-    <section className="relative isolate -mx-4 -mt-8 overflow-hidden bg-[linear-gradient(180deg,#e9f5fb_0%,#f1fbfa_52%,#ffffff_100%)] px-4 pt-6 md:-mx-6 md:-mt-10 md:px-6 md:pt-9">
+    <section className="relative isolate -mx-4 -mt-8 overflow-hidden bg-[linear-gradient(180deg,#e9f5fb_0%,#f1fbfa_52%,#ffffff_100%)] px-4 pt-4 md:-mx-6 md:-mt-10 md:px-6 md:pt-9">
       <Sparkle className="left-[53%] top-4 text-[#9fd4f2]" size={22} />
       <Sparkle className="right-[8%] top-12 text-[#bfe4f7]" size={30} />
       <Sparkle className="left-[47%] top-[34%] text-[#7ec8ec]" size={18} />
@@ -77,16 +77,16 @@ export default function ScanHero() {
             AI SKIN ANALYSIS
           </p>
 
-          <h1 className="mt-3.5 text-[1.85rem] font-bold leading-[1.15] text-brand-ink md:text-[2.5rem]">
+          <h1 className="mt-3 text-[1.7rem] font-bold leading-[1.15] text-brand-ink md:text-[2.5rem]">
             สแกนผิวกับน้อง
             {/* One sentence, so one heading — the name is a span, not a
                 second h1. */}
-            <span className="mt-0.5 block bg-brand-gradient bg-clip-text text-[2.45rem] text-transparent md:text-[3.2rem]">
+            <span className="mt-0.5 block bg-brand-gradient bg-clip-text text-[2.2rem] text-transparent md:text-[3.2rem]">
               Smoothie
             </span>
           </h1>
 
-          <p className="mt-2 max-w-[20rem] text-[13.5px] leading-relaxed text-slate-500 md:text-[15px]">
+          <p className="mt-1.5 max-w-[20rem] text-[12.5px] leading-snug text-slate-500 md:text-[15px] md:leading-relaxed">
             ประเมินผิวจากรูปถ่าย เพื่อความสวยงาม ไม่ใช่การวินิจฉัยทางการแพทย์
           </p>
         </div>
@@ -100,7 +100,7 @@ export default function ScanHero() {
             as the column gets wider. Percentages hold the arrangement at
             every width, which is what "เหมือนรูปตัวอย่าง" has to mean on a
             screen that is not the one the artwork was drawn at. */}
-        <div className="pointer-events-none relative h-[7.5rem] md:h-40">
+        <div className="pointer-events-none relative h-[5.6rem] md:h-40">
           <p className="absolute bottom-[42%] left-[28%] z-10 rounded-[14px] rounded-br-sm bg-white px-3 py-1.5 text-center text-[11.5px] font-bold leading-tight text-brand-ink shadow-product md:left-[32%] md:text-[13px]">
             มาสแกน
             <br />
@@ -119,14 +119,14 @@ export default function ScanHero() {
 
       {/* Four across at every width: each is an icon and two short lines, not
           a sentence, so they fit even on the narrowest phone. */}
-      <ul className="relative grid grid-cols-4 gap-1 pb-6 md:gap-4 md:pb-9">
+      <ul className="relative grid grid-cols-4 gap-1 pb-4 md:gap-4 md:pb-9">
         {REASONS.map(({ Icon, tint, title, body }) => (
           <li key={title} className="flex flex-col items-center text-center">
-            <span className={`grid size-12 place-items-center rounded-full md:size-14 ${tint}`}>
-              <Icon size={23} />
+            <span className={`grid size-10 place-items-center rounded-full md:size-14 ${tint}`}>
+              <Icon size={19} />
             </span>
-            <p className="mt-2 text-[11.5px] font-bold leading-tight text-brand-ink md:text-sm">{title}</p>
-            <p className="mt-0.5 text-[10.5px] leading-tight text-slate-500 md:text-xs">{body}</p>
+            <p className="mt-1.5 text-[10.5px] font-bold leading-tight text-brand-ink md:text-sm">{title}</p>
+            <p className="mt-0.5 text-[9.5px] leading-tight text-slate-500 md:text-xs">{body}</p>
           </li>
         ))}
       </ul>

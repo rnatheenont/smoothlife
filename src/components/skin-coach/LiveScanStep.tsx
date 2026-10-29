@@ -608,13 +608,13 @@ export default function LiveScanStep({
   // coaches the framing live once it is open.
   if (phase === "intro" || phase === "error") {
     return (
-      <section className="rounded-[22px] bg-[linear-gradient(135deg,#f2faf7_0%,#ffffff_52%,#edf7fc_100%)] p-4 shadow-product md:p-7">
+      <section className="rounded-[22px] bg-[linear-gradient(135deg,#f2faf7_0%,#ffffff_52%,#edf7fc_100%)] p-3 shadow-product md:p-7">
         {/* Two columns at every width, phone left, because that is what the
             artwork does — and the artwork is a phone screen, so this is not
             a desktop arrangement being forced onto a small one. Stacking it
             below md was my own addition and it pushed the buttons a screen
             and a half down. */}
-        <div className="flex flex-row items-center gap-3.5 md:gap-8">
+        <div className="flex flex-row items-center gap-3 md:gap-8">
           <div className="relative w-[38%] max-w-[215px] shrink-0">
             {/* Beside the phone where there is room, above it where there is
                 not: on a 375px screen a note floated over the phone's corner
@@ -628,8 +628,13 @@ export default function LiveScanStep({
             </p>
 
             {/* The phone. A rounded black shell, a notch, and the screen. */}
-            <div className="relative aspect-[202/420] w-full rounded-[26px] bg-[#1b1f24] p-[5px] shadow-[0_18px_30px_-16px_rgba(16,35,28,0.45)]">
-              <div className="relative h-full w-full overflow-hidden rounded-[22px] bg-[linear-gradient(180deg,#fbfdfd_0%,#eef8f5_100%)]">
+            {/* 1.63 tall for its width, measured off the artwork. It was
+                2.08 — a real phone's proportions — and since the phone is
+                the tallest thing in the card it was setting the card's
+                height on its own, which is most of why the whole block came
+                out half again as tall as the artwork's. */}
+            <div className="relative aspect-[210/342] w-full rounded-[22px] bg-[#1b1f24] p-[4px] shadow-[0_14px_26px_-14px_rgba(16,35,28,0.45)] md:rounded-[26px] md:p-[5px]">
+              <div className="relative h-full w-full overflow-hidden rounded-[18px] bg-[linear-gradient(180deg,#fbfdfd_0%,#eef8f5_100%)] md:rounded-[22px]">
                 <span aria-hidden className="absolute left-1/2 top-1.5 z-20 h-1.5 w-12 -translate-x-1/2 rounded-full bg-[#1b1f24]/85" />
                 <Image
                   src="/skin-coach/scan-woman.webp"
@@ -645,7 +650,7 @@ export default function LiveScanStep({
                   // tall as she is wide. Three quarters of the height is a
                   // mild side crop — face and a little shoulder, with room
                   // above, which is where the artwork has her.
-                  className="absolute inset-x-0 bottom-0 h-[74%] w-full object-cover object-top"
+                  className="absolute inset-x-0 bottom-0 h-[82%] w-full object-cover object-top"
                 />
                 {/* The four corner brackets. Four corners, each two borders.
                     This was one bordered box clipped to its corners with a
@@ -673,14 +678,14 @@ export default function LiveScanStep({
             <p className="inline-flex rounded-full bg-white px-3 py-1 text-[11px] font-bold text-brand-ink shadow-product">
               ขั้นตอนที่ 1 จาก {SCAN_STEPS.length}
             </p>
-            <ol className="mt-2.5 grid grid-cols-4 gap-1.5" aria-hidden>
+            <ol className="mt-2 grid grid-cols-4 gap-1.5" aria-hidden>
               {SCAN_STEPS.map((label, i) => (
                 <li key={label} className={clsx("h-1.5 rounded-full", i === 0 ? "bg-brand-action" : "bg-surface-line")} />
               ))}
             </ol>
 
-            <h2 className="mt-4 text-xl font-bold text-brand-ink md:text-2xl">สแกนหน้าด้วยกล้อง</h2>
-            <p className="mt-2 text-[14px] leading-relaxed text-slate-500 md:text-[15px]">
+            <h2 className="mt-2.5 text-[17px] font-bold text-brand-ink md:text-2xl">สแกนหน้าด้วยกล้อง</h2>
+            <p className="mt-1.5 text-[12.5px] leading-snug text-slate-500 md:text-[15px] md:leading-relaxed">
               ถ่าย 3 มุม หน้าตรงและแก้มสองข้าง เมื่อพร้อมแล้วกดถ่ายเอง หรือให้คนอื่นถ่ายให้ก็ได้
             </p>
 
@@ -700,7 +705,7 @@ export default function LiveScanStep({
               // into two lines. Shrinking the type keeps the arrangement the
               // artwork has, which is what was asked for, rather than moving
               // the buttons somewhere it does not put them.
-              className="group mt-4 flex min-h-12 w-full items-center justify-center gap-1.5 rounded-full bg-brand-gradient px-3 text-[13px] font-bold text-white shadow-product transition-[filter] hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 md:mt-5 md:min-h-13 md:gap-2.5 md:px-6 md:text-[15px]"
+              className="group mt-3 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-brand-gradient px-3 text-[13px] font-bold text-white shadow-product transition-[filter] hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 md:mt-5 md:min-h-13 md:gap-2.5 md:px-6 md:text-[15px]"
             >
               <CameraIcon size={16} className="shrink-0 md:hidden" />
               <CameraIcon size={19} className="hidden shrink-0 md:block" />
@@ -715,22 +720,18 @@ export default function LiveScanStep({
             <button
               type="button"
               onClick={abandon}
-              className="mt-2 flex min-h-12 w-full items-center justify-center gap-1.5 rounded-full border border-surface-line bg-white px-3 text-[13px] font-bold text-brand-ink transition-colors hover:border-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 md:mt-2.5 md:min-h-13 md:gap-2.5 md:px-6 md:text-[15px]"
+              className="mt-1.5 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-surface-line bg-white px-3 text-[13px] font-bold text-brand-ink transition-colors hover:border-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 md:mt-2.5 md:min-h-13 md:gap-2.5 md:px-6 md:text-[15px]"
             >
               <PictureIcon size={16} className="shrink-0 md:hidden" />
               <PictureIcon size={18} className="hidden shrink-0 md:block" />
               <span className="whitespace-nowrap">อัปโหลดรูปจากแกลเลอรี</span>
             </button>
 
-            <p className="mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+            <p className="mt-2 flex items-center justify-center gap-1.5 text-[10.5px] text-slate-400">
               <span className="shrink-0">
                 <LockIcon size={12} />
               </span>
               รูปของคุณจะถูกเก็บเป็นความลับ
-            </p>
-            <p className="mt-2 text-center text-[11px] leading-snug text-slate-400">
-              การจับตำแหน่งใบหน้าทำในเครื่องของคุณ · ถอดแว่น เปิดหน้าผาก ถือระดับสายตาห่างราวหนึ่งช่วงแขน ·
-              หน้าสด ไม่ใช้ฟิลเตอร์ และสแกนที่เดิม แสงเดิมทุกครั้ง เพื่อเทียบผลได้แม่น
             </p>
           </div>
         </div>
