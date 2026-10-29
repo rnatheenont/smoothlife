@@ -668,7 +668,7 @@ export default function LiveScanStep({
                   // face fills the frame rather than sitting inside it with
                   // room to spare. The overflow is neck and shoulders, which
                   // the screen clips; her head stays whole.
-                  className="absolute bottom-[-9%] left-1/2 h-[113%] w-auto max-w-none -translate-x-1/2 object-cover object-top"
+                  className="absolute bottom-[-5%] left-1/2 h-[105%] w-auto max-w-none -translate-x-1/2 object-cover object-top"
                 />
                 {/* The four corner brackets. Four corners, each two borders.
                     This was one bordered box clipped to its corners with a
