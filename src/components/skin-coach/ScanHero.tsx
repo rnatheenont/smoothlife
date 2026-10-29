@@ -59,7 +59,7 @@ export default function ScanHero() {
             so it needs no mask to hide a background — the first attempt at
             this page used a rectangle cropped out of the mockup and spent
             an elliptical mask hiding its corners. */}
-        <div className="pointer-events-none absolute -right-6 -top-6 w-[54%] max-w-[360px] md:-right-2 md:w-[46%]">
+        <div className="pointer-events-none absolute -right-7 -top-7 w-[62%] max-w-[390px] md:-right-3 md:w-[52%]">
           <Image
             src="/skin-coach/hero-woman.webp"
             alt=""
@@ -91,10 +91,17 @@ export default function ScanHero() {
           </p>
         </div>
 
-        {/* The mascot, overlapping the portrait the way the artwork has it,
-            with its line in a bubble beside it. Ours, in the lab coat. */}
-        <div className="pointer-events-none relative mt-1 flex h-28 items-end justify-end pr-[14%] md:h-36 md:pr-[16%]">
-          <p className="relative z-10 mb-10 mr-[-0.5rem] rounded-[14px] rounded-br-sm bg-white px-3 py-1.5 text-center text-[12px] font-bold leading-tight text-brand-ink shadow-product md:text-[13px]">
+        {/* The mascot, overlapping the portrait, with its line in a bubble
+            up and to its left. Ours, in the lab coat.
+
+            Placed as a share of the hero rather than pushed from an edge:
+            in the artwork it stands just left of centre and overlaps her,
+            and anything measured from the right edge drifts away from her
+            as the column gets wider. Percentages hold the arrangement at
+            every width, which is what "เหมือนรูปตัวอย่าง" has to mean on a
+            screen that is not the one the artwork was drawn at. */}
+        <div className="pointer-events-none relative h-[7.5rem] md:h-40">
+          <p className="absolute bottom-[42%] left-[28%] z-10 rounded-[14px] rounded-br-sm bg-white px-3 py-1.5 text-center text-[11.5px] font-bold leading-tight text-brand-ink shadow-product md:left-[32%] md:text-[13px]">
             มาสแกน
             <br />
             ผิวกันเถอะ!
@@ -104,8 +111,8 @@ export default function ScanHero() {
             alt="น้อง Smoothie"
             width={380}
             height={398}
-            sizes="(max-width: 768px) 120px, 150px"
-            className="h-full w-auto"
+            sizes="(max-width: 768px) 130px, 190px"
+            className="absolute bottom-0 left-1/2 h-full w-auto"
           />
         </div>
       </div>

@@ -129,7 +129,31 @@ export default function SkinCoachPage() {
   const opening = step === "front";
 
   return (
-    <div className="container-page max-w-2xl py-8 md:py-10">
+    // The width, set through --page-max rather than a max-w utility.
+    //
+    // This read `container-page max-w-2xl`, and max-w-2xl has never had any
+    // effect: .container-page sets max-width too, both selectors weigh the
+    // same, and globals.css is emitted after the utilities — so the whole
+    // scan flow has been rendering 1400px wide on a desktop since it was
+    // written. .container-page reads its width from a custom property, so
+    // setting that locally changes the width without a specificity fight.
+    //
+    // Two widths, because the opening and the flow want different ones.
+    //
+    // The artwork this page is laid out to is a phone screen, and every
+    // proportion in it — the portrait against the headline, the mascot
+    // overlapping her, four reasons across — is a proportion of that column.
+    // Letting it run to 1400px does not make it a desktop design, it makes
+    // the same design stretched until the pieces stop touching. Capped at a
+    // wide-tablet column instead, which is the artwork at a comfortable
+    // size rather than a different layout nobody has seen.
+    //
+    // The flow after it is narrower still: a camera view, four questions and
+    // a result are reading and tapping, and a 900px line of Thai body text
+    // is a long way for an eye to travel back.
+    <div
+      className={`container-page py-8 md:py-10 ${opening ? "[--page-max:900px]" : "[--page-max:760px]"}`}
+    >
       {opening ? (
         <ScanHero />
       ) : (

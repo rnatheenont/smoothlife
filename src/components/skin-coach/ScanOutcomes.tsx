@@ -43,7 +43,11 @@ export default function ScanOutcomes() {
         {/* The hand-lettered line in the artwork. Italic and underlined
             rather than a webfont nobody else on the site loads: one more
             font file for five words is not a trade worth making. */}
-        <p className="hidden shrink-0 -rotate-2 border-b-2 border-brand-teal pb-0.5 text-sm font-bold italic text-brand-800 sm:block md:text-base">
+        {/* Shown at every width. It was hidden below sm, which got the
+            arithmetic right and the brief wrong: the artwork this is laid
+            out to is a phone screen and has this line on it, so hiding it on
+            a phone hides it from almost everybody who sees the page. */}
+        <p className="shrink-0 -rotate-2 border-b-2 border-brand-teal pb-0.5 text-[12px] font-bold italic text-brand-800 md:text-base">
           ผิวดี…เริ่มได้วันนี้
         </p>
       </div>
