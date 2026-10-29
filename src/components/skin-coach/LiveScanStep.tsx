@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import Image from "next/image";
-import { Camera, Check, ImageIcon, Loader2, RotateCcw } from "lucide-react";
+import { Camera, Check, ChevronLeft, ImageIcon, Loader2, RotateCcw } from "lucide-react";
 import { CameraIcon, ArrowRightIcon, ImageIcon as PictureIcon, LockIcon } from "./icons";
 import { SCAN_STEPS } from "./Stepper";
 import type { FaceLandmarker, NormalizedLandmark } from "@mediapipe/tasks-vision";
@@ -211,6 +211,28 @@ export default function LiveScanStep({
     finishedRef.current = true;
     stopCamera();
     onUsePhoto();
+  }
+
+  /** Back to the opening card from inside the camera.
+   *
+   *  Pressing "เริ่มสแกนผิว" opened the camera and there was no way out of
+   *  it: the page's own back button is hidden on this step, and this screen
+   *  had none of its own, so the only exits were finishing the scan or the
+   *  browser's back button — which leaves the page entirely.
+   *
+   *  Shots taken so far are dropped on the way out. Keeping them would mean
+   *  coming back to a card that says "start" above a half-finished scan,
+   *  and the review screen is where a half-finished scan is meant to live. */
+  function backToIntro() {
+    finishedRef.current = false;
+    retakingRef.current = false;
+    setRetaking(false);
+    stopCamera();
+    setShots({});
+    setError(null);
+    setReady(false);
+    setHint("");
+    go("intro");
   }
 
   /** Redo one photo from the review screen. */
@@ -782,6 +804,17 @@ export default function LiveScanStep({
 
   return (
     <section>
+      {/* Above the heading, where a back control is looked for, and present
+          at every phase of the camera including the review. */}
+      <button
+        type="button"
+        onClick={backToIntro}
+        className="mb-3 -ml-1 flex min-h-11 items-center gap-1 rounded-full px-1 text-sm font-semibold text-slate-600 transition-colors hover:text-brand-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+      >
+        <ChevronLeft size={17} aria-hidden="true" />
+        ย้อนกลับ
+      </button>
+
       <div aria-live="polite">
         <h2 className="text-lg font-bold text-brand-ink md:text-xl">{title}</h2>
         <p className="mt-1 text-sm text-slate-600">{sub}</p>

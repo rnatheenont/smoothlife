@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, ImageIcon, RotateCcw } from "lucide-react";
+import { Camera, ChevronLeft, ImageIcon, RotateCcw } from "lucide-react";
 import type { ResizedImage } from "@/lib/image-utils";
 import { Button } from "@/components/ui";
 import { usePhotoPicker } from "./PhotoPicker";
@@ -53,6 +53,21 @@ export default function FrontStep({
 
   return (
     <section>
+      {/* The same way out as the camera has. "อัปโหลดรูปจากแกลเลอรี" on the
+          opening card lands here, and the switch link further down is
+          phrased as a choice of method rather than as going back — so
+          somebody who pressed the wrong button had nothing to press. */}
+      {onUseLive && (
+        <button
+          type="button"
+          onClick={onUseLive}
+          className="mb-3 -ml-1 flex min-h-11 items-center gap-1 rounded-full px-1 text-sm font-semibold text-slate-600 transition-colors hover:text-brand-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+        >
+          <ChevronLeft size={17} aria-hidden="true" />
+          ย้อนกลับ
+        </button>
+      )}
+
       <h2 className="text-lg font-bold text-brand-ink md:text-xl">ถ่ายรูปหน้าตรง 1 รูป</h2>
       <p className="mt-1 text-sm text-slate-600">รูปเดียวก็สแกนได้ ถ้าอยากให้ละเอียดขึ้น เพิ่มมุมอื่นได้ในขั้นถัดไป</p>
 
