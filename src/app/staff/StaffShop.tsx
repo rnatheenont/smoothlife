@@ -293,6 +293,15 @@ export default function StaffShop() {
   const [busy, setBusy] = useState(false);
   const [justPaid, setJustPaid] = useState(false);
   const [category, setCategory] = useState<string>("all");
+  // Five seconds, then it goes. Long enough to read a line of Thai twice,
+  // short enough that it is gone before the next thing is tapped — and the
+  // close button is still there for anyone who wants it sooner.
+  useEffect(() => {
+    if (!cartNotice) return;
+    const id = setTimeout(() => setCartNotice(null), 5000);
+    return () => clearTimeout(id);
+  }, [cartNotice]);
+
   // The toolbar parks a rem below the header; it wears glass only once it is
   // there, with the grid running underneath it.
   const [toolbar, stuck] = useStuck(16);
@@ -819,10 +828,21 @@ export default function StaffShop() {
         </div>
       )}
 
+      {/* A floating alert on a phone, a banner in the page on a laptop.
+          
+          This is said in answer to a tap on a + somewhere down the grid,
+          and as a block at the top of the page it was announced where the
+          person was not looking: on a phone the whole message sat above
+          the fold they had scrolled past twenty products ago. Pinned under
+          the header it is in front of them, and it takes itself away after
+          five seconds so it never becomes furniture.
+          
+          One element with two positions rather than two copies — the words,
+          the icon and the close button are the same on both. */}
       {cartNotice && (
         <div
-          role="status"
-          className="mb-5 flex items-start gap-2 rounded-xl2 bg-amber-50 p-3 text-[13px] text-amber-800"
+          role="alert"
+          className="fixed inset-x-3 top-[calc(var(--app-header-h,0px)+0.75rem)] z-90 flex items-start gap-2 rounded-xl2 bg-amber-50 p-3 text-[13px] text-amber-800 shadow-[0_12px_30px_-12px_rgba(120,53,15,.45)] ring-1 ring-amber-200 motion-safe:animate-slideUp lg:static lg:mb-5 lg:shadow-none lg:ring-0"
         >
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <p className="flex-1">{cartNotice}</p>
