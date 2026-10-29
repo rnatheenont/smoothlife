@@ -74,24 +74,36 @@ export default function ScanHero() {
         className="pointer-events-none absolute inset-x-0 bottom-0 h-52 bg-[radial-gradient(60%_78%_at_18%_100%,#fff_0%,transparent_70%),radial-gradient(55%_72%_at_54%_100%,#fff_0%,transparent_72%),radial-gradient(62%_82%_at_88%_100%,#fff_0%,transparent_70%)]"
       />
 
-      <div className="relative">
-        {/* The portrait, bleeding off the top right. A transparent cut-out,
-            so it needs no mask to hide a background — the first attempt at
-            this page used a rectangle cropped out of the mockup and spent
-            an elliptical mask hiding its corners. */}
-        <div className="pointer-events-none absolute -right-5 -top-2 w-[66%] max-w-[430px] md:-right-3 md:w-[56%]">
+      {/* One arrangement on a phone, another on a desktop.
+          
+          On a phone the artwork's own: the portrait floats over the top
+          right and the words sit under her, because that is the only way a
+          375px column fits both.
+          
+          On a desktop they stand side by side. The overlap version was
+          scaling up with the column, so at 900px the portrait was 460px tall
+          and the reasons row had to be pushed a quarter of the page down to
+          clear it — which bought a clear row at the price of a very large
+          patch of empty sky beside the words. Two columns use that space
+          instead of leaving it. */}
+      <div className="relative md:grid md:grid-cols-[1fr_auto] md:items-center md:gap-8">
+        {/* The portrait. A transparent cut-out, so it needs no mask to hide
+            a background — the first attempt at this page used a rectangle
+            cropped out of the mockup and spent an elliptical mask hiding its
+            corners. */}
+        <div className="pointer-events-none absolute -right-5 -top-2 w-[66%] max-w-[430px] md:relative md:right-auto md:top-auto md:order-2 md:w-[20rem] md:max-w-none lg:w-[23rem]">
           <Image
             src="/skin-coach/hero-woman.webp"
             alt=""
             width={720}
             height={769}
             priority
-            sizes="(max-width: 768px) 54vw, 360px"
+            sizes="(max-width: 768px) 66vw, 23rem"
             className="h-auto w-full"
           />
         </div>
 
-        <div className="relative max-w-[62%] sm:max-w-[25rem]">
+        <div className="relative max-w-[62%] sm:max-w-[25rem] md:order-1 md:max-w-none md:py-6">
           <p className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[9.5px] font-bold tracking-[0.06em] text-brand-800 shadow-product md:gap-1.5 md:px-3 md:py-1.5 md:text-[11px]">
             <SparkleIcon size={11} />
             AI SKIN ANALYSIS
@@ -127,7 +139,7 @@ export default function ScanHero() {
           0.499 and running through her shoulder. The padding below is the
           sky the reference leaves under the labels; without it the hero ends
           0.68 of the way down where it should end at 0.96. */}
-      <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[3%] md:mt-[28%] md:gap-4 md:pb-7">
+      <ul className="relative mt-[25%] grid grid-cols-4 gap-1 pb-[3%] md:mt-8 md:gap-4 md:pb-9">
         {REASONS.map(({ Icon, tint, title, body }) => (
           <li key={title} className="flex flex-col items-center text-center">
             <span className={`grid size-[3.1rem] place-items-center rounded-full md:size-16 ${tint}`}>
