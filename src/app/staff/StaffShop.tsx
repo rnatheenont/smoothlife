@@ -1030,16 +1030,21 @@ export default function StaffShop() {
               // already full of colour, and a tinted bar across the top of
               // it competes with the products instead of framing them.
               //
-              // Flat white on a phone: a sticky backdrop-blur over a fast
-              // scroll is one of the things that blacked the screen out
-              // (29 Oct 2026). /95 and the blur only from lg up.
+              // This card was flat white on a phone for a while: a sticky
+              // backdrop-blur over a fast scroll was named as one of the
+              // things that blacked the screen out (29 Oct 2026). It wears
+              // glass on every width again now, but only once it is stuck
+              // and with a lighter blur on small screens — .glass-card in
+              // globals.css carries the reasoning and is the one block to
+              // pull if that ever comes back.
               <div
                 ref={toolbar}
                 className={clsx(
                   "scrollbar-none sticky top-[calc(var(--app-header-h,0px)+1rem)] z-30 mb-5 space-y-3 rounded-xl2 bg-white p-3 ring-1 ring-surface-line transition-[top,background-color,box-shadow] duration-300",
-                  // Glass only once it is actually floating over the grid,
-                  // and only on a wide screen — the rule itself is in
-                  // globals.css, with the reason.
+                  // Glass only once it is actually floating over the grid.
+                  // The blur is lighter on a phone than on a laptop; see
+                  // .glass-card in globals.css for why, and for what to
+                  // take out first if the blackouts return.
                   stuck && "glass-card",
                 )}
               >
