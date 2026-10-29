@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { Camera, Check, ImageIcon, Loader2, RotateCcw } from "lucide-react";
+import Image from "next/image";
+import { Camera, Check, ChevronLeft, ImageIcon, Loader2, RotateCcw } from "lucide-react";
+import { CameraIcon, ArrowRightIcon, ImageIcon as PictureIcon, LockIcon } from "./icons";
+import { SCAN_STEPS } from "./Stepper";
 import type { FaceLandmarker, NormalizedLandmark } from "@mediapipe/tasks-vision";
 import { resizeForUpload, type ResizedImage } from "@/lib/image-utils";
 import type { AngleKey } from "@/lib/skin-coach";
@@ -208,6 +211,28 @@ export default function LiveScanStep({
     finishedRef.current = true;
     stopCamera();
     onUsePhoto();
+  }
+
+  /** Back to the opening card from inside the camera.
+   *
+   *  Pressing "เริ่มสแกนผิว" opened the camera and there was no way out of
+   *  it: the page's own back button is hidden on this step, and this screen
+   *  had none of its own, so the only exits were finishing the scan or the
+   *  browser's back button — which leaves the page entirely.
+   *
+   *  Shots taken so far are dropped on the way out. Keeping them would mean
+   *  coming back to a card that says "start" above a half-finished scan,
+   *  and the review screen is where a half-finished scan is meant to live. */
+  function backToIntro() {
+    finishedRef.current = false;
+    retakingRef.current = false;
+    setRetaking(false);
+    stopCamera();
+    setShots({});
+    setError(null);
+    setReady(false);
+    setHint("");
+    go("intro");
   }
 
   /** Redo one photo from the review screen. */
@@ -587,32 +612,184 @@ export default function LiveScanStep({
 
   const taken = SHOT_ORDER.filter((k) => shots[k]);
 
+  // The opening card, laid out to TOP's mockup.
+  //
+  // The phone is a CSS frame around a cut-out portrait, not a screenshot of
+  // one — the kit's README asks for it that way, and it means the brackets,
+  // the shutter and the bezel stay sharp on any screen and can be restyled
+  // without going back to a design tool.
+  //
+  // The step chip and the four-segment bar are inside the card, as in the
+  // artwork, and they are the page's real stepper rather than a drawing of
+  // one: this is step one of ถ่ายรูป → เพิ่มมุม → คำถาม → ผลลัพธ์.
+  //
+  // The four tips that used to be a bulleted list are still all four, but
+  // only the one that actually ruins a scan — the light — is said beside the
+  // phone. The rest sit under the buttons: nobody reads a checklist before
+  // pressing a button they have already decided to press, and the scan
+  // coaches the framing live once it is open.
   if (phase === "intro" || phase === "error") {
     return (
-      <section>
-        <h2 className="text-lg font-bold text-brand-ink md:text-xl">สแกนสดด้วยกล้องหน้า</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          ถ่าย 3 มุม หน้าตรงและแก้มสองข้าง เส้นรอบหน้าจะเป็นสีเขียวเมื่อพร้อม แล้วกดถ่ายเอง ถ่ายใหม่ได้ก่อนส่ง
-          การจับตำแหน่งใบหน้าทำในเครื่องของคุณ
-        </p>
-        <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-slate-600 marker:text-brand-800/50">
-          <li>หันหน้าเข้าหาแสงสว่าง ไม่ย้อนแสง</li>
-          <li>ถอดแว่น เปิดหน้าผาก</li>
-          <li>ถือโทรศัพท์ระดับสายตา ห่างประมาณหนึ่งช่วงแขน</li>
-          <li>หน้าสด ไม่ใช้ฟิลเตอร์ และสแกนที่เดิม แสงเดิมทุกครั้ง เพื่อเทียบผลได้แม่น</li>
-        </ul>
-        {error && (
-          <p role="alert" className="mt-4 rounded-lg bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">
-            {error}
-          </p>
-        )}
-        <div className="mt-5 flex flex-col gap-2.5">
-          <Button size="lg" onClick={start}>
-            <Camera size={17} aria-hidden="true" /> {phase === "error" ? "ลองเปิดกล้องอีกครั้ง" : "เริ่มสแกนสด"}
-          </Button>
-          <Button size="lg" variant="secondary" onClick={abandon}>
-            <ImageIcon size={17} aria-hidden="true" /> ถ่ายหรือเลือกรูปเองแทน
-          </Button>
+      // A little room above it — the hero's sky runs to the window's edges,
+      // so a card flush against it reads as a second band stuck to the
+      // first. Only a little: three separate paddings were stacking here
+      // (the sky's own, the page's top, and this margin) and together they
+      // left a gap wider than the card's own padding.
+      <section className="mt-3.5 rounded-[22px] bg-[linear-gradient(135deg,#f2faf7_0%,#ffffff_52%,#edf7fc_100%)] p-3 shadow-product md:mt-6 md:p-7">
+        {/* Two columns at every width, phone left, because that is what the
+            artwork does — and the artwork is a phone screen, so this is not
+            a desktop arrangement being forced onto a small one. Stacking it
+            below md was my own addition and it pushed the buttons a screen
+            and a half down. */}
+        <div className="flex flex-row items-center gap-3 md:gap-8">
+          {/* 34% of the card's inside, which lands on 0.29 of the page —
+              measured off the artwork, where the phone is 249px wide on an
+              851px canvas. */}
+          <div className="relative w-[34%] max-w-[190px] shrink-0">
+            {/* Beside the phone where there is room, above it where there is
+                not: on a 375px screen a note floated over the phone's corner
+                lands on the face it is telling you how to photograph. */}
+            {/* A white stroke behind the letters, drawn under the fill.
+                On a desktop this note is rotated over the corner of the
+                phone, so part of it lands on the photograph and part on the
+                card — two backgrounds, one of them dark hair. Without the
+                stroke the half over the hair is unreadable. */}
+            <p
+              style={{ WebkitTextStroke: "3px #ffffff", paintOrder: "stroke" }}
+              className="mb-1 flex items-end gap-0.5 text-[10px] font-bold leading-tight text-brand-800 md:absolute md:-left-8 md:top-5 md:z-10 md:mb-0 md:max-w-[6.5rem] md:-rotate-6 md:text-[11px]"
+            >
+              {/* Capped on a phone so the arrow sits right after the words.
+                  Loose, the text was an anonymous flex item taking every
+                  pixel the arrow did not, which parked the arrow at the far
+                  right of the column — over the phone's top corner, pointing
+                  away from it. On a desktop the <p> itself is already
+                  capped, so this cap gets out of the way there. */}
+              <span className="block max-w-[6.1rem] md:max-w-none">ถ่ายหน้าตรงในที่แสงสว่าง</span>
+              <svg viewBox="0 0 40 30" aria-hidden className="h-5 w-8 shrink-0 text-brand-teal md:mt-0.5">
+                <path d="M2 2c10 2 18 9 24 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                <path d="M20 22l7 1 -2-7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </p>
+
+            {/* The phone. A rounded black shell, a notch, and the screen. */}
+            {/* 1.93 tall for its width: 249 x 478 on the artwork's 851px
+                canvas, measured off the pixels rather than guessed. An
+                earlier pass put it at 1.63 on an eyeballed reading of the
+                same picture and made the phone visibly squat — the right
+                answer was always to keep it tall and make it narrower. */}
+            <div className="relative aspect-[249/478] w-full rounded-[22px] bg-[#1b1f24] p-[4px] shadow-[0_14px_26px_-14px_rgba(16,35,28,0.45)] md:rounded-[26px] md:p-[5px]">
+              <div className="relative h-full w-full overflow-hidden rounded-[18px] bg-[linear-gradient(180deg,#fbfdfd_0%,#eef8f5_100%)] md:rounded-[22px]">
+                <span aria-hidden className="absolute left-1/2 top-1.5 z-20 h-1.5 w-12 -translate-x-1/2 rounded-full bg-[#1b1f24]/85" />
+                <Image
+                  src="/skin-coach/scan-woman.webp"
+                  alt="ตัวอย่างหน้าจอตอนสแกน"
+                  width={560}
+                  height={672}
+                  sizes="(max-width: 768px) 30vw, 190px"
+                  // The bottom three quarters of the screen, filled and
+                  // cropped. Two attempts either side of this: at her own
+                  // proportions she is 183x219 in a 391-tall screen and the
+                  // top half is empty, and filling the whole screen crops
+                  // her to a pair of eyes, because the screen is twice as
+                  // tall as she is wide. Three quarters of the height is a
+                  // mild side crop — face and a little shoulder, with room
+                  // above, which is where the artwork has her.
+                  // Scaled so the face sits inside the brackets rather than
+                  // under them: the frame is inset 15% / 20%, and at 82% of
+                  // the screen height her head came out well short of it.
+                  //
+                  // Sized by height with the width left to follow, centred
+                  // by transform. Giving it inset-x and a width at the same
+                  // time over-constrained the box and the picture vanished
+                  // altogether.
+                  // Bigger than the screen and hanging below it, so the
+                  // face fills the frame rather than sitting inside it with
+                  // room to spare. The overflow is neck and shoulders, which
+                  // the screen clips; her head stays whole.
+                  className="absolute bottom-[-5%] left-1/2 h-[105%] w-auto max-w-none -translate-x-1/2 object-cover object-top"
+                />
+                {/* The four corner brackets. Four corners, each two borders.
+                    This was one bordered box clipped to its corners with a
+                    twenty-four-point polygon, which is cleverer and drew a
+                    cross: the percentages in a clip-path are of the box, so
+                    the arms came out at different lengths horizontally and
+                    vertically and the short sides met in the middle. */}
+                <span aria-hidden className="pointer-events-none absolute inset-x-[15%] inset-y-[20%]">
+                  <i className="absolute left-0 top-0 size-6 rounded-tl-[5px] border-l-[2.5px] border-t-[2.5px] border-white" />
+                  <i className="absolute right-0 top-0 size-6 rounded-tr-[5px] border-r-[2.5px] border-t-[2.5px] border-white" />
+                  <i className="absolute bottom-0 left-0 size-6 rounded-bl-[5px] border-b-[2.5px] border-l-[2.5px] border-white" />
+                  <i className="absolute bottom-0 right-0 size-6 rounded-br-[5px] border-b-[2.5px] border-r-[2.5px] border-white" />
+                </span>
+                <span
+                  aria-hidden
+                  className="absolute bottom-[7%] left-1/2 grid size-11 -translate-x-1/2 place-items-center rounded-full bg-[#bfe9dc]/85 text-brand-800 backdrop-blur-sm"
+                >
+                  <CameraIcon size={20} />
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="inline-flex rounded-full bg-white px-3 py-1 text-[11px] font-bold text-brand-ink shadow-product">
+              ขั้นตอนที่ 1 จาก {SCAN_STEPS.length}
+            </p>
+            <ol className="mt-2 grid grid-cols-4 gap-1.5" aria-hidden>
+              {SCAN_STEPS.map((label, i) => (
+                <li key={label} className={clsx("h-1.5 rounded-full", i === 0 ? "bg-brand-action" : "bg-surface-line")} />
+              ))}
+            </ol>
+
+            <h2 className="mt-2.5 text-[17px] font-bold text-brand-ink md:text-2xl">สแกนหน้าด้วยกล้อง</h2>
+            <p className="mt-1.5 text-[12.5px] leading-snug text-slate-500 md:text-[15px] md:leading-relaxed">
+              ถ่าย 3 มุม หน้าตรงและแก้มสองข้าง เมื่อพร้อมแล้วกดถ่ายเอง หรือให้คนอื่นถ่ายให้ก็ได้
+            </p>
+
+            {error && (
+              <p role="alert" className="mt-4 rounded-lg bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={start}
+              // 13px and a tighter gutter below md. The artwork is drawn at
+              // roughly twice a phone's width, so its text column is 460px
+              // and these labels sit on one line; the same proportions on a
+              // real 390px phone leave 188px, and at 15px both buttons broke
+              // into two lines. Shrinking the type keeps the arrangement the
+              // artwork has, which is what was asked for, rather than moving
+              // the buttons somewhere it does not put them.
+              className="group mt-3 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-brand-gradient px-3 text-[13px] font-bold text-white shadow-product transition-[filter] hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 md:mt-5 md:min-h-13 md:gap-2.5 md:px-6 md:text-[15px]"
+            >
+              <CameraIcon size={16} className="shrink-0 md:hidden" />
+              <CameraIcon size={19} className="hidden shrink-0 md:block" />
+              <span className="whitespace-nowrap">
+                {phase === "error" ? "ลองเปิดกล้องอีกครั้ง" : "เริ่มสแกนผิว"}
+              </span>
+              <span className="grid size-5 shrink-0 place-items-center rounded-full bg-white/25 transition-transform group-hover:translate-x-0.5 md:size-6">
+                <ArrowRightIcon size={13} />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={abandon}
+              className="mt-1.5 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-surface-line bg-white px-3 text-[13px] font-bold text-brand-ink transition-colors hover:border-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 md:mt-2.5 md:min-h-13 md:gap-2.5 md:px-6 md:text-[15px]"
+            >
+              <PictureIcon size={16} className="shrink-0 md:hidden" />
+              <PictureIcon size={18} className="hidden shrink-0 md:block" />
+              <span className="whitespace-nowrap">อัปโหลดรูปจากแกลเลอรี</span>
+            </button>
+
+            <p className="mt-2 flex items-center justify-center gap-1.5 text-[10.5px] text-slate-400">
+              <span className="shrink-0">
+                <LockIcon size={12} />
+              </span>
+              รูปของคุณจะถูกเก็บเป็นความลับ
+            </p>
+          </div>
         </div>
       </section>
     );
@@ -641,6 +818,17 @@ export default function LiveScanStep({
 
   return (
     <section>
+      {/* Above the heading, where a back control is looked for, and present
+          at every phase of the camera including the review. */}
+      <button
+        type="button"
+        onClick={backToIntro}
+        className="mb-3 -ml-1 flex min-h-11 items-center gap-1 rounded-full px-1 text-sm font-semibold text-slate-600 transition-colors hover:text-brand-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+      >
+        <ChevronLeft size={17} aria-hidden="true" />
+        ย้อนกลับ
+      </button>
+
       <div aria-live="polite">
         <h2 className="text-lg font-bold text-brand-ink md:text-xl">{title}</h2>
         <p className="mt-1 text-sm text-slate-600">{sub}</p>

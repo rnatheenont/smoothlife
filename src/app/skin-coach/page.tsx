@@ -5,6 +5,8 @@ import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
 import ConsentGate, { hasStoredConsent } from "@/components/skin-coach/ConsentGate";
 import Stepper from "@/components/skin-coach/Stepper";
+import ScanHero from "@/components/skin-coach/ScanHero";
+import ScanOutcomes from "@/components/skin-coach/ScanOutcomes";
 import FrontStep from "@/components/skin-coach/FrontStep";
 import LiveScanStep, { liveScanSupported } from "@/components/skin-coach/LiveScanStep";
 import AnglesStep from "@/components/skin-coach/AnglesStep";
@@ -24,6 +26,12 @@ const STEP_INDEX: Record<Step, number> = { front: 0, angles: 1, questions: 2, an
 export default function SkinCoachPage() {
   const [consented, setConsented] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  /** Whether there is room to put the scan card beside the hero instead of
+   *  under it. Read after mount rather than guessed from a breakpoint class,
+   *  because the card is stateful — a camera, a stream, photos taken so far
+   *  — and rendering it in both places so CSS could hide one would be two of
+   *  it, with the hidden copy holding its own camera. */
+  const [wide, setWide] = useState(false);
   const [step, setStep] = useState<Step>("front");
   const [shots, setShots] = useState<Shots>({});
   const [answers, setAnswers] = useState<ScanAnswers>({});
@@ -38,6 +46,11 @@ export default function SkinCoachPage() {
     setConsented(hasStoredConsent());
     if (liveScanSupported()) setCaptureMode("live");
     setHydrated(true);
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setWide(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
   }, []);
 
   // Each step starts at the top — on a phone the next screen would otherwise
@@ -117,46 +130,100 @@ export default function SkinCoachPage() {
     setStep("front");
   }
 
+  // The dressed-up opening, or the working screen. Everything above the
+  // card — the sky, the portrait, the mascot, the reasons — and everything
+  // below it belongs to the moment before somebody has decided. Once the
+  // camera is open, or a photo is in hand, the page is the scan: scenery
+  // either side of it is an argument with a person who has stopped arguing,
+  // and on a phone it is scenery they have to scroll past to see their own
+  // face.
+  const opening = step === "front";
+
+  /** The first step's own screen — the camera, or the photo picker.
+   *
+   *  Held in a variable because it has two homes: beside the hero on a
+   *  desktop, and under it on a phone. One variable, rendered once, in one
+   *  place or the other. */
+  const front =
+    captureMode === "live" ? (
+      <LiveScanStep
+        notice={frontError}
+        onComplete={(captured) => {
+          setShots(captured);
+          setFrontError(null);
+          // All three angles came from the live scan: straight to the
+          // questions. Fewer, and the add-an-angle step offers the rest.
+          setStep(Object.keys(captured).length >= 3 ? "questions" : captured.front ? "angles" : "front");
+        }}
+        onUsePhoto={() => setCaptureMode("photo")}
+      />
+    ) : (
+      <FrontStep
+        photo={shots.front}
+        error={frontError}
+        onPhoto={(image) => {
+          setShots((prev) => ({ ...prev, front: image }));
+          setFrontError(null);
+        }}
+        onError={setFrontError}
+        onNext={() => setStep("angles")}
+        onUseLive={liveScanSupported() ? () => setCaptureMode("live") : undefined}
+      />
+    );
+
   return (
-    <div className="container-page max-w-2xl py-8 md:py-10">
-      <header className="mb-6 flex items-center gap-3">
-        <div className="relative h-14 w-14 shrink-0">
-          <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="56px" className="object-contain" priority />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold leading-tight text-brand-ink md:text-3xl md:leading-9">สแกนผิวกับน้อง Smoothie</h1>
-          <p className="mt-0.5 text-sm text-slate-600">ประเมินผิวจากรูปถ่าย เพื่อความสวยงาม ไม่ใช่การวินิจฉัยทางการแพทย์</p>
-        </div>
-      </header>
+    // The width, set through --page-max rather than a max-w utility.
+    //
+    // This read `container-page max-w-2xl`, and max-w-2xl has never had any
+    // effect: .container-page sets max-width too, both selectors weigh the
+    // same, and globals.css is emitted after the utilities — so the whole
+    // scan flow has been rendering 1400px wide on a desktop since it was
+    // written. .container-page reads its width from a custom property, so
+    // setting that locally changes the width without a specificity fight.
+    //
+    // Two widths, because the opening and the flow want different ones.
+    //
+    // The artwork this page is laid out to is a phone screen, and every
+    // proportion in it — the portrait against the headline, the mascot
+    // overlapping her, four reasons across — is a proportion of that column.
+    // Letting it run to 1400px does not make it a desktop design, it makes
+    // the same design stretched until the pieces stop touching. Capped at a
+    // wide-tablet column instead, which is the artwork at a comfortable
+    // size rather than a different layout nobody has seen.
+    //
+    // The flow after it is narrower still: a camera view, four questions and
+    // a result are reading and tapping, and a 900px line of Thai body text
+    // is a long way for an eye to travel back.
+    <>
+      {/* Outside the column on purpose: its sky runs to the window's edges,
+          which a child of a centred, max-width column cannot do without
+          a 100vw trick that overshoots by the width of the scrollbar. It
+          carries its own column inside. */}
+      {opening && <ScanHero aside={wide ? front : undefined} />}
 
-      <Stepper current={STEP_INDEX[step]} />
+      <div
+        className={`container-page py-8 md:py-10 ${opening ? "[--page-max:900px] pt-2 md:pt-5 md:[--page-max:1400px]" : "[--page-max:760px]"}`}
+      >
+      {!opening && (
+        <header className="mb-6 flex items-center gap-3">
+          <div className="relative h-14 w-14 shrink-0">
+            <Image src="/mascot/rig/still.webp" alt="" fill sizes="56px" className="object-contain" priority />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold leading-tight text-brand-ink md:text-3xl md:leading-9">สแกนผิวกับน้อง Smoothie</h1>
+            <p className="mt-0.5 text-sm text-slate-600">ประเมินผิวจากรูปถ่าย เพื่อความสวยงาม ไม่ใช่การวินิจฉัยทางการแพทย์</p>
+          </div>
+        </header>
+      )}
 
-      {step === "front" && captureMode === "live" && (
-        <LiveScanStep
-          notice={frontError}
-          onComplete={(captured) => {
-            setShots(captured);
-            setFrontError(null);
-            // All three angles came from the live scan: straight to the
-            // questions. Fewer, and the add-an-angle step offers the rest.
-            setStep(Object.keys(captured).length >= 3 ? "questions" : captured.front ? "angles" : "front");
-          }}
-          onUsePhoto={() => setCaptureMode("photo")}
-        />
-      )}
-      {step === "front" && captureMode === "photo" && (
-        <FrontStep
-          photo={shots.front}
-          error={frontError}
-          onPhoto={(image) => {
-            setShots((prev) => ({ ...prev, front: image }));
-            setFrontError(null);
-          }}
-          onError={setFrontError}
-          onNext={() => setStep("angles")}
-          onUseLive={liveScanSupported() ? () => setCaptureMode("live") : undefined}
-        />
-      )}
+      {/* The opening card draws its own stepper, inside itself, as the
+          mockup has it — so the page's one would be the same four segments
+          twice on the same screen. */}
+      {!opening && <Stepper current={STEP_INDEX[step]} />}
+
+      {/* Rendered here only when it is not beside the hero — see `front`
+          above and the `aside` passed to ScanHero. */}
+      {step === "front" && !wide && front}
       {step === "angles" && (
         <AnglesStep
           shots={shots}
@@ -191,6 +258,8 @@ export default function SkinCoachPage() {
         />
       )}
 
+      {opening && <ScanOutcomes />}
+
       {step !== "front" && step !== "analyzing" && step !== "result" && (
         <button
           type="button"
@@ -200,6 +269,7 @@ export default function SkinCoachPage() {
           <ChevronLeft size={16} aria-hidden="true" /> ย้อนกลับ
         </button>
       )}
-    </div>
+      </div>
+    </>
   );
 }
