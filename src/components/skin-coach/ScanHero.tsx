@@ -59,7 +59,7 @@ export default function ScanHero() {
             so it needs no mask to hide a background — the first attempt at
             this page used a rectangle cropped out of the mockup and spent
             an elliptical mask hiding its corners. */}
-        <div className="pointer-events-none absolute -right-7 -top-7 w-[62%] max-w-[390px] md:-right-3 md:w-[52%]">
+        <div className="pointer-events-none absolute -right-4 -top-1 w-[56%] max-w-[370px] md:-right-3 md:w-[50%]">
           <Image
             src="/skin-coach/hero-woman.webp"
             alt=""
@@ -71,7 +71,7 @@ export default function ScanHero() {
           />
         </div>
 
-        <div className="relative max-w-[18.5rem] sm:max-w-[25rem]">
+        <div className="relative max-w-[62%] sm:max-w-[25rem]">
           <p className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[9.5px] font-bold tracking-[0.06em] text-brand-800 shadow-product md:gap-1.5 md:px-3 md:py-1.5 md:text-[11px]">
             <SparkleIcon size={11} />
             AI SKIN ANALYSIS
@@ -86,7 +86,7 @@ export default function ScanHero() {
             </span>
           </h1>
 
-          <p className="mt-1.5 max-w-[20rem] text-[12.5px] leading-snug text-slate-500 md:text-[15px] md:leading-relaxed">
+          <p className="mt-1.5 text-[11.5px] leading-snug text-slate-500 md:text-[15px] md:leading-relaxed">
             ประเมินผิวจากรูปถ่าย เพื่อความสวยงาม ไม่ใช่การวินิจฉัยทางการแพทย์
           </p>
         </div>
@@ -105,8 +105,7 @@ export default function ScanHero() {
           
           Sizes are the artwork's too: 0.263 of the page width across, its
           left edge at 0.521. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden md:block" aria-hidden />
-      <div className="pointer-events-none absolute left-[52%] top-[46%] z-10 w-[26%] max-w-[190px]">
+      <div className="pointer-events-none absolute bottom-[14%] left-[52%] z-20 w-[26%] max-w-[190px]">
         <p className="absolute bottom-[58%] right-[86%] w-max rounded-[14px] rounded-br-sm bg-white px-2.5 py-1.5 text-center text-[11px] font-bold leading-tight text-brand-ink shadow-product md:text-[13px]">
           มาสแกน
           <br />

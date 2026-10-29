@@ -26,7 +26,11 @@ export default function ScanOutcomes() {
             which fits a quarter of a phone. */}
         <ul className="grid grid-cols-4 gap-1.5 md:gap-4">
           {OUTCOMES.map(({ Icon, title, body }) => (
-            <li key={title} className="rounded-2xl bg-white p-1.5 shadow-product md:p-4">
+            // Centred, not ranged left: the artwork stacks the icon over the
+            // words down the middle of each card, and at a quarter of a
+            // phone's width a left-ranged icon with centred-looking text
+            // under it just reads as misaligned.
+            <li key={title} className="flex flex-col items-center rounded-2xl bg-white p-1.5 text-center shadow-product md:p-4">
               <span className="grid size-7 place-items-center rounded-full bg-[#eaf6fb] text-[#1d7fa8] md:size-10">
                 <Icon size={15} />
               </span>

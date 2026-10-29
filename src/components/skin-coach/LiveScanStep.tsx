@@ -653,7 +653,15 @@ export default function LiveScanStep({
                   // tall as she is wide. Three quarters of the height is a
                   // mild side crop — face and a little shoulder, with room
                   // above, which is where the artwork has her.
-                  className="absolute inset-x-0 bottom-0 h-[82%] w-full object-cover object-top"
+                  // Scaled so the face sits inside the brackets rather than
+                  // under them: the frame is inset 15% / 20%, and at 82% of
+                  // the screen height her head came out well short of it.
+                  //
+                  // Sized by height with the width left to follow, centred
+                  // by transform. Giving it inset-x and a width at the same
+                  // time over-constrained the box and the picture vanished
+                  // altogether.
+                  className="absolute bottom-0 left-1/2 h-[96%] w-auto max-w-none -translate-x-1/2 object-cover object-top"
                 />
                 {/* The four corner brackets. Four corners, each two borders.
                     This was one bordered box clipped to its corners with a
