@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { currentStaffRound, staffShopVisible } from "@/lib/staff-shop";
-import AuroraBackground from "@/components/ui/AuroraBackground";
 import StaffShop from "./StaffShop";
 
 // The employee shop.
@@ -52,14 +51,5 @@ export default async function StaffPage() {
   const round = await currentStaffRound();
   if (!round || !(await staffShopVisible(round.id, session))) notFound();
 
-  // The light sits behind the shop rather than wrapping it: the version this
-  // came from is a full-height hero that centres whatever you give it, and
-  // this page is a long scrolling grid. Fixed, so it stays put while the
-  // products move over it — a background that scrolls away is a header.
-  return (
-    <>
-      <AuroraBackground className="pointer-events-none fixed inset-0 -z-10" />
-      <StaffShop />
-    </>
-  );
+  return <StaffShop />;
 }
