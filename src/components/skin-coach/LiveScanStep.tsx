@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
+import Image from "next/image";
 import { Camera, Check, ImageIcon, Loader2, RotateCcw } from "lucide-react";
+import { CameraIcon, ArrowRightIcon, ImageIcon as PictureIcon, LockIcon } from "./icons";
+import { SCAN_STEPS } from "./Stepper";
 import type { FaceLandmarker, NormalizedLandmark } from "@mediapipe/tasks-vision";
 import { resizeForUpload, type ResizedImage } from "@/lib/image-utils";
 import type { AngleKey } from "@/lib/skin-coach";
@@ -587,32 +590,133 @@ export default function LiveScanStep({
 
   const taken = SHOT_ORDER.filter((k) => shots[k]);
 
+  // The opening card, laid out to TOP's mockup.
+  //
+  // The phone is a CSS frame around a cut-out portrait, not a screenshot of
+  // one — the kit's README asks for it that way, and it means the brackets,
+  // the shutter and the bezel stay sharp on any screen and can be restyled
+  // without going back to a design tool.
+  //
+  // The step chip and the four-segment bar are inside the card, as in the
+  // artwork, and they are the page's real stepper rather than a drawing of
+  // one: this is step one of ถ่ายรูป → เพิ่มมุม → คำถาม → ผลลัพธ์.
+  //
+  // The four tips that used to be a bulleted list are still all four, but
+  // only the one that actually ruins a scan — the light — is said beside the
+  // phone. The rest sit under the buttons: nobody reads a checklist before
+  // pressing a button they have already decided to press, and the scan
+  // coaches the framing live once it is open.
   if (phase === "intro" || phase === "error") {
     return (
-      <section>
-        <h2 className="text-lg font-bold text-brand-ink md:text-xl">สแกนสดด้วยกล้องหน้า</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          ถ่าย 3 มุม หน้าตรงและแก้มสองข้าง เส้นรอบหน้าจะเป็นสีเขียวเมื่อพร้อม แล้วกดถ่ายเอง ถ่ายใหม่ได้ก่อนส่ง
-          การจับตำแหน่งใบหน้าทำในเครื่องของคุณ
-        </p>
-        <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-slate-600 marker:text-brand-800/50">
-          <li>หันหน้าเข้าหาแสงสว่าง ไม่ย้อนแสง</li>
-          <li>ถอดแว่น เปิดหน้าผาก</li>
-          <li>ถือโทรศัพท์ระดับสายตา ห่างประมาณหนึ่งช่วงแขน</li>
-          <li>หน้าสด ไม่ใช้ฟิลเตอร์ และสแกนที่เดิม แสงเดิมทุกครั้ง เพื่อเทียบผลได้แม่น</li>
-        </ul>
-        {error && (
-          <p role="alert" className="mt-4 rounded-lg bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">
-            {error}
-          </p>
-        )}
-        <div className="mt-5 flex flex-col gap-2.5">
-          <Button size="lg" onClick={start}>
-            <Camera size={17} aria-hidden="true" /> {phase === "error" ? "ลองเปิดกล้องอีกครั้ง" : "เริ่มสแกนสด"}
-          </Button>
-          <Button size="lg" variant="secondary" onClick={abandon}>
-            <ImageIcon size={17} aria-hidden="true" /> ถ่ายหรือเลือกรูปเองแทน
-          </Button>
+      <section className="rounded-[22px] bg-[linear-gradient(135deg,#f2faf7_0%,#ffffff_52%,#edf7fc_100%)] p-4 shadow-product md:p-7">
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-8">
+          <div className="relative mx-auto w-[62%] max-w-[215px] shrink-0 md:mx-0 md:w-[38%]">
+            {/* Beside the phone where there is room, above it where there is
+                not: on a 375px screen a note floated over the phone's corner
+                lands on the face it is telling you how to photograph. */}
+            <p className="mb-1.5 flex max-w-[12rem] items-end gap-1 text-[11px] font-bold leading-tight text-brand-800 md:absolute md:-left-8 md:top-5 md:z-10 md:mb-0 md:max-w-[6.5rem] md:-rotate-6">
+              ถ่ายหน้าตรงในที่แสงสว่าง
+              <svg viewBox="0 0 40 30" aria-hidden className="h-5 w-8 shrink-0 text-brand-teal md:mt-0.5">
+                <path d="M2 2c10 2 18 9 24 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                <path d="M20 22l7 1 -2-7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </p>
+
+            {/* The phone. A rounded black shell, a notch, and the screen. */}
+            <div className="relative aspect-[202/420] w-full rounded-[26px] bg-[#1b1f24] p-[5px] shadow-[0_18px_30px_-16px_rgba(16,35,28,0.45)]">
+              <div className="relative h-full w-full overflow-hidden rounded-[22px] bg-[linear-gradient(180deg,#fbfdfd_0%,#eef8f5_100%)]">
+                <span aria-hidden className="absolute left-1/2 top-1.5 z-20 h-1.5 w-12 -translate-x-1/2 rounded-full bg-[#1b1f24]/85" />
+                <Image
+                  src="/skin-coach/scan-woman.webp"
+                  alt="ตัวอย่างหน้าจอตอนสแกน"
+                  width={560}
+                  height={672}
+                  sizes="(max-width: 768px) 62vw, 215px"
+                  // The bottom three quarters of the screen, filled and
+                  // cropped. Two attempts either side of this: at her own
+                  // proportions she is 183x219 in a 391-tall screen and the
+                  // top half is empty, and filling the whole screen crops
+                  // her to a pair of eyes, because the screen is twice as
+                  // tall as she is wide. Three quarters of the height is a
+                  // mild side crop — face and a little shoulder, with room
+                  // above, which is where the artwork has her.
+                  className="absolute inset-x-0 bottom-0 h-[74%] w-full object-cover object-top"
+                />
+                {/* The four corner brackets. Four corners, each two borders.
+                    This was one bordered box clipped to its corners with a
+                    twenty-four-point polygon, which is cleverer and drew a
+                    cross: the percentages in a clip-path are of the box, so
+                    the arms came out at different lengths horizontally and
+                    vertically and the short sides met in the middle. */}
+                <span aria-hidden className="pointer-events-none absolute inset-x-[15%] inset-y-[20%]">
+                  <i className="absolute left-0 top-0 size-6 rounded-tl-[5px] border-l-[2.5px] border-t-[2.5px] border-white" />
+                  <i className="absolute right-0 top-0 size-6 rounded-tr-[5px] border-r-[2.5px] border-t-[2.5px] border-white" />
+                  <i className="absolute bottom-0 left-0 size-6 rounded-bl-[5px] border-b-[2.5px] border-l-[2.5px] border-white" />
+                  <i className="absolute bottom-0 right-0 size-6 rounded-br-[5px] border-b-[2.5px] border-r-[2.5px] border-white" />
+                </span>
+                <span
+                  aria-hidden
+                  className="absolute bottom-[7%] left-1/2 grid size-11 -translate-x-1/2 place-items-center rounded-full bg-[#bfe9dc]/85 text-brand-800 backdrop-blur-sm"
+                >
+                  <CameraIcon size={20} />
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="inline-flex rounded-full bg-white px-3 py-1 text-[11px] font-bold text-brand-ink shadow-product">
+              ขั้นตอนที่ 1 จาก {SCAN_STEPS.length}
+            </p>
+            <ol className="mt-2.5 grid grid-cols-4 gap-1.5" aria-hidden>
+              {SCAN_STEPS.map((label, i) => (
+                <li key={label} className={clsx("h-1.5 rounded-full", i === 0 ? "bg-brand-action" : "bg-surface-line")} />
+              ))}
+            </ol>
+
+            <h2 className="mt-4 text-xl font-bold text-brand-ink md:text-2xl">สแกนหน้าด้วยกล้อง</h2>
+            <p className="mt-2 text-[14px] leading-relaxed text-slate-500 md:text-[15px]">
+              ถ่าย 3 มุม หน้าตรงและแก้มสองข้าง เมื่อพร้อมแล้วกดถ่ายเอง หรือให้คนอื่นถ่ายให้ก็ได้
+            </p>
+
+            {error && (
+              <p role="alert" className="mt-4 rounded-lg bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={start}
+              className="group mt-5 flex min-h-13 w-full items-center justify-center gap-2.5 rounded-full bg-brand-gradient px-6 text-[15px] font-bold text-white shadow-product transition-[filter] hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2"
+            >
+              <CameraIcon size={19} />
+              {phase === "error" ? "ลองเปิดกล้องอีกครั้ง" : "เริ่มสแกนผิว"}
+              <span className="grid size-6 place-items-center rounded-full bg-white/25 transition-transform group-hover:translate-x-0.5">
+                <ArrowRightIcon size={14} />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={abandon}
+              className="mt-2.5 flex min-h-13 w-full items-center justify-center gap-2.5 rounded-full border border-surface-line bg-white px-6 text-[15px] font-bold text-brand-ink transition-colors hover:border-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2"
+            >
+              <PictureIcon size={18} />
+              อัปโหลดรูปจากแกลเลอรี
+            </button>
+
+            <p className="mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+              <span className="shrink-0">
+                <LockIcon size={12} />
+              </span>
+              รูปของคุณจะถูกเก็บเป็นความลับ
+            </p>
+            <p className="mt-2 text-center text-[11px] leading-snug text-slate-400">
+              การจับตำแหน่งใบหน้าทำในเครื่องของคุณ · ถอดแว่น เปิดหน้าผาก ถือระดับสายตาห่างราวหนึ่งช่วงแขน ·
+              หน้าสด ไม่ใช้ฟิลเตอร์ และสแกนที่เดิม แสงเดิมทุกครั้ง เพื่อเทียบผลได้แม่น
+            </p>
+          </div>
         </div>
       </section>
     );

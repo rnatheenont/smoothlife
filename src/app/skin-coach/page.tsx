@@ -5,6 +5,8 @@ import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
 import ConsentGate, { hasStoredConsent } from "@/components/skin-coach/ConsentGate";
 import Stepper from "@/components/skin-coach/Stepper";
+import ScanHero from "@/components/skin-coach/ScanHero";
+import ScanOutcomes from "@/components/skin-coach/ScanOutcomes";
 import FrontStep from "@/components/skin-coach/FrontStep";
 import LiveScanStep, { liveScanSupported } from "@/components/skin-coach/LiveScanStep";
 import AnglesStep from "@/components/skin-coach/AnglesStep";
@@ -117,19 +119,35 @@ export default function SkinCoachPage() {
     setStep("front");
   }
 
+  // The dressed-up opening, or the working screen. Everything above the
+  // card — the sky, the portrait, the mascot, the reasons — and everything
+  // below it belongs to the moment before somebody has decided. Once the
+  // camera is open, or a photo is in hand, the page is the scan: scenery
+  // either side of it is an argument with a person who has stopped arguing,
+  // and on a phone it is scenery they have to scroll past to see their own
+  // face.
+  const opening = step === "front";
+
   return (
     <div className="container-page max-w-2xl py-8 md:py-10">
-      <header className="mb-6 flex items-center gap-3">
-        <div className="relative h-14 w-14 shrink-0">
-          <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="56px" className="object-contain" priority />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold leading-tight text-brand-ink md:text-3xl md:leading-9">สแกนผิวกับน้อง Smoothie</h1>
-          <p className="mt-0.5 text-sm text-slate-600">ประเมินผิวจากรูปถ่าย เพื่อความสวยงาม ไม่ใช่การวินิจฉัยทางการแพทย์</p>
-        </div>
-      </header>
+      {opening ? (
+        <ScanHero />
+      ) : (
+        <header className="mb-6 flex items-center gap-3">
+          <div className="relative h-14 w-14 shrink-0">
+            <Image src="/mascot/rig/still.webp" alt="" fill sizes="56px" className="object-contain" priority />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold leading-tight text-brand-ink md:text-3xl md:leading-9">สแกนผิวกับน้อง Smoothie</h1>
+            <p className="mt-0.5 text-sm text-slate-600">ประเมินผิวจากรูปถ่าย เพื่อความสวยงาม ไม่ใช่การวินิจฉัยทางการแพทย์</p>
+          </div>
+        </header>
+      )}
 
-      <Stepper current={STEP_INDEX[step]} />
+      {/* The opening card draws its own stepper, inside itself, as the
+          mockup has it — so the page's one would be the same four segments
+          twice on the same screen. */}
+      {!opening && <Stepper current={STEP_INDEX[step]} />}
 
       {step === "front" && captureMode === "live" && (
         <LiveScanStep
@@ -190,6 +208,8 @@ export default function SkinCoachPage() {
           onRestart={restart}
         />
       )}
+
+      {opening && <ScanOutcomes />}
 
       {step !== "front" && step !== "analyzing" && step !== "result" && (
         <button
