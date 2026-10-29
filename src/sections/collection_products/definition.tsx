@@ -29,7 +29,7 @@ function Component({ data }: SectionProps<z.output<typeof schema>, ProductCardDa
 
   return (
     <section className="container-page pb-6 md:pb-8">
-      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
         {items.map((p) => (
           <ProductCard key={p.slug} product={p} />
         ))}

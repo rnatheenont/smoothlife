@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { collections, getCollectionByHandle, getCollectionProducts } from "@/data/collections";
 import ProductCard from "@/components/ProductCard";
@@ -57,22 +56,17 @@ async function CollectionPageWritten({ collection }: { collection: NonNullable<R
       <BackButton fallbackHref="/collections" />
       <Breadcrumb items={breadcrumbItems} />
 
-      <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center">
-        {collection.image && (
-          <div className="relative h-28 w-full shrink-0 overflow-hidden rounded-xl2 md:h-24 md:w-40">
-            <Image src={collection.image} alt={collection.title} fill className="object-cover" sizes="160px" />
-          </div>
+      {/* No thumbnail beside the heading, to match the section that renders
+          this page when the pages system owns it. */}
+      <div className="mt-4 min-w-0">
+        <h1 className="text-2xl font-bold text-brand-ink md:text-3xl">{collection.title}</h1>
+        <p className="mt-1 text-sm text-slate-500">{items.length} รายการ</p>
+        {collection.description && (
+          <p className="mt-2 max-w-2xl text-sm text-slate-500">{collection.description}</p>
         )}
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-brand-ink md:text-3xl">{collection.title}</h1>
-          <p className="mt-1 text-sm text-slate-500">{items.length} รายการ</p>
-          {collection.description && (
-            <p className="mt-2 max-w-2xl text-sm text-slate-500">{collection.description}</p>
-          )}
-        </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
         {items.map((p) => (
           <ProductCard key={p.slug} product={toCardData(p)} />
         ))}
