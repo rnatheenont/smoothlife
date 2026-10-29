@@ -5,8 +5,12 @@ import {
   BANDS,
   bandOf,
   drawFromBand,
+  drawGiftExchange,
   drawLuckyFan,
+  drawPhoneIn,
+  GIFT_EXCHANGE,
   LUCKY_FAN_PRIZES,
+  PHONE_IN_PRIZES,
   splitIntoBands,
   type Entrant,
   type Rng,
@@ -110,4 +114,64 @@ test("asking for more than the band holds returns the band", () => {
 test("the bands add up to the prize count on the poster", () => {
   const seated = BANDS.reduce((n, b) => n + (b.seats ?? 8), 0);
   assert.equal(seated, LUCKY_FAN_PRIZES);
+});
+
+
+// ---------------------------------------------------------------- phone in
+
+test("phone in takes two from the middle band only", () => {
+  const winners = drawPhoneIn(room(8, 26, 138), [], PHONE_IN_PRIZES, firstAlways);
+  assert.equal(winners.length, 2);
+  assert.ok(winners.every((w) => w.band === "silver"));
+  assert.ok(winners.every((w) => w.entries >= 6 && w.entries <= 9));
+});
+
+test("phone in skips anybody who already has a prize", () => {
+  const pool = room(8, 26, 138);
+  const first = drawLuckyFan(pool, firstAlways);
+  const won = new Set(first.map((w) => w.userId));
+  const phone = drawPhoneIn(pool, won, PHONE_IN_PRIZES, firstAlways);
+  assert.equal(phone.length, 2);
+  assert.ok(phone.every((w) => !won.has(w.userId)));
+});
+
+test("phone in gives what it can when the band has run out", () => {
+  // Two left in the band and both already hold a prize.
+  const pool = room(0, 2, 10);
+  const won = splitIntoBands(pool).silver.map((e) => e.userId);
+  assert.equal(drawPhoneIn(pool, won, PHONE_IN_PRIZES, firstAlways).length, 0);
+});
+
+// ----------------------------------------------------------- gift exchange
+
+const vipList = (n: number): Entrant[] =>
+  Array.from({ length: n }, (_, i) => ({ userId: `v${i}`, name: `vip ${i}`, entries: 1 }));
+
+test("gift exchange draws ten from the VIP list: eight gifts and two lucky", () => {
+  const winners = drawGiftExchange(vipList(21), [], GIFT_EXCHANGE, () => Math.random());
+  assert.equal(winners.length, GIFT_EXCHANGE.vip + GIFT_EXCHANGE.lucky);
+  assert.equal(winners.filter((w) => w.band === "gold").length, GIFT_EXCHANGE.vip);
+  assert.equal(winners.filter((w) => w.band === "silver").length, GIFT_EXCHANGE.lucky);
+});
+
+test("nobody takes two of the ten", () => {
+  for (let i = 0; i < 50; i++) {
+    const winners = drawGiftExchange(vipList(21), [], GIFT_EXCHANGE, () => Math.random());
+    assert.equal(new Set(winners.map((w) => w.userId)).size, winners.length);
+  }
+});
+
+test("a VIP who has already been called is out", () => {
+  const vips = vipList(21);
+  const out = vips.slice(0, 13).map((v) => v.userId);
+  const winners = drawGiftExchange(vips, out, GIFT_EXCHANGE, () => Math.random());
+  // Eight left to draw ten from: everyone who is left, and no one who is not.
+  assert.equal(winners.length, 8);
+  assert.ok(winners.every((w) => !out.includes(w.userId)));
+});
+
+test("a VIP list shorter than the gifts hands out what there is", () => {
+  const winners = drawGiftExchange(vipList(4), [], GIFT_EXCHANGE, firstAlways);
+  assert.equal(winners.length, 4);
+  assert.ok(winners.every((w) => w.band === "gold"));
 });

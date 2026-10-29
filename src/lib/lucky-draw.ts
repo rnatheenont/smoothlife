@@ -57,15 +57,20 @@ export const cryptoRng: Rng = () => {
   return buf[0] / 2 ** 32;
 };
 
-export function bandOf(entries: number): BandKey | null {
-  const band = BANDS.find((b) => entries >= b.min && entries <= b.max);
+// Every function below takes the bands as an argument with BANDS as the
+// default. The rehearsal screen lets somebody move the thresholds and the
+// seats and watch what it does to the result, which is the whole reason to
+// have a rehearsal screen — and a rule that can only be changed by editing
+// this file is a rule nobody can argue with before the night.
+export function bandOf(entries: number, bands: Band[] = BANDS): BandKey | null {
+  const band = bands.find((b) => entries >= b.min && entries <= b.max);
   return band?.key ?? null;
 }
 
-export function splitIntoBands(pool: Entrant[]): Record<BandKey, Entrant[]> {
+export function splitIntoBands(pool: Entrant[], bands: Band[] = BANDS): Record<BandKey, Entrant[]> {
   const out: Record<BandKey, Entrant[]> = { gold: [], silver: [], open: [] };
   for (const e of pool) {
-    const key = bandOf(e.entries);
+    const key = bandOf(e.entries, bands);
     if (key) out[key].push(e);
   }
   return out;
@@ -115,12 +120,13 @@ export function drawLuckyFan(
   pool: Entrant[],
   rng: Rng = cryptoRng,
   prizes = LUCKY_FAN_PRIZES,
+  spec: Band[] = BANDS,
 ): Winner[] {
-  const bands = splitIntoBands(pool);
+  const bands = splitIntoBands(pool, spec);
   const winners: Winner[] = [];
   let left = prizes;
 
-  for (const band of BANDS) {
+  for (const band of spec) {
     if (left <= 0) break;
     const people = bands[band.key];
     // null seats means "everybody", which is still capped by what is left.
@@ -137,11 +143,75 @@ export function drawLuckyFan(
   // count that gets handed out.
   if (left > 0) {
     const taken = new Set(winners.map((w) => w.userId));
-    const rest = pool.filter((e) => !taken.has(e.userId) && bandOf(e.entries) !== null);
+    const rest = pool.filter((e) => !taken.has(e.userId) && bandOf(e.entries, spec) !== null);
     for (const e of drawFromBand(rest, left, rng)) {
-      winners.push({ ...e, band: bandOf(e.entries) ?? "open", order: 0 });
+      winners.push({ ...e, band: bandOf(e.entries, spec) ?? "open", order: 0 });
     }
   }
 
   return winners.map((w, i) => ({ ...w, order: i + 1 }));
+}
+
+
+/** Two more names, called out on the night. */
+export const PHONE_IN_PRIZES = 2;
+
+/**
+ * Phone in: two more from the band in the middle.
+ *
+ * The twenty-five are already decided when this runs, and nobody holds two
+ * prizes — so the pool is the 6-to-9 band minus whoever is already on the
+ * list. Weighted inside the band like every other draw here: six entries
+ * against nine is a real difference whichever draw is being run.
+ */
+export function drawPhoneIn(
+  pool: Entrant[],
+  alreadyWon: Iterable<string>,
+  take = PHONE_IN_PRIZES,
+  rng: Rng = cryptoRng,
+  spec: Band[] = BANDS,
+  from: BandKey = "silver",
+): Winner[] {
+  const won = new Set(alreadyWon);
+  const band = splitIntoBands(pool, spec)[from].filter((e) => !won.has(e.userId));
+  return drawFromBand(band, take, rng).map((e, i) => ({
+    ...e,
+    band: from,
+    order: i + 1,
+  }));
+}
+
+export type GiftSeats = { vip: number; lucky: number };
+
+export const GIFT_EXCHANGE: GiftSeats = { vip: 8, lucky: 2 };
+
+/**
+ * Gift exchange: ten names out of the VIP list, in two kinds.
+ *
+ * One pool, not two. Both halves come from the same twenty-one VIP buyers —
+ * eight take the VIP gift and two take the Lucky one — so the only thing
+ * that separates them is which gift they are called for. Drawn in one pass
+ * without replacement, because the alternative is two draws that can land
+ * on the same person and a rule bolted on afterwards to say they cannot.
+ *
+ * Flat, not weighted. Entries decided who got onto this list in the first
+ * place and have no second say here; everybody standing in the room for a
+ * gift exchange is standing in it on equal terms. Entries of 1 is what
+ * makes drawFromBand uniform.
+ */
+export function drawGiftExchange(
+  vips: Entrant[],
+  alreadyWon: Iterable<string> = [],
+  seats: GiftSeats = GIFT_EXCHANGE,
+  rng: Rng = cryptoRng,
+): Winner[] {
+  const taken = new Set(alreadyWon);
+  const pool = vips.filter((e) => !taken.has(e.userId)).map((e) => ({ ...e, entries: 1 }));
+  const picked = drawFromBand(pool, seats.vip + seats.lucky, rng);
+  return picked.map((e, i) => ({
+    ...e,
+    // The first eight out are the VIP gifts, the last two the Lucky ones.
+    band: (i < seats.vip ? "gold" : "silver") as BandKey,
+    order: i + 1,
+  }));
 }
