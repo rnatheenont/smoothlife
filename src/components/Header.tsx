@@ -174,6 +174,18 @@ export default function Header({
       // so — inset, rounded, glass — reads as one layer rather than as the
       // page having a white stripe stuck to its forehead.
       //
+      // The four things the glass note in globals.css says make a translucent
+      // box read as glass rather than as a white veil: the blur, the
+      // saturation lift so what is behind keeps its colour, a hairline
+      // lighter than the fill, and a one-pixel highlight inset along the top
+      // edge, which is the only part that suggests thickness.
+      //
+      // Written out rather than reusing .glass-bar. That class is built for
+      // the full-width sticky bar — it carries its own fill and a
+      // border-bottom to stop the blur mid-grid — and being plain CSS it
+      // beats these utilities, so a card borrowing it came out with the bar's
+      // fill and a line across its bottom.
+      //
       // Narrower than the page once it detaches — 1024px centred rather
       // than the full width inset by a margin. A bar that has become a card
       // but still runs the width of the window reads as the old bar with
@@ -190,7 +202,7 @@ export default function Header({
         hideHeader && !open ? "-translate-y-full" : "translate-y-0"
       } ${
         scrolled
-          ? "top-2 mx-2 max-w-full rounded-2xl border border-slate-200/70 bg-white/75 shadow-[0_12px_32px_-14px_rgba(0,53,41,0.3)] backdrop-blur-lg sm:mx-4 lg:top-3 lg:mx-auto lg:max-w-5xl"
+          ? "top-2 mx-2 max-w-full rounded-2xl border border-white/70 bg-white/60 shadow-[inset_0_1px_0_rgb(255_255_255/0.9),inset_0_-1px_0_rgb(255_255_255/0.3),0_12px_32px_-14px_rgb(0_53_41/0.3)] backdrop-blur-xl backdrop-saturate-[1.8] sm:mx-4 lg:top-3 lg:mx-auto lg:max-w-5xl"
           : "top-0 mx-0 rounded-none border-b border-transparent bg-transparent"
       }`}
     >
