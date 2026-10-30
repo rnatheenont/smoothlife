@@ -4,6 +4,7 @@ import ProductCard from "@/components/ProductCard";
 import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";
 import ShopHero from "@/components/shop/ShopHero";
+import { collectionBanner } from "@/lib/category-banner";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { withSeoOverride, shareMeta } from "@/lib/seo-overrides";
 import { withCustomImages } from "@/lib/product-images";
@@ -64,6 +65,7 @@ async function CollectionPageWritten({ collection }: { collection: NonNullable<R
         title={collection.title}
         subtitle={collection.description ?? ""}
         count={items.length}
+        banner={collectionBanner(collection.handle)}
       />
 
       <div className="container-page py-6 md:py-8">

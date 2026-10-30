@@ -3,6 +3,7 @@ import Link from "next/link";
 import { collections } from "@/data/collections";
 import Breadcrumb from "@/components/Breadcrumb";
 import ShopHero from "@/components/shop/ShopHero";
+import { COLLECTION_BANNER } from "@/lib/category-banner";
 import { pageMetadata } from "@/lib/site-pages";
 import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
 import { SystemPageBody } from "@/lib/pages/system-page";
@@ -27,6 +28,7 @@ function CollectionsIndexPageWritten() {
         subtitle="อัปเดตตรงจากร้าน"
         count={sorted.length}
         countLabel="คอลเลกชัน"
+        banner={COLLECTION_BANNER}
       />
 
       <div className="container-page py-6 md:py-8">

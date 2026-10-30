@@ -1,4 +1,5 @@
 import Image from "next/image";
+import ShopHero from "@/components/shop/ShopHero";
 import { z } from "zod";
 import { CONTENT_ICON_KEYS, contentIcon } from "../shared/content-icons";
 import { lText, tx } from "@/lib/i18n/localized";
@@ -24,7 +25,7 @@ const schema = z.object({
   /** A wide picture under the header, as /about has. */
   image: z.string().default(""),
   align: z.enum(["left", "center"]).default("left"),
-  background: z.enum(["page", "white", "soft"]).default("page"),
+  background: z.enum(["page", "white", "soft", "sky"]).default("page"),
   /**
    * The header's rhythm: a marketing page or a document.
    *
@@ -109,6 +110,24 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
   const top = TOP_ROOM[settings.topRoom] ?? TOP_ROOM.page;
   const EyebrowIcon = contentIcon(settings.eyebrowIcon);
   if (!title && !intro && !settings.image) return null;
+
+  // "sky" is not a background colour but the whole band — the full-bleed
+  // sheet with the drifting clouds that /shop and the category pages wear,
+  // with the heading centred in it. It is here rather than as a second
+  // section because every listing page already carries a page_header, and
+  // the alternative was asking whoever lays out a page to swap one block for
+  // another to change how the top of it looks. The picture, when there is
+  // one, is the section's own image setting.
+  if (settings.background === "sky") {
+    return (
+      <ShopHero
+        eyebrow={eyebrow || undefined}
+        title={title}
+        subtitle={intro}
+        banner={settings.image || undefined}
+      />
+    );
+  }
 
   // With a mascot the header is a row: picture on the left, the three lines
   // on the right. It is a different shape rather than an extra element, so
@@ -229,7 +248,7 @@ export const pageHeader: SectionDefinition<typeof schema> = {
       key: "background",
       type: "select",
       label: "พื้นหลัง",
-      options: [["page", "ตามพื้นหน้า"], ["white", "ขาว"], ["soft", "เขียวอ่อน"]],
+      options: [["page", "ตามพื้นหน้า"], ["white", "ขาว"], ["soft", "เขียวอ่อน"], ["sky", "แถบท้องฟ้า เต็มความกว้าง"]],
     },
   ],
   enabledOn: ["page", "campaign", "system", "template"],

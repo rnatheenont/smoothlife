@@ -1,5 +1,6 @@
 // With the extension, so the unit tests can load this file without a bundler.
 import { type PageDoc } from "../doc.ts";
+import { ALL_PRODUCTS_BANNER, COLLECTION_BANNER } from "../../category-banner.ts";
 import { doc, type DraftSection } from "./build.ts";
 
 // The pages of wave 2, written as documents.
@@ -26,7 +27,7 @@ import { doc, type DraftSection } from "./build.ts";
 const listingHeader = (
   title: string,
   intro: string,
-  over: { layout?: string; topRoom?: string } = {}
+  over: { layout?: string; topRoom?: string; background?: string; image?: string } = {}
 ) => ({
   type: "page_header",
   v: 1,
@@ -34,9 +35,9 @@ const listingHeader = (
     eyebrow: "",
     title,
     intro,
-    image: "",
+    image: over.image ?? "",
     align: "left",
-    background: "page",
+    background: over.background ?? "page",
     layout: over.layout ?? "document",
     topRoom: over.topRoom ?? "page",
     mascot: "",
@@ -142,7 +143,8 @@ const concernHub = (): PageDoc =>
   doc([
     listingHeader(
       "ช้อปตามปัญหาผิวที่กังวล",
-      "เลือกดูผลิตภัณฑ์ที่ตรงกับความต้องการของผิวคุณ พร้อมคำแนะนำจากผู้เชี่ยวชาญ"
+      "เลือกดูผลิตภัณฑ์ที่ตรงกับความต้องการของผิวคุณ พร้อมคำแนะนำจากผู้เชี่ยวชาญ",
+      { background: "sky", image: ALL_PRODUCTS_BANNER }
     ),
     {
       type: "concern_tiles",
@@ -178,7 +180,12 @@ const concernHub = (): PageDoc =>
 const collectionsIndex = (): PageDoc =>
   doc([
     { type: "breadcrumb", v: 1, settings: { showHome: true, display: "row", room: "page" } },
-    listingHeader("คอลเลกชันทั้งหมด", "", { layout: "listing", topRoom: "none" }),
+    listingHeader("คอลเลกชันทั้งหมด", "อัปเดตตรงจากร้าน", {
+      layout: "listing",
+      topRoom: "none",
+      background: "sky",
+      image: COLLECTION_BANNER,
+    }),
     {
       type: "collection_tiles",
       v: 1,

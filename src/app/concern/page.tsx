@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { concerns, concernImage } from "@/data/categories";
 import ShopHero from "@/components/shop/ShopHero";
+import { ALL_PRODUCTS_BANNER } from "@/lib/category-banner";
 import { pageMetadata } from "@/lib/site-pages";
 import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
 import { SystemPageBody } from "@/lib/pages/system-page";
@@ -18,6 +19,7 @@ function ConcernHubPageWritten() {
         eyebrow="CONCERNS"
         title="ช้อปตามปัญหาผิวที่กังวล"
         subtitle="เลือกดูผลิตภัณฑ์ที่ตรงกับความต้องการของผิวคุณ พร้อมคำแนะนำจากผู้เชี่ยวชาญ"
+        banner={ALL_PRODUCTS_BANNER}
       />
 
       <div className="container-page py-8 md:py-10">

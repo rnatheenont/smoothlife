@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { getCollectionByHandle, getCollectionProducts } from "@/data/collections";
+import ShopHero from "@/components/shop/ShopHero";
+import { collectionBanner } from "@/lib/category-banner";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // A collection's own introduction: its name, how many things are in it, and
@@ -21,7 +23,7 @@ const schema = z.object({
   countSuffix: z.string().max(60).default(""),
 });
 
-type Data = { title: string; count: number; description: string };
+type Data = { title: string; handle: string; count: number; description: string };
 
 async function load(
   _settings: z.output<typeof schema>,
@@ -36,6 +38,7 @@ async function load(
     // collection can name a product the catalogue no longer has, and the
     // count under the title should agree with the grid under it.
     count: getCollectionProducts(c).length,
+    handle: c.handle,
     description: c.description ?? "",
   };
 }
@@ -43,20 +46,19 @@ async function load(
 function Component({ settings, data }: SectionProps<z.output<typeof schema>, Data | null>) {
   if (!data) return null;
 
+  // The same band /shop and the category pages wear. This section used to
+  // draw a plain h1 in the container, which is what the hand-written route
+  // did before it was moved onto ShopHero — and since the route renders from
+  // the document, the band only arrives when it is put here.
   return (
-    <section className="container-page">
-      <div className="min-w-0">
-        <h1 className="text-2xl font-bold text-brand-ink md:text-3xl">{data.title}</h1>
-        {settings.countSuffix && (
-          <p className="mt-1 text-sm text-slate-500">
-            {data.count} {settings.countSuffix}
-          </p>
-        )}
-        {settings.showDescription && data.description && (
-          <p className="mt-2 max-w-2xl text-sm text-slate-500">{data.description}</p>
-        )}
-      </div>
-    </section>
+    <ShopHero
+      eyebrow="COLLECTION"
+      title={data.title}
+      subtitle={settings.showDescription ? data.description : ""}
+      count={settings.countSuffix ? data.count : undefined}
+      countLabel={settings.countSuffix || undefined}
+      banner={collectionBanner(data.handle)}
+    />
   );
 }
 

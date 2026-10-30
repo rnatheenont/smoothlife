@@ -5,6 +5,7 @@ import { promotions } from "@/data/promotions";
 import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import ShopHero from "@/components/shop/ShopHero";
+import { ALL_PRODUCTS_BANNER } from "@/lib/category-banner";
 import { pageMetadata } from "@/lib/site-pages";
 import { withCustomImages } from "@/lib/product-images";
 import { toCardData } from "@/data/card";
@@ -32,6 +33,7 @@ async function PromotionsPageWritten() {
         subtitle="รวมโปรโมชั่นและดีลพิเศษประจำเดือนจาก Smooth Life"
         count={promotions.length}
         countLabel="โปรโมชัน"
+        banner={ALL_PRODUCTS_BANNER}
       />
 
       <div className="container-page py-8 md:py-10">

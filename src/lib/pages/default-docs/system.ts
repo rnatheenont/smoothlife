@@ -2,6 +2,7 @@
 // (tsconfig allows it; see src/sections/breadcrumb/trail.ts for the same
 // trade made for the same reason).
 import { type PageDoc } from "../doc.ts";
+import { ALL_PRODUCTS_BANNER } from "../../category-banner.ts";
 import { doc } from "./build.ts";
 import { WAVE2_DEFAULT_DOCS } from "./system-wave2.ts";
 
@@ -316,9 +317,9 @@ const promotions = (): PageDoc =>
         eyebrow: "",
         title: "New, Best Sellers and Promotions",
         intro: "รวมโปรโมชั่นและดีลพิเศษประจำเดือนจาก Smooth Life",
-        image: "",
+        image: ALL_PRODUCTS_BANNER,
         align: "left",
-        background: "page",
+        background: "sky",
         layout: "document",
       },
     },

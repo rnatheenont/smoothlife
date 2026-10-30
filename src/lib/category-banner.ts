@@ -37,6 +37,26 @@ const CATEGORY_BANNERS = [
  */
 export const ALL_PRODUCTS_BANNER = "/categories/banners/all-products.webp";
 export const BRANDS_BANNER = "/categories/banners/brands.webp";
+/** The band on a listing page that is not products, brands or one category. */
+export const COLLECTION_BANNER = "/categories/banners/collection.webp";
+
+/**
+ * A collection's own band, or the one every collection shares.
+ *
+ * There are thirty-six collections and most of them are a brand's shelf, so
+ * they are not each worth a picture; the shared one is a curated grouping and
+ * says what any of them are. A handle gets its own only when the collection
+ * is about something a picture can say — ซื้อ 1 แถม 1 is two of a thing, and
+ * the generic one cannot carry that.
+ */
+const COLLECTION_BANNERS = ["buy-1-get-1-free-deal"] as const;
+
+export function collectionBanner(handle: string | undefined): string {
+  if (handle && (COLLECTION_BANNERS as readonly string[]).includes(handle)) {
+    return `/categories/banners/${handle}.webp`;
+  }
+  return COLLECTION_BANNER;
+}
 
 export function categoryBanner(slug: string | undefined): string | null {
   if (!slug) return null;
