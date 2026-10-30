@@ -213,8 +213,15 @@ export default function HalloweenSky() {
         {/* Left of the mascot, not behind it. The mascot is pinned to the
             right edge from xl and is about 300 of these units wide, so
             anything past x≈1040 is standing behind a lab coat — which is
-            where the castle was, and why only its left towers showed. */}
-        <g transform="translate(872 18) scale(0.62)">
+            where the castle was, and why only its left towers showed.
+
+            The y is not free either: the castle is drawn from 0 down to
+            150, so its base lands at y + 0.62·150. The ridge under it runs
+            from about 135 on the left to 123 on the right, so the base has
+            to sit at 137 — a touch under the ridge's near edge, which buries
+            the bottom corners in the hill instead of leaving the whole
+            thing hanging in the air above it. */}
+        <g transform="translate(872 44) scale(0.62)">
           <path fill="#190e29" d="M0 150V74h18V60h14v14h16V40h16v34h18V60h14v14h18v76Z" />
           {/* Left tower */}
           <path fill="#190e29" d="M-34 150V62h36v88Z" />
