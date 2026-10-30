@@ -206,6 +206,34 @@ export default function Header({
           : "top-0 mx-0 rounded-none border-b border-transparent bg-transparent"
       }`}
     >
+      {/* A blur that is strongest at the top of the bar and gone by the
+          bottom of it — the thing the reference calls progressive blur.
+          Only while the bar is attached: once it detaches it is a card with
+          its own glass, and the two together would be blur over blur.
+          
+          It is four layers, not one, because a single backdrop-filter is
+          uniform and masking it only fades the blurred copy in and out —
+          which reads as a translucent sheet with a hard edge, not as depth.
+          Each layer blurs harder than the one under it and is masked to a
+          shorter run from the top, so the strengths add up at the top edge
+          and arrive at nothing by the bottom.
+          
+          -z-10 so it sits behind the rows but still inside the bar's own
+          stacking context, which is above the page — that is what gives it
+          the banner to blur. pointer-events-none because it is weather. */}
+      {!scrolled && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute inset-0 backdrop-blur-[10px] backdrop-saturate-[1.4] [mask-image:linear-gradient(to_bottom,black_0%,transparent_28%)]" />
+          <div className="absolute inset-0 backdrop-blur-[6px] [mask-image:linear-gradient(to_bottom,black_0%,transparent_52%)]" />
+          <div className="absolute inset-0 backdrop-blur-[3px] [mask-image:linear-gradient(to_bottom,black_0%,transparent_76%)]" />
+          <div className="absolute inset-0 backdrop-blur-[1.5px] [mask-image:linear-gradient(to_bottom,black_0%,transparent_100%)]" />
+          {/* The fill fades on the same run, so the words at the top of the
+              bar keep their contrast and the bottom edge dissolves into the
+              picture instead of ending on a line. */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgb(255_255_255/0.55)_0%,rgb(255_255_255/0.25)_45%,transparent_100%)]" />
+        </div>
+      )}
+
       {/* The strip belongs to the top of the page, not to the app bar.
           The header already hides on the way down and comes back on the way
           up — but it was coming back with this attached, so a scroll-up gave
