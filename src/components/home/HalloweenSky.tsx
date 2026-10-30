@@ -117,7 +117,7 @@ function DeadTree({ x, scale, flip }: { x: number; scale: number; flip?: boolean
   const ink = "#1b0f2b";
   return (
     <g
-      transform={`translate(${x} 240) scale(${flip ? -scale : scale} ${scale})`}
+      transform={`translate(${x} 180) scale(${flip ? -scale : scale} ${scale})`}
       fill="none"
       stroke={ink}
       strokeLinecap="round"
@@ -187,28 +187,35 @@ export default function HalloweenSky() {
         </span>
       ))}
 
-      {/* The skyline. Three depths of their own: a far ridge, the castle on
-          it, and the near trees and fence. It is the band's bottom edge, so
-          nothing here loops — nothing moves down here. */}
-      <svg
-        viewBox="0 0 1440 240"
-        preserveAspectRatio="xMidYMax slice"
-        className="absolute inset-x-0 bottom-0 h-[120px] w-full md:h-[150px]"
-      >
+      {/* The skyline: a far ridge, a castle standing on it, and the near
+          trees and pumpkins in front.
+
+          Sized by width alone — w-full with no height — so the box keeps
+          its own proportions and nothing is ever cut off. It used to be a
+          fixed height with preserveAspectRatio slice, which crops whatever
+          does not fit: on a 1920px screen that was 130 units off the top of
+          the drawing, and the first thing above 130 units was the castle's
+          spire. A drawing that loses its tallest thing on the widest screen
+          is a drawing nobody checked on a wide screen.
+
+          The box is deliberately short and wide, so at the width it is
+          actually used it lands about 180px tall. */}
+      <svg viewBox="0 0 1440 180" className="absolute inset-x-0 bottom-0 w-full">
         {/* Far ridge, lighter: distance is haze, not a smaller shape. */}
         <path
           fill="#3a2350"
-          d="M0 186c112-22 186 14 288 10 94-4 144-26 244-22 88 4 134 26 224 26 94 0 150-28 244-28 90 0 140 22 230 22 86 0 144-14 210-22v68H0Z"
+          d="M0 132c112-16 186 10 288 7 94-3 144-19 244-16 88 3 134 19 224 19 94 0 150-20 244-20 90 0 140 16 230 16 86 0 144-10 210-16v58H0Z"
         />
 
-        {/* The castle, standing on the far ridge. Towers, battlements and
-            lit windows — the windows are the only warm thing down here, and
+        {/* The castle, on the far ridge. Towers, battlements and lit
+            windows — the windows are the only warm thing down here, and
             they are what says somebody is home. */}
-        <g transform="translate(1012 46)">
-          <path
-            fill="#190e29"
-            d="M0 150V74h18V60h14v14h16V40h16v34h18V60h14v14h18v76Z"
-          />
+        {/* Left of the mascot, not behind it. The mascot is pinned to the
+            right edge from xl and is about 300 of these units wide, so
+            anything past x≈1040 is standing behind a lab coat — which is
+            where the castle was, and why only its left towers showed. */}
+        <g transform="translate(872 18) scale(0.62)">
+          <path fill="#190e29" d="M0 150V74h18V60h14v14h16V40h16v34h18V60h14v14h18v76Z" />
           {/* Left tower */}
           <path fill="#190e29" d="M-34 150V62h36v88Z" />
           <path fill="#190e29" d="M-16 22-40 64h48Z" />
@@ -219,9 +226,8 @@ export default function HalloweenSky() {
           <path fill="#190e29" d="M44 150V34h30v116Z" />
           <path fill="#190e29" d="M59 0 36 36h46Z" />
           {/* A flag, because a tower without one is a chimney. */}
-          <path fill="#190e29" d="M131 6V-8m0 0 16 5-16 5" />
-          <path stroke="#190e29" strokeWidth="2" d="M131 8V-10" />
-          <path fill="#190e29" d="M131-10l15 4.5-15 4.5Z" />
+          <path stroke="#190e29" strokeWidth="3" d="M131 8V-14" />
+          <path fill="#190e29" d="M131-14l18 5.5-18 5.5Z" />
           {[
             [-22, 88],
             [-22, 112],
@@ -232,32 +238,32 @@ export default function HalloweenSky() {
             [6, 104],
             [84, 104],
           ].map(([x, y]) => (
-            <rect key={`${x}-${y}`} x={x} y={y} width="8" height="12" rx="4" fill="#ffc46b" />
+            <rect key={`${x}-${y}`} x={x} y={y} width="9" height="13" rx="4.5" fill="#ffc46b" />
           ))}
         </g>
 
         {/* Near ground, darkest, with everything standing on it. */}
         <path
           fill="#20122f"
-          d="M0 214c120-16 200 8 310 6 100-2 150-14 250-12 92 2 140 14 232 14 100 0 156-16 256-16 96 0 150 12 242 12 56 0 106-4 150-10v32H0Z"
+          d="M0 158c120-12 200 6 310 5 100-2 150-11 250-9 92 1 140 10 232 10 100 0 156-12 256-12 96 0 150 9 242 9 56 0 106-3 150-7v26H0Z"
         />
-        <DeadTree x={104} scale={0.82} />
-        <DeadTree x={188} scale={0.54} flip />
-        <DeadTree x={356} scale={0.42} />
-        <DeadTree x={690} scale={0.38} flip />
-        <DeadTree x={1348} scale={0.74} flip />
-        <DeadTree x={1264} scale={0.5} />
+        <DeadTree x={104} scale={0.62} />
+        <DeadTree x={188} scale={0.4} flip />
+        <DeadTree x={356} scale={0.31} />
+        <DeadTree x={690} scale={0.28} flip />
+        <DeadTree x={1348} scale={0.56} flip />
+        <DeadTree x={1264} scale={0.37} />
 
         {/* Pumpkins, sitting where the ground is lowest. */}
         {[
-          [470, 226, 15],
-          [512, 229, 11],
-          [905, 227, 14],
-          [1180, 228, 12],
+          [470, 168, 11],
+          [506, 170, 8],
+          [762, 169, 10],
+          [1180, 170, 9],
         ].map(([x, y, r]) => (
           <g key={x}>
             <ellipse cx={x} cy={y} rx={r * 1.3} ry={r} fill="#e8762a" />
-            <path d={`M${x - 3} ${y - r - 6}h6v8h-6Z`} fill="#2f5c32" />
+            <path d={`M${x - 2} ${y - r - 5}h4v6h-4Z`} fill="#2f5c32" />
           </g>
         ))}
       </svg>
