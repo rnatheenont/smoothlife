@@ -24,7 +24,7 @@ export const VIEW_BUST: View = { x0: 110, x1: 890, y0: -40, y1: 740 };
  * so a changed file under the same URL never reaches anyone who has visited
  * before — the query string makes it a new URL.
  */
-export const MASCOT_ASSET_VERSION = "2026-10-30c";
+export const MASCOT_ASSET_VERSION = "2026-10-30d";
 export const mascotAsset = (file: string) => `/mascot/rig/${file}?v=${MASCOT_ASSET_VERSION}`;
 
 /** Gestures and moods the storefront may trigger (sad / angry / love are left out on purpose). */
@@ -118,8 +118,9 @@ const FACES: Record<string, number[]> = {
   happy: [176, 6, 818, 568], laugh: [176, 14, 818, 568],
   surprised: [176, 20, 818, 568], curious: [176, 17, 858, 568], worried: [176, 17, 818, 568],
 };
-// Halloween props (the hat box is still named HAT_BOX): boxes come from smoothlife-mascot/halloween/build_halloween.py.
-const HAT_BOX = [346, -51, 690, 157];
+// Halloween (Dracula): the cape from smoothlife-mascot/halloween/build_dracula.py,
+// the pumpkin from build_halloween.py.
+const CAPE_BOX = [0, 352, 1000, 908];
 const PUMPKIN_BOX = [11, 740, 225, 956];
 // Christmas props: smoothlife-mascot/christmas/build_christmas.py.
 const SANTA_HAT_BOX = [374, -71, 718, 167];
@@ -127,12 +128,15 @@ const SANTA_HAT_BOX = [374, -71, 718, 167];
 // "<part>-<theme>.webp" instead (Santa suit: smoothlife-mascot/christmas/build_santa.py).
 const SUIT: Partial<Record<MascotTheme, string[]>> = {
   christmas: ["body", "arm-left", "arm-left-down", "arm-right", "arm-right-up", "arm-left-hand", "arm-right-hand"],
+  halloween: ["body", "arm-left", "arm-left-down", "arm-right", "arm-right-up", "arm-left-hand", "arm-right-hand"],
 };
 const GIFT_BOX = [20, 755, 217, 959];
 // New Year props: smoothlife-mascot/newyear/build_newyear.py.
 const PARTY_HAT_BOX = [440, -61, 605, 160];
 const BALLOONS_BOX = [786, 749, 993, 941];
 const LAYERS: LayerDef[] = [
+  // behind everything, swaying with the body the way the coat does; its collar stands up beside the hood
+  { name: "halloween-cape", theme: "halloween", bbox: CAPE_BOX, texBox: CAPE_BOX, grid: [12, 10], w: (_x, y) => { const c = smooth(830, 640, y); return [["chest", c], ["hips", 1 - c]]; } },
   // stands on the ground beside the feet — the "world" bone never moves, so it stays put when he jumps
   { name: "halloween-pumpkin", theme: "halloween", bbox: PUMPKIN_BOX, texBox: PUMPKIN_BOX, grid: [1, 1], w: () => [["world", 1]] },
   { name: "christmas-gift", theme: "christmas", bbox: GIFT_BOX, texBox: GIFT_BOX, grid: [1, 1], w: () => [["world", 1]] },
@@ -153,7 +157,6 @@ const LAYERS: LayerDef[] = [
   { name: "mouth", bbox: [466, 394, 543, 448], grid: [2, 2], w: () => [["mouth", 1]], group: "base" },
   ...Object.entries(FACES).map(([id, bbox]): LayerDef => ({ name: "face-" + id, react: id, bbox, grid: [26, 22], w: headWeights })),
   // over the hood and every face, under the raised mittens
-  { name: "halloween-hat", theme: "halloween", bbox: HAT_BOX, texBox: HAT_BOX, grid: [4, 3], w: () => [["head", 1]] },
   { name: "christmas-hat", theme: "christmas", bbox: SANTA_HAT_BOX, texBox: SANTA_HAT_BOX, grid: [4, 3], w: () => [["head", 1]] },
   { name: "newyear-hat", theme: "newyear", bbox: PARTY_HAT_BOX, texBox: PARTY_HAT_BOX, grid: [3, 3], w: () => [["head", 1]] },
   { name: "arm-left-hand", armSide: "front", bbox: [129, 406, 377, 657], grid: [16, 16], w: ARM_L },
