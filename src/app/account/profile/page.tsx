@@ -41,6 +41,10 @@ const labelClass = "text-xs font-semibold text-slate-500 mb-1.5 block";
 // max-w-md and top margin because each was the only thing on its row;
 // in a column that reads as a stack of boxes of different widths.
 const CARD = "rounded-xl2 border border-slate-200 bg-white p-5";
+// Email and phone are two of the ways into this account, so they are rows in
+// the login-channels card rather than cards beside it. Same markup either
+// way — only the shell changes.
+const ROW = "border-t border-slate-100 pt-4 mt-4";
 
 function ProfileContent() {
   const { user, refreshUser } = useAuth();
@@ -265,7 +269,7 @@ function ProfileContent() {
 // emailed-OTP flow already used for email login (see LoginContent.tsx) —
 // never let either happen on just the strength of typing an address, since
 // that's exactly how someone could hijack an account that isn't theirs.
-function EmailLinkCard() {
+function EmailLinkCard({ embedded = false }: { embedded?: boolean }) {
   const { user, refreshUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [email, setEmail] = useState("");
@@ -305,7 +309,7 @@ function EmailLinkCard() {
 
   if (hasEmail && !editing) {
     return (
-      <div className={CARD}>
+      <div className={embedded ? ROW : CARD}>
         <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Mail size={16} />
           <span className="text-xs font-semibold">Email</span>
@@ -379,7 +383,7 @@ function EmailLinkCard() {
 
   if (justLinked) {
     return (
-      <div className={CARD}>
+      <div className={embedded ? ROW : CARD}>
         <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Mail size={16} />
           <span className="text-xs font-semibold">Email</span>
@@ -393,7 +397,7 @@ function EmailLinkCard() {
   }
 
   return (
-    <div className={CARD}>
+    <div className={embedded ? ROW : CARD}>
       <div className="flex items-center gap-2 text-brand-800 mb-1">
         <Mail size={16} />
         <span className="text-xs font-semibold">Email</span>
@@ -501,7 +505,7 @@ function EmailLinkCard() {
 // number always goes through real Firebase SMS verification on the *new*
 // number — mirrors EmailLinkCard's role for email, and the same login-time
 // phone-OTP flow in LoginContent.tsx.
-function PhoneChangeCard() {
+function PhoneChangeCard({ embedded = false }: { embedded?: boolean }) {
   const { user, refreshUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [phone, setPhone] = useState("");
@@ -521,7 +525,7 @@ function PhoneChangeCard() {
 
   if (hasPhone && !editing) {
     return (
-      <div className={CARD}>
+      <div className={embedded ? ROW : CARD}>
         <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Phone size={16} />
           <span className="text-xs font-semibold">Phone</span>
@@ -611,7 +615,7 @@ function PhoneChangeCard() {
 
   if (justLinked) {
     return (
-      <div className={CARD}>
+      <div className={embedded ? ROW : CARD}>
         <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Phone size={16} />
           <span className="text-xs font-semibold">Phone</span>
@@ -625,7 +629,7 @@ function PhoneChangeCard() {
   }
 
   return (
-    <div className={CARD}>
+    <div className={embedded ? ROW : CARD}>
       <div className="flex items-center gap-2 text-brand-800 mb-1">
         <Phone size={16} />
         <span className="text-xs font-semibold">Phone</span>
@@ -729,9 +733,14 @@ export default function ProfilePage() {
             running out of card halfway down the page. */}
         <div className="flex flex-col gap-4">
           <ProfileContent />
-          <EmailLinkCard />
-          <PhoneChangeCard />
-          <SettingsSummary />
+          <SettingsSummary
+            channelRows={
+              <>
+                <EmailLinkCard embedded />
+                <PhoneChangeCard embedded />
+              </>
+            }
+          />
         </div>
         {/* The two books. They are lists that grow, so they get the side
             with room to grow into. */}

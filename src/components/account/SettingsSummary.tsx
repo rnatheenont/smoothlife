@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Modal } from "@/components/ui";
 import LoginChannels from "@/components/account/LoginChannels";
 import { KeyRound, ShieldCheck } from "lucide-react";
@@ -37,9 +38,10 @@ function Pill({ ok, children }: { ok: boolean; children: React.ReactNode }) {
   );
 }
 
-export default function SettingsSummary() {
+export default function SettingsSummary({ channelRows }: { channelRows?: React.ReactNode }) {
   const [identities, setIdentities] = useState<Identity[] | null>(null);
   const [channelsOpen, setChannelsOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     let alive = true;
@@ -76,7 +78,10 @@ export default function SettingsSummary() {
           </button>
         </div>
         <p className="mt-1 text-xs text-slate-500">ทุกช่องทางนี้เข้าบัญชีเดียวกัน</p>
-        <div className="mt-3">
+        {/* The address and the number first: they are the two a shopper
+            actually types, and the two they may need to change. */}
+        {channelRows}
+        <div className="mt-4">
           {social.map((s) => (
             <div key={s.key} className={ROW}>
               <span className="flex items-center gap-2 text-slate-600">
@@ -94,9 +99,17 @@ export default function SettingsSummary() {
               ) : s.linked ? (
                 <Pill ok>เชื่อมแล้ว</Pill>
               ) : (
-                <button type="button" onClick={() => setChannelsOpen(true)} className={LINK}>
+                // Straight out to the provider, not into the dialog first:
+                // linking Google or LINE is a redirect either way, and the
+                // dialog added a click that only repeated this row. The
+                // "จัดการ" link above still opens it, for the merge decision
+                // that a link can raise.
+                <a
+                  href={`/api/auth/${s.key}/start?returnTo=${encodeURIComponent(pathname)}`}
+                  className={LINK}
+                >
                   เชื่อม
-                </button>
+                </a>
               )}
             </div>
           ))}
