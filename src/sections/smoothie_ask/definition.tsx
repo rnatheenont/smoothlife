@@ -1,5 +1,5 @@
 import { z } from "zod";
-import SmoothieHeroBand, { type HeroTheme } from "@/components/home/SmoothieHeroBand";
+import SmoothieHeroBand, { type HeroThemeSetting } from "@/components/home/SmoothieHeroBand";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // The band at the very top of the home page: ask Smoothie a question, or send
@@ -10,17 +10,17 @@ import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 // edits in the AI knowledge base — moving that text in here would give them a
 // second place to edit the same words.
 //
-// The sky is a setting, because a season has a date on it. Switching back is
-// the same two clicks as switching on, which is the part that matters: the
-// first of November is a morning when somebody has to be able to undo
-// October without waiting for a developer.
+// The sky is a setting, because a season has a date on it. "auto" follows
+// Smoothie's outfit (/admin/mascot, which itself follows the calendar), so
+// the band and the mascot change together and nobody has to undo October on
+// the first of November. Picking one sky by hand still pins it.
 
 const schema = z.object({
-  theme: z.enum(["sky", "halloween"]).default("sky"),
+  theme: z.enum(["auto", "sky", "halloween", "christmas", "newyear"]).default("auto"),
 });
 
 function Component({ settings }: SectionProps<z.output<typeof schema>>) {
-  return <SmoothieHeroBand theme={settings.theme as HeroTheme} />;
+  return <SmoothieHeroBand theme={settings.theme as HeroThemeSetting} />;
 }
 
 export const smoothieAsk: SectionDefinition<typeof schema> = {
@@ -30,15 +30,18 @@ export const smoothieAsk: SectionDefinition<typeof schema> = {
   description: "ช่องถาม AI พร้อมคำถามแนะนำ — เลือกธีมพื้นหลังได้ ข้อความและคำถามแก้ที่ฐานความรู้ AI",
   category: "hero",
   schema,
-  defaults: { theme: "sky" },
+  defaults: { theme: "auto" },
   fields: [
     {
       key: "theme",
       type: "select",
       label: "ธีมพื้นหลัง",
       options: [
+        ["auto", "ตามชุดน้อง Smoothie (แนะนำ)"],
         ["sky", "ท้องฟ้า (ปกติ)"],
         ["halloween", "ฮาโลวีน"],
+        ["christmas", "คริสต์มาส"],
+        ["newyear", "ปีใหม่"],
       ],
     },
   ],
