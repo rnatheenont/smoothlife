@@ -493,8 +493,8 @@ export default function StaffShop() {
    * the phone one: the two drifted once already, and a cart you can check
    * out from on a laptop but not on a phone is a bug nobody reports.
    */
-  function blockedBecause(shop: Extract<State, { state: "shop" }>): string | null {
-    if (Object.keys(cart).length === 0) return "ยังไม่ได้เลือกสินค้า";
+  /** What the collection is still missing, or null. */
+  function fulfilmentBlock(shop: Extract<State, { state: "shop" }>): string | null {
     const option = fulfilmentOption(fulfilment.method);
     if (option.needsName && !(fulfilment.pickup_name ?? "").trim()) {
       return "กรุณาระบุชื่อเล่นสำหรับติดกล่อง";
@@ -507,6 +507,11 @@ export default function StaffShop() {
     if (!shop.shipTo) return "ยังไม่มีข้อมูลผู้รับในโปรไฟล์";
     if (!shop.shipTo.hasPhone) return "ยังไม่มีเบอร์โทรในโปรไฟล์";
     return null;
+  }
+
+  function blockedBecause(shop: Extract<State, { state: "shop" }>): string | null {
+    if (Object.keys(cart).length === 0) return "ยังไม่ได้เลือกสินค้า";
+    return fulfilmentBlock(shop);
   }
 
   function narrow(apply: () => void) {
@@ -2044,10 +2049,54 @@ export default function StaffShop() {
               </div>
             ) : (
               <div
-                className={`flex items-center gap-3 bg-brand-ink px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] motion-safe:animate-slideUp ${
+                className={`bg-brand-ink px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] motion-safe:animate-slideUp ${
                   cartOpen && cartCount > 0 ? "" : "rounded-t-2xl"
                 }`}
               >
+                {/* Where it is going, on the bar itself.
+                    
+                    The chooser lives in the sheet, and the sheet only opens
+                    when somebody taps the total — so on a phone the whole
+                    feature was behind a tap nobody had a reason to make.
+                    Everybody who shopped on a phone posted their order
+                    without ever learning they could come and collect it.
+                    
+                    So the answer sits on the bar, always, and the strip is
+                    the way into the chooser. Hidden while the sheet is open
+                    because the real thing is then two inches above it. */}
+                {cartCount > 0 && !cartOpen && (
+                  <button
+                    type="button"
+                    onClick={() => setCartOpen(true)}
+                    className="mb-2.5 flex w-full items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-left"
+                  >
+                    <Truck className="h-4 w-4 shrink-0 text-white/70" aria-hidden />
+                    <span className="min-w-0 flex-1 truncate text-[12px] leading-tight">
+                      {/* An unfinished collection says so here rather than
+                          greying the button out of sight below it. */}
+                      {fulfilmentBlock(shop) ? (
+                        <span className="font-semibold text-amber-300">{fulfilmentBlock(shop)}</span>
+                      ) : (
+                        <>
+                          <span className="font-bold text-white">
+                            {fulfilmentOption(fulfilment.method).label}
+                          </span>
+                          <span className="text-white/60">
+                            {" · "}
+                            {isPickup(fulfilment.method)
+                              ? [fulfilment.pickup_name, fulfilment.pickup_floor && `ชั้น ${fulfilment.pickup_floor}`]
+                                  .filter(Boolean)
+                                  .join(" · ")
+                              : (shop.shipTo?.summary ?? "ยังไม่มีที่อยู่")}
+                          </span>
+                        </>
+                      )}
+                    </span>
+                    <span className="shrink-0 text-[12px] font-bold text-brand-emerald">เปลี่ยน</span>
+                  </button>
+                )}
+
+                <div className="flex items-center gap-3">
                 {/* The left half opens the cart. A total with no way to see
                     what is in it means scrolling the whole round back to
                     find the one line that is wrong. */}
@@ -2123,6 +2172,7 @@ export default function StaffShop() {
                       presses again. */}
                   {busy ? "กำลังเปิด…" : "ไปชำระเงิน"}
                 </button>
+                </div>
               </div>
             )}
           </div>
