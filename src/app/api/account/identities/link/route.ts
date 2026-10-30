@@ -105,6 +105,16 @@ export async function POST(req: NextRequest) {
   ).catch(() => []);
 
   if (owner?.user_id === uid) {
+    // Already on this account, but maybe never proved: an email typed into
+    // the profile form is saved with verified_at null, and the code just read
+    // out of that mailbox is the proof it was missing. Without this the staff
+    // shop — which only trusts a verified address — never appeared for
+    // someone who had done everything asked of them (29 Oct 2026).
+    await supabaseRest(
+      `auth_identities?user_id=eq.${pgValue(uid)}&provider=eq.${pgValue(provider)}` +
+        `&provider_uid=eq.${pgValue(uidValue)}&verified_at=is.null`,
+      { method: "PATCH", returning: false, body: JSON.stringify({ verified_at: new Date().toISOString() }) },
+    ).catch(() => {});
     return NextResponse.json({ ok: true, state: "linked", alreadyMine: true, provider });
   }
 

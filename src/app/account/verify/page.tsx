@@ -273,6 +273,11 @@ function VerifyContent() {
       <ul className="flex flex-col gap-3">
         {CHANNELS.map((channel) => {
           const mine = identities.find((i) => i.provider === channel.key);
+          // On file but never proved — an email typed into the profile form.
+          // Shown as such, with a way to prove it, rather than as "เชื่อมแล้ว":
+          // the staff shop and anything else that trusts this address only
+          // counts it once a code has been read out of that mailbox.
+          const unproved = Boolean(mine && !mine.verifiedAt && channel.how === "otp");
           const Icon = ICONS[channel.key];
           const isOpen = open === channel.key;
           return (
@@ -286,10 +291,11 @@ function VerifyContent() {
                     <p className="text-sm font-semibold text-brand-ink">{channel.label}</p>
                     <p className="truncate text-xs text-slate-500">
                       {mine ? mine.masked || "เชื่อมแล้ว" : channel.hint}
+                      {unproved && " · ยังไม่ได้ยืนยัน กดยืนยันเพื่อรับรหัส"}
                     </p>
                   </div>
                 </div>
-                {mine ? (
+                {mine && !unproved ? (
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-gradient-soft px-3 py-1.5 text-xs font-semibold text-brand-800">
                     <Check size={13} /> เชื่อมแล้ว
                   </span>
@@ -297,9 +303,11 @@ function VerifyContent() {
                   <button
                     type="button"
                     onClick={() => (isOpen ? reset() : (reset(), setOpen(channel.key)))}
-                    className="h-11 shrink-0 rounded-full px-4 text-xs font-semibold text-brand-800"
+                    className={`h-11 shrink-0 rounded-full px-4 text-xs font-semibold ${
+                      unproved && !isOpen ? "bg-amber-50 text-amber-800" : "text-brand-800"
+                    }`}
                   >
-                    {isOpen ? "ยกเลิก" : "เชื่อมต่อ"}
+                    {isOpen ? "ยกเลิก" : unproved ? "ยืนยัน" : "เชื่อมต่อ"}
                   </button>
                 ) : (
                   // Nothing to type: the provider answers for them. The
