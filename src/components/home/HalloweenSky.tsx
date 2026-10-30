@@ -102,7 +102,7 @@ function BatShape({ bat }: { bat: Bat }) {
 export default function HalloweenSky() {
   return (
     <span aria-hidden="true" className="pointer-events-none absolute inset-0 -z-20 overflow-hidden">
-      <SkyBackdrop name="halloween" position="50% 38%" />
+      <SkyBackdrop name="halloween" position="28% 35%" />
       {ROWS.map((row) => (
         <span
           key={row.seconds}
