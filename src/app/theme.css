@@ -616,12 +616,4 @@
   --color-popover-foreground: var(--foreground);
   --color-input: var(--border);
   --color-ring: var(--focus);
-  /* shadcn's error colour (HeroUI calls it danger). The shadcn files in
-     src/components/shadcn also had `accent` and `muted` swapped for
-     surface-soft: in HeroUI those mean the brand green and a grey text
-     colour, so a hovered menu item came out solid green or slate. Their
-     z-50 layers were raised to z-100, ui/Modal's level: at z-50 a sheet sat
-     under the chat bubble (z-80) and a select opened inside a Modal under
-     the Modal. Re-adding a component with `shadcn add -o` undoes both. */
-  --color-destructive: var(--danger);
 }
