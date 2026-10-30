@@ -48,10 +48,22 @@ export default function ShopHero({
     // Full-bleed: the sky is weather, and weather does not stop at a
     // 1280px card with rounded corners. The content inside still lines up
     // with the rest of the page, because the container is on the inner row.
-    <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#cfe9f8_0%,#e4f3fb_52%,#f7fcfe_100%)]">
+    // No overflow-hidden on the band, so the mark can hang out of the bottom
+    // of it. The clouds do not need it — SkyClouds clips itself — and it was
+    // the only thing here that did.
+    <section className="relative isolate bg-[linear-gradient(180deg,#cfe9f8_0%,#e4f3fb_52%,#f7fcfe_100%)]">
       <SkyClouds />
-      <div className="container-page relative flex items-center gap-4 py-7 md:gap-8 md:py-10">
-        <div className="min-w-0 flex-1">
+      <div className="container-page relative py-7 md:py-10">
+        {/* The heading gives the mark its side of the band rather than
+            running under it: the mark is out of flow, so nothing else
+            reserves the space for it. */}
+        <div
+          className={
+            icon
+              ? "max-w-[calc(100%-9rem)] sm:max-w-[calc(100%-12.5rem)] md:max-w-[calc(100%-15rem)] lg:max-w-[calc(100%-17rem)]"
+              : undefined
+          }
+        >
           <p className="text-[11px] font-medium tracking-[0.3em] text-brand-800">{eyebrow}</p>
           <h1 className="mt-1.5 text-2xl font-extrabold text-brand-1000 md:text-4xl">{title}</h1>
           <p className="mt-1.5 text-sm text-slate-600 md:text-base">{subtitle}</p>
@@ -62,19 +74,28 @@ export default function ShopHero({
           )}
         </div>
         {icon && (
-          // 128px at the widest and no larger: the artwork is 160px on its
-          // long side, so a box that fills the space this banner could spare
-          // would be drawing it past its own resolution. It keeps its share
-          // of the row on a phone rather than dropping out — the mark is how
-          // you know at a glance which shelf you are standing in front of,
-          // and that is worth more on a small screen, not less.
+          // Sat on the bottom edge of the band and pushed a fifth of its own
+          // height past it, so the object breaks the frame instead of sitting
+          // politely inside it. end is the gutter rather than 0 because these
+          // offsets resolve against the padding box, and the container's
+          // gutter is padding — at 0 the mark would hang off the page edge
+          // while every heading on the site stops short of it.
+          //
+          // pointer-events-none for the part that now covers the breadcrumb
+          // row: it is a picture, and a picture should not take a click away
+          // from the link underneath it.
+          //
+          // It keeps its share of the band on a phone rather than dropping
+          // out at a breakpoint — the mark is how you know at a glance which
+          // shelf you are in front of, and that is worth more on a small
+          // screen, not less.
           <Image
             src={icon}
             alt=""
             width={160}
             height={160}
             priority
-            className="size-16 shrink-0 object-contain drop-shadow-[0_8px_20px_rgba(0,53,41,0.14)] sm:size-24 md:size-28 lg:size-32"
+            className="pointer-events-none absolute bottom-0 end-[var(--page-gutter)] z-10 w-32 translate-y-[20%] object-contain drop-shadow-[0_14px_30px_rgba(0,53,41,0.18)] sm:w-44 md:w-52 lg:w-60"
           />
         )}
       </div>
