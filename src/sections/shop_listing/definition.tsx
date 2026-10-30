@@ -7,7 +7,6 @@ import SortMenu from "@/components/shop/SortMenu";
 import StickyToolbar from "@/components/shop/StickyToolbar";
 import Pagination from "@/components/Pagination";
 import InfiniteProducts from "@/components/shop/InfiniteProducts";
-import ViewToggle from "@/components/shop/ViewToggle";
 import ProductRow from "@/components/shop/ProductRow";
 import { categories } from "@/data/categories";
 import { toCardData, type ProductCardData } from "@/data/card";
@@ -107,7 +106,6 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
               />
               <div className="hidden items-center gap-2 lg:flex">
                 <SortMenu current={data.params} />
-                <ViewToggle current={data.params} />
               </div>
             </div>
           </StickyToolbar>

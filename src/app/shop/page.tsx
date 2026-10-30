@@ -10,7 +10,6 @@ import Pagination from "@/components/Pagination";
 import InfiniteProducts from "@/components/shop/InfiniteProducts";
 import ShopHero from "@/components/shop/ShopHero";
 import { ALL_PRODUCTS_BANNER, categoryBanner } from "@/lib/category-banner";
-import ViewToggle from "@/components/shop/ViewToggle";
 import ProductRow from "@/components/shop/ProductRow";
 import { pageMetadata } from "@/lib/site-pages";
 import { withCustomImages } from "@/lib/product-images";
@@ -74,7 +73,6 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
                 />
                 <div className="hidden items-center gap-2 lg:flex">
                   <SortMenu current={searchParams} />
-                  <ViewToggle current={searchParams} />
                 </div>
               </div>
             </StickyToolbar>
