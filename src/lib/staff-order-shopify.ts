@@ -40,18 +40,50 @@ type TxRow = {
  * Without one the purchase never appears in the employee's own order
  * history — which is the whole point of putting it in Shopify rather than
  * only in our own tables.
+ *
+ * The address decides, not the stored link. The order carries this email,
+ * and orderCreate refuses an order that names one customer while carrying
+ * an address belonging to another — "Customer email address has already
+ * been taken", which reads like a duplicate order and is really a
+ * disagreement about who the buyer is.
+ *
+ * It happens to anyone who signed up by phone before verifying a work
+ * address on /staff: the phone signup makes a customer with no email, the
+ * verification makes a second one with the email, and users.shopify_customer_id
+ * still points at the first. Seen on 30 Oct 2026, one employee out of
+ * eighteen, on the first staff order that ever reached Shopify.
+ *
+ * So the owner of the email wins, and the stored link is the fallback for
+ * the case the search cannot answer. The stale link is left alone rather
+ * than rewritten: which of someone's accounts is the real one is a question
+ * for a human with the merge button, not for an order sync.
  */
 async function resolveCustomerId(userId: string | null, email: string): Promise<string | null> {
-  if (userId) {
-    const users = await supabaseRest<{ shopify_customer_id: string | null }[]>(
-      `users?id=eq.${pgValue(userId)}&select=shopify_customer_id&limit=1`,
-    ).catch(() => []);
-    const existing = users?.[0]?.shopify_customer_id;
-    if (existing) return existing;
+  const linked = userId
+    ? (
+        await supabaseRest<{ shopify_customer_id: string | null }[]>(
+          `users?id=eq.${pgValue(userId)}&select=shopify_customer_id&limit=1`,
+        ).catch(() => [])
+      )?.[0]?.shopify_customer_id ?? null
+    : null;
+
+  const owner = (await findShopifyCustomerByEmail(email))?.id ?? null;
+  if (owner) {
+    if (linked && linked !== owner) {
+      console.warn("[staff-order-shopify] two Shopify customers for one employee", {
+        email,
+        linked,
+        usedInstead: owner,
+      });
+    }
+    return owner;
   }
 
-  const found = await findShopifyCustomerByEmail(email);
-  const id = found?.id ?? (await createShopifyCustomer({ email }))?.id ?? null;
+  // No customer owns the address. The stored link is then the best guess we
+  // have, and carrying an unclaimed email alongside it cannot clash.
+  if (linked) return linked;
+
+  const id = (await createShopifyCustomer({ email }))?.id ?? null;
 
   // Back-filled so the next order skips both lookups, and so the rest of the
   // account — order history, the group's other stores — finds them too.
