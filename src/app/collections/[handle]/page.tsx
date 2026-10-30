@@ -3,6 +3,7 @@ import { collections, getCollectionByHandle, getCollectionProducts } from "@/dat
 import ProductCard from "@/components/ProductCard";
 import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";
+import ShopHero from "@/components/shop/ShopHero";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { withSeoOverride, shareMeta } from "@/lib/seo-overrides";
 import { withCustomImages } from "@/lib/product-images";
@@ -51,27 +52,31 @@ async function CollectionPageWritten({ collection }: { collection: NonNullable<R
   ];
 
   return (
-    <div className="container-page py-6 md:py-8">
+    <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd(breadcrumbItems)) }} />
+      {/* The same banner /shop and /collections wear. The description is the
+          subtitle rather than a third line under the count: the banner has a
+          place for one sentence about what you are looking at, and that is
+          what a collection's description is. No thumbnail beside it, to match
+          the section that renders this page when the pages system owns it. */}
+      <ShopHero
+        eyebrow="COLLECTION"
+        title={collection.title}
+        subtitle={collection.description ?? ""}
+        count={items.length}
+      />
+
+      <div className="container-page py-6 md:py-8">
       <BackButton fallbackHref="/collections" />
       <Breadcrumb items={breadcrumbItems} />
-
-      {/* No thumbnail beside the heading, to match the section that renders
-          this page when the pages system owns it. */}
-      <div className="mt-4 min-w-0">
-        <h1 className="text-2xl font-bold text-brand-ink md:text-3xl">{collection.title}</h1>
-        <p className="mt-1 text-sm text-slate-500">{items.length} รายการ</p>
-        {collection.description && (
-          <p className="mt-2 max-w-2xl text-sm text-slate-500">{collection.description}</p>
-        )}
-      </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
         {items.map((p) => (
           <ProductCard key={p.slug} product={toCardData(p)} />
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

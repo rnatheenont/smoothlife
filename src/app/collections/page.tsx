@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { collections } from "@/data/collections";
 import Breadcrumb from "@/components/Breadcrumb";
+import ShopHero from "@/components/shop/ShopHero";
 import { pageMetadata } from "@/lib/site-pages";
 import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
 import { SystemPageBody } from "@/lib/pages/system-page";
@@ -17,10 +18,19 @@ function CollectionsIndexPageWritten() {
   const sorted = [...collections].sort((a, b) => b.productSlugs.length - a.productSlugs.length);
 
   return (
-    <div className="container-page py-6 md:py-8">
+    <>
+      {/* The same banner /shop wears. A page that lists things to browse
+          should open the same way wherever you land on it. */}
+      <ShopHero
+        eyebrow="COLLECTIONS"
+        title="คอลเลกชันทั้งหมด"
+        subtitle="อัปเดตตรงจากร้าน"
+        count={sorted.length}
+        countLabel="คอลเลกชัน"
+      />
+
+      <div className="container-page py-6 md:py-8">
       <Breadcrumb items={[{ label: "หน้าแรก", href: "/" }, { label: "คอลเลกชัน" }]} />
-      <h1 className="mt-4 text-2xl font-bold text-brand-ink md:text-3xl">คอลเลกชันทั้งหมด</h1>
-      <p className="mt-1 text-sm text-slate-500">{sorted.length} คอลเลกชัน อัปเดตตรงจากร้าน</p>
 
       {sorted.length === 0 ? (
         <p className="mt-8 text-sm text-slate-500">ยังไม่มีคอลเลกชันในขณะนี้</p>
@@ -55,7 +65,8 @@ function CollectionsIndexPageWritten() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 

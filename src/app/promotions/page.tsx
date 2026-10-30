@@ -4,6 +4,7 @@ import Image from "next/image";
 import { promotions } from "@/data/promotions";
 import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
+import ShopHero from "@/components/shop/ShopHero";
 import { pageMetadata } from "@/lib/site-pages";
 import { withCustomImages } from "@/lib/product-images";
 import { toCardData } from "@/data/card";
@@ -23,9 +24,17 @@ async function PromotionsPageWritten() {
     }),
   );
   return (
-    <div className="container-page py-8 md:py-10">
-      <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">New, Best Sellers and Promotions</h1>
-      <p className="text-sm text-slate-500 mb-8">รวมโปรโมชั่นและดีลพิเศษประจำเดือนจาก Smooth Life</p>
+    <>
+      {/* The same banner /shop wears. */}
+      <ShopHero
+        eyebrow="PROMOTIONS"
+        title="New, Best Sellers and Promotions"
+        subtitle="รวมโปรโมชั่นและดีลพิเศษประจำเดือนจาก Smooth Life"
+        count={promotions.length}
+        countLabel="โปรโมชัน"
+      />
+
+      <div className="container-page py-8 md:py-10">
 
       {sections.map(({ promo, display }) => {
         return (
@@ -50,7 +59,8 @@ async function PromotionsPageWritten() {
           </section>
         );
       })}
-    </div>
+      </div>
+    </>
   );
 }
 

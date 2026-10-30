@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { concerns, concernImage } from "@/data/categories";
+import ShopHero from "@/components/shop/ShopHero";
 import { pageMetadata } from "@/lib/site-pages";
 import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
 import { SystemPageBody } from "@/lib/pages/system-page";
@@ -11,9 +12,15 @@ export function generateMetadata() {
 
 function ConcernHubPageWritten() {
   return (
-    <div className="container-page py-8 md:py-10">
-      <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">ช้อปตามปัญหาผิวที่กังวล</h1>
-      <p className="text-sm text-slate-500 mb-8">เลือกดูผลิตภัณฑ์ที่ตรงกับความต้องการของผิวคุณ พร้อมคำแนะนำจากผู้เชี่ยวชาญ</p>
+    <>
+      {/* The same banner /shop wears. */}
+      <ShopHero
+        eyebrow="CONCERNS"
+        title="ช้อปตามปัญหาผิวที่กังวล"
+        subtitle="เลือกดูผลิตภัณฑ์ที่ตรงกับความต้องการของผิวคุณ พร้อมคำแนะนำจากผู้เชี่ยวชาญ"
+      />
+
+      <div className="container-page py-8 md:py-10">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
         {concerns.map((c) => (
           <Link key={c.slug} href={`/concern/${c.slug}`} className="group rounded-xl2 overflow-hidden shadow-card">
@@ -32,7 +39,8 @@ function ConcernHubPageWritten() {
           <span className="text-sm text-brand-800 font-semibold mt-2">ให้น้อง Smoothie ช่วยประเมิน →</span>
         </Link>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

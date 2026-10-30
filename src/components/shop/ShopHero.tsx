@@ -20,12 +20,17 @@ export default function ShopHero({
   title,
   subtitle,
   count,
+  countLabel = "รายการ",
 }: {
   eyebrow?: string;
   title: string;
   subtitle: string;
   /** How many products the current filters leave, said under the heading. */
   count?: number;
+  /** What the count counts. The banner is on pages that list collections and
+   *  promotions as well as products, and "12 รายการ" for twelve collections
+   *  is the wrong noun. */
+  countLabel?: string;
 }) {
   return (
     // The same sky the home page opens with. The banner used to be a flat
@@ -49,7 +54,7 @@ export default function ShopHero({
           <p className="mt-1.5 text-sm text-slate-600 md:text-base">{subtitle}</p>
           {typeof count === "number" && (
             <p className="mt-2 text-sm font-semibold text-brand-800">
-              {count.toLocaleString("th-TH")} รายการ
+              {count.toLocaleString("th-TH")} {countLabel}
             </p>
           )}
         </div>
