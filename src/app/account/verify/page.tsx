@@ -13,6 +13,7 @@ import { getFirebaseAuth } from "@/lib/firebase-client";
 import { toE164Thai } from "@/lib/thai-phone";
 import { askToSendOtp } from "@/lib/otp-allowance";
 import { CHANNELS, channelLabel, type ChannelKey } from "@/lib/account-identities";
+import { announceStaffAccessChanged } from "@/lib/use-staff-access";
 
 // "ช่องทางเข้าสู่ระบบ" — every way in, and one account behind them.
 //
@@ -189,6 +190,9 @@ function VerifyContent() {
       setDone(data.alreadyMine ? "ช่องทางนี้ผูกกับบัญชีนี้อยู่แล้ว" : "เชื่อมช่องทางเรียบร้อยแล้ว");
       reset();
       await load();
+      // A company address proved here can open the staff shop; the menus
+      // ask again now rather than on the next page load.
+      announceStaffAccessChanged();
     } catch (err) {
       console.error("[verify] proof failed", err);
       setError("รหัสไม่ถูกต้องหรือหมดอายุ กรุณาลองใหม่");
