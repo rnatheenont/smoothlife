@@ -65,7 +65,7 @@ async function ConcernDetailWritten({ concern }: { concern: (typeof concerns)[nu
       {items.length === 0 ? (
         <p className="text-slate-500 text-sm">เร็วๆ นี้จะมีสินค้าเพิ่มเติมสำหรับหมวดนี้</p>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
           {items.map((p) => (
             <ProductCard key={p.slug} product={toCardData(p)} />
           ))}

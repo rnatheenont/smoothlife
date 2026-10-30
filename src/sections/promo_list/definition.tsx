@@ -76,7 +76,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, She
               {item.subtitle && <p className="text-sm text-white/80">{item.subtitle}</p>}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
             {(shelves.get(item.slug) ?? []).map((p) => (
               <ProductCard key={p.slug} product={toCardData(p)} />
             ))}

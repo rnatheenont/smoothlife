@@ -86,7 +86,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
           {data.cards.length === 0 ? (
             <div className="py-20 text-center text-slate-500">{settings.emptyText}</div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
               {data.cards.map((p) => (
                 <ProductCard key={p.slug} product={p} />
               ))}

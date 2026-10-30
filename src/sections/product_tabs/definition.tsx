@@ -65,7 +65,7 @@ function Component({ settings, data }: SectionProps<Settings, Data>) {
   if (tabs.length === 0) return null;
 
   const panels = tabs.map((t) => (
-    <div key={t.label} className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4">
+    <div key={t.label} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
       {t.items.map((product) => (
         <ProductCard key={product.slug} product={toCardData(product)} />
       ))}

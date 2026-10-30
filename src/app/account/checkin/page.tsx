@@ -417,7 +417,7 @@ function CheckinContent() {
       {bestSellers.length > 0 && (
         <div>
           <h2 className="font-bold text-brand-ink mb-3">สินค้าขายดี ระหว่างรอครบรอบ</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
             {bestSellers.map((p) => (
               <ProductCard key={p.slug} product={p} />
             ))}

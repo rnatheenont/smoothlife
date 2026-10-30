@@ -37,7 +37,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Pro
         {settings.heading && (
           <h2 className="mb-4 text-lg font-bold text-brand-ink md:text-xl">{settings.heading}</h2>
         )}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
           {items.map((p) => (
             <ProductCard key={p.slug} product={p} />
           ))}

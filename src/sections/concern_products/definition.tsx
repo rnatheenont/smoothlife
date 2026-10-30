@@ -48,7 +48,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Pro
       {items.length === 0 ? (
         <p className="text-sm text-slate-500">{settings.emptyText}</p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
           {items.map((p) => (
             <ProductCard key={p.slug} product={p} />
           ))}

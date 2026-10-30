@@ -96,7 +96,7 @@ export default function OralCareAdvisorQuiz() {
 
         {recommended.length > 0 && (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5 mb-6">
               {recommended.map((p) => (
                 <ProductCard key={p.slug} product={p} />
               ))}

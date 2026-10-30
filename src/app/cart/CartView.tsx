@@ -487,7 +487,10 @@ export default function CartView() {
               <h2 className="font-bold text-brand-ink mb-3">
                 {t("อาจสนใจ: เซ็ต Bundle จากแบรนด์ที่คุณเลือก", "You might like: bundle deals from brands in your cart")}
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {/* Four, not the six the full-width listings use: this block sits in
+                  the cart's lg:col-span-2 column, which is two thirds of the
+                  page, so six here would be ~118px cards. */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {bundleSuggestions.map((p) => (
                   <ProductCard key={p.slug} product={p} />
                 ))}

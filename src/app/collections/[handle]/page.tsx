@@ -70,7 +70,7 @@ async function CollectionPageWritten({ collection }: { collection: NonNullable<R
       <BackButton fallbackHref="/collections" />
       <Breadcrumb items={breadcrumbItems} />
 
-      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
         {items.map((p) => (
           <ProductCard key={p.slug} product={toCardData(p)} />
         ))}

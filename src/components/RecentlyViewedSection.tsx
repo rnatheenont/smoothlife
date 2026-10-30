@@ -26,7 +26,7 @@ export default function RecentlyViewedSection({ excludeSlug }: { excludeSlug?: s
   return (
     <div className="mt-16">
       <SectionHeading title="สินค้าที่เพิ่งดู" subtitle="Recently viewed" />
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
         {viewed.map((p) => (
           <ProductCard key={p.slug} product={cardFromLite(p)} />
         ))}

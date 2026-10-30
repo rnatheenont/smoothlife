@@ -220,7 +220,7 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
           className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5"
         />
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
           {group.items.slice(0, PER_GROUP_XL).map((p, i) => (
             <div key={p.slug} className={shelfItemClass(i, 2)}>
               <ProductCard product={toCardData(p)} />
@@ -360,7 +360,7 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
             สินค้า<span translate="no">{brand.name}</span>ที่มีคนรีวิวมากที่สุด
           </h2>
           <p className="mb-4 text-xs text-slate-500">เรียงจากจำนวนรีวิวจริงของผู้ซื้อบนเว็บไซต์</p>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
             {bestsellers.map((p, i) => (
               <div key={p.slug} className={firstRowClass(i)}>
                 <ProductCard product={toCardData(p)} />

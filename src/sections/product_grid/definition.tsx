@@ -80,7 +80,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Pro
       {settings.title && (
         <SectionHeading title={settings.title} subtitle={settings.subtitle || undefined} href={settings.href || undefined} />
       )}
-      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
         {items.map((product) => (
           <ProductCard key={product.slug} product={toCardData(product)} />
         ))}

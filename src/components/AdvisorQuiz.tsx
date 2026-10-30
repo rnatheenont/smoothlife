@@ -116,7 +116,7 @@ export default function AdvisorQuiz() {
         </div>
 
         <h3 className="font-bold text-brand-ink mb-4">สินค้าที่แนะนำสำหรับคุณ</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5 mb-10">
           {recommended.map((p) => (
             <ProductCard key={p.slug} product={p} />
           ))}

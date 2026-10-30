@@ -182,7 +182,7 @@ export default function SearchContent() {
 
           <div className="mt-8">
             <h2 className="font-bold text-brand-ink mb-3">สินค้าแนะนำ</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
               {recommendedProducts.map((p) => (
                 <ProductCard key={p.slug} product={p} />
               ))}
@@ -204,7 +204,7 @@ export default function SearchContent() {
 
           <div>
             <h2 className="font-bold text-brand-ink mb-3">สินค้าแนะนำ</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
               {recommendedProducts.map((p) => (
                 <ProductCard key={p.slug} product={p} />
               ))}
@@ -231,7 +231,7 @@ export default function SearchContent() {
           <h2 className="font-bold text-brand-ink mb-3">
             สินค้า ({totalProducts || matchedProducts.length})
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
             {matchedProducts.map((p) => (
               <ProductCard key={p.slug} product={p} />
             ))}

@@ -119,7 +119,7 @@ export default function InfiniteProducts({
       {/* grid-virtualized: the cards past the viewport cost nothing to
           paint. See globals.css — it is what keeps a few hundred of them in
           one document from killing the tab on a phone. */}
-      <div className="grid-virtualized grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid-virtualized grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
         {[...initial, ...extra].map((p) => (
           <ProductCard key={p.slug} product={p} />
         ))}

@@ -131,7 +131,7 @@ async function CategoryPageWritten({
           {items.length === 0 ? (
             <div className="text-center py-20 text-slate-500">ไม่พบสินค้าในหมวดนี้</div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
               {items.map((p) => (
                 <ProductCard key={p.slug} product={toCardData(p)} />
               ))}

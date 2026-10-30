@@ -42,7 +42,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Pro
     <section className="container-page">
       <div className="mt-16">
         <SectionHeading title={settings.title} subtitle={settings.subtitle} />
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-5">
           {items.map((p) => (
             <ProductCard key={p.slug} product={p} />
           ))}
