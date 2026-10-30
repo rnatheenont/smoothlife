@@ -65,7 +65,11 @@ export default function CategoryIconRow({
           // and at lg the page has 976 — so `lg:overflow-visible` took the
           // scrollbar away from a row that still did not fit and pushed the
           // whole page sideways instead.
-          className="container-page flex gap-3 overflow-x-auto scroll-smooth py-5 scrollbar-none md:gap-5 xl:justify-center xl:gap-[clamp(1rem,2.6vw,2.4rem)] xl:overflow-visible">
+          // Deeper at the top than the bottom because the rendered icons
+          // stand taller than their disc and lean out of it. Below xl this
+          // row is a horizontal scroller, and a scroller clips what leaves
+          // it on *either* axis — so the room has to be inside the box.
+          className="container-page flex gap-3 overflow-x-auto scroll-smooth pt-10 pb-5 scrollbar-none md:gap-5 xl:justify-center xl:gap-[clamp(1rem,2.6vw,2.4rem)] xl:overflow-visible">
         {items.map((s) => (
           <li key={s.href} className="shrink-0">
             <Link
@@ -99,7 +103,12 @@ export default function CategoryIconRow({
                           height={56}
                           loading="lazy"
                           decoding="async"
-                          className="h-[46px] w-[46px] object-contain motion-safe:group-hover:animate-iconBob lg:h-[60px] lg:w-[60px]"
+                          // Bigger than the disc and sitting high in it, so
+                          // the object looks set into the circle rather than
+                          // printed on it. A negative margin rather than a
+                          // transform: the bob on hover is a transform and
+                          // would drop it back down mid-animation.
+                          className="-mt-[22px] h-[58px] w-[58px] object-contain motion-safe:group-hover:animate-iconBob lg:-mt-[30px] lg:h-[74px] lg:w-[74px]"
                         />
                       );
                     }
