@@ -281,11 +281,6 @@ export default function LoginContent({
    */
   async function handleStartEmail(e: React.FormEvent) {
     e.preventDefault();
-    const address = emailOtpAddress.trim();
-    if (!address) {
-      setEmailOtpError("กรุณากรอกอีเมล");
-      return;
-    }
     if (!agreedTerms) {
       setEmailOtpError("กรุณายอมรับข้อกำหนดการใช้บริการและนโยบายความเป็นส่วนตัวก่อน");
       return;
@@ -296,7 +291,11 @@ export default function LoginContent({
       // that comes back to life before the page changes invites a second
       // press.
       setEmailOtpSending(true);
-      window.location.href = shopifyAuthStartPath({ intent: "login", returnTo, hint: address });
+      window.location.href = shopifyAuthStartPath({ intent: "login", returnTo });
+      return;
+    }
+    if (!emailOtpAddress.trim()) {
+      setEmailOtpError("กรุณากรอกอีเมล");
       return;
     }
     await handleSendEmailOtp(e);
@@ -467,7 +466,9 @@ export default function LoginContent({
         </h1>
         {view === "start" && (
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            กรอกอีเมลเพื่อรับรหัสยืนยัน — ถ้ายังไม่มีบัญชี ระบบจะสมัครให้อัตโนมัติ
+            {SHOPIFY_EMAIL_LOGIN
+              ? "รับรหัสยืนยันทางอีเมล — ถ้ายังไม่มีบัญชี ระบบจะสมัครให้อัตโนมัติ"
+              : "กรอกอีเมลเพื่อรับรหัสยืนยัน — ถ้ายังไม่มีบัญชี ระบบจะสมัครให้อัตโนมัติ"}
           </p>
         )}
         {view === "password" && (
@@ -507,36 +508,57 @@ export default function LoginContent({
             <DemoBadge text="ระบบ OTP เบอร์โทรยังไม่ได้ตั้งค่า Firebase — ใช้ LINE หรืออีเมลแทนได้ค่ะ" />
           )}
 
-          {/* The address is asked for here rather than behind a button that
-              only reveals this same field. The front door costs no extra
-              tap; everything else does. */}
-          {/* noValidate so the consent box's own `required` cannot stop the
-              submit with a browser bubble before the handler says, in Thai
-              and in the page, which box is missing. The checkbox keeps the
-              attribute — a screen reader should still announce it. */}
-          <form onSubmit={handleStartEmail} noValidate className="flex flex-col gap-3">
-            <label htmlFor="login-email" className="text-xs font-semibold text-slate-500">
-              อีเมล
-            </label>
-            <div className="relative">
-              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                id="login-email"
-                type="email"
-                value={emailOtpAddress}
-                onChange={(e) => setEmailOtpAddress(e.target.value)}
-                placeholder="you@example.com"
-                autoComplete="email"
-                inputMode="email"
-                className="w-full rounded-full bg-surface-soft py-3.5 pl-11 pr-4 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
-              />
+          {/* Whether there is a field here depends on who sends the code.
+              
+              With Shopify customer accounts on, Shopify asks for the address
+              on its own page and Shopify is what sends the code. A field
+              here asked the same question twice — and the second time on a
+              page that already had the answer typed into it, with nothing
+              but a small arrow to say it was not finished. People read that
+              as "email login has no code box" and stopped there. So: no
+              second question, just the door.
+              
+              With it off, the code is ours to send and the boxes to type it
+              into are the next thing on this same card, so the address is
+              asked for here. */}
+          {SHOPIFY_EMAIL_LOGIN ? (
+            <div className="flex flex-col gap-3">
+              <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
+              {emailOtpError && <p className="text-xs text-rose-700">{emailOtpError}</p>}
+              <Button type="button" size="lg" loading={emailOtpSending} onClick={handleStartEmail}>
+                <Mail size={17} aria-hidden />
+                {emailOtpSending ? "กำลังเปิดหน้ายืนยัน…" : "เข้าสู่ระบบด้วยอีเมล"}
+              </Button>
             </div>
-            <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
-            {emailOtpError && <p className="text-xs text-rose-700">{emailOtpError}</p>}
-            <Button type="submit" size="lg" loading={emailOtpSending}>
-              {emailOtpSending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
-            </Button>
-          </form>
+          ) : (
+            /* noValidate so the consent box's own `required` cannot stop the
+               submit with a browser bubble before the handler says, in Thai
+               and in the page, which box is missing. The checkbox keeps the
+               attribute — a screen reader should still announce it. */
+            <form onSubmit={handleStartEmail} noValidate className="flex flex-col gap-3">
+              <label htmlFor="login-email" className="text-xs font-semibold text-slate-500">
+                อีเมล
+              </label>
+              <div className="relative">
+                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  id="login-email"
+                  type="email"
+                  value={emailOtpAddress}
+                  onChange={(e) => setEmailOtpAddress(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  inputMode="email"
+                  className="w-full rounded-full bg-surface-soft py-3.5 pl-11 pr-4 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
+                />
+              </div>
+              <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
+              {emailOtpError && <p className="text-xs text-rose-700">{emailOtpError}</p>}
+              <Button type="submit" size="lg" loading={emailOtpSending}>
+                {emailOtpSending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
+              </Button>
+            </form>
+          )}
 
           <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-slate-200" />
