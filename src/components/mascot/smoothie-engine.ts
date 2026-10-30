@@ -24,7 +24,7 @@ export const VIEW_BUST: View = { x0: 110, x1: 890, y0: -40, y1: 740 };
  * so a changed file under the same URL never reaches anyone who has visited
  * before — the query string makes it a new URL.
  */
-export const MASCOT_ASSET_VERSION = "2026-10-30b";
+export const MASCOT_ASSET_VERSION = "2026-10-30c";
 export const mascotAsset = (file: string) => `/mascot/rig/${file}?v=${MASCOT_ASSET_VERSION}`;
 
 /** Gestures and moods the storefront may trigger (sad / angry / love are left out on purpose). */
@@ -123,6 +123,11 @@ const HAT_BOX = [346, -51, 690, 157];
 const PUMPKIN_BOX = [11, 740, 225, 956];
 // Christmas props: smoothlife-mascot/christmas/build_christmas.py.
 const SANTA_HAT_BOX = [374, -71, 718, 167];
+// Outfits that change clothes, not just add props: these parts load
+// "<part>-<theme>.webp" instead (Santa suit: smoothlife-mascot/christmas/build_santa.py).
+const SUIT: Partial<Record<MascotTheme, string[]>> = {
+  christmas: ["body", "arm-left", "arm-left-down", "arm-right", "arm-right-up", "arm-left-hand", "arm-right-hand"],
+};
 const GIFT_BOX = [20, 755, 217, 959];
 const LAYERS: LayerDef[] = [
   // stands on the ground beside the feet — the "world" bone never moves, so it stays put when he jumps
@@ -173,6 +178,8 @@ export class SmoothieEngine {
   private view: View;
   private reduce: boolean;
   private base: string;
+  private suit: Set<string>;
+  private theme: MascotTheme;
   private onGround?: EngineOptions["onGround"];
 
   private cur: string | null = null; private curT = 0; private prevPose: Pose | null = null;
@@ -202,6 +209,8 @@ export class SmoothieEngine {
     // Not in BONES, so solve() never moves it: for props that stand on the ground.
     this.B.world = { name: "world", parent: null, px: 0, py: 0, m: [1, 0, 0, 1, 0, 0] };
     const theme = opts.theme ?? "default";
+    this.theme = theme;
+    this.suit = new Set(SUIT[theme] ?? []);
 
     const sh = (t: number, src: string) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s); return s; };
     const prog = gl.createProgram();
@@ -248,7 +257,8 @@ export class SmoothieEngine {
   }
   private async loadTexture(l: Layer) {
     const gl = this.gl;
-    const url = `${this.base}${l.src ?? l.name}.webp?v=${MASCOT_ASSET_VERSION}`;
+    const part = l.src ?? l.name;
+    const url = `${this.base}${part}${this.suit.has(part) ? `-${this.theme}` : ""}.webp?v=${MASCOT_ASSET_VERSION}`;
     const r = await fetch(url);
     if (!r.ok) throw new Error(`${url}: ${r.status}`);
     const bmp = await createImageBitmap(await r.blob(), { premultiplyAlpha: "premultiply" });
