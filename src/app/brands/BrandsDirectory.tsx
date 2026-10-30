@@ -61,7 +61,7 @@ function BrandCard({ b }: { b: BrandEntry }) {
             src={b.image}
             alt={b.name}
             fill
-            sizes="(max-width: 640px) 42vw, (max-width: 1024px) 28vw, 200px"
+            sizes="(max-width: 640px) 30vw, (max-width: 1024px) 28vw, 200px"
             className="object-contain p-1"
           />
         ) : (
@@ -151,14 +151,18 @@ export default function BrandsDirectory({
           <h2 className="text-[13px] font-bold text-brand-800">
             แบรนด์ในเครือ Smooth Life
           </h2>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3 md:gap-4">
+          <div className="mt-3 grid grid-cols-3 gap-2.5 sm:gap-3 md:gap-4">
             {houseShown.map((b) => (
               <Link
                 key={b.slug}
                 href={`/brands/${b.slug}`}
-                className="flex items-center gap-4 rounded-xl2 border border-brand-emerald/30 bg-brand-gradient-soft p-4 transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-brand-emerald hover:shadow-cardHover"
+                // Stacked and centred at three across, back to a row once
+                // there is width for one. A 390px phone gives each of these
+                // about 111px, and a logo beside two lines of Thai does not
+                // go in that.
+                className="flex flex-col items-center gap-2 rounded-xl2 border border-brand-emerald/30 bg-brand-gradient-soft p-3 text-center transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-brand-emerald hover:shadow-cardHover sm:flex-row sm:items-center sm:gap-4 sm:p-4 sm:text-left"
               >
-                <span className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-white/70 md:size-24">
+                <span className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-white/70 sm:size-20 md:size-24">
                   {b.image && (
                     <Image
                       src={b.image}
@@ -172,14 +176,14 @@ export default function BrandsDirectory({
                 <span className="min-w-0">
                   <span
                     translate="no"
-                    className="block text-lg font-bold text-brand-ink"
+                    className="block text-[13px] font-bold leading-tight text-brand-ink sm:text-lg"
                   >
                     {b.name}
                   </span>
-                  <span className="mt-0.5 block line-clamp-2 text-[13px] text-slate-600">
+                  <span className="mt-0.5 hidden text-[13px] text-slate-600 sm:line-clamp-2">
                     {b.tagline}
                   </span>
-                  <span className="mt-1.5 block text-[12px] font-semibold text-brand-800">
+                  <span className="mt-1 block text-[11px] font-semibold text-brand-800 sm:mt-1.5 sm:text-[12px]">
                     {b.productCount} สินค้า
                   </span>
                 </span>
@@ -262,7 +266,7 @@ export default function BrandsDirectory({
           </button>
         </div>
       ) : (
-        <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5 xl:grid-cols-6">
+        <ul className="mt-5 grid grid-cols-3 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5 xl:grid-cols-6">
           {filtered.map((b) => (
             <li key={b.slug}>
               <BrandCard b={b} />
