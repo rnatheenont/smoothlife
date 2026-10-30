@@ -9,7 +9,8 @@
 
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 import { SMOOTHIE_ACTIONS, SmoothieEngine, VIEW_BUST, VIEW_FULL, mascotAsset, type View } from "./smoothie-engine";
-import { mascotTheme, themedFile, type MascotTheme } from "./mascot-theme";
+import { themedFile, type MascotTheme } from "./mascot-theme";
+import { useMascotTheme } from "./mascot-theme-context";
 
 export type SmoothieRigHandle = {
   play: (action: string) => void;
@@ -36,7 +37,7 @@ type Props = {
   /** Soft shadow under the feet that shrinks when it jumps. */
   shadow?: boolean;
   alt?: string;
-  /** Outfit. Leave it out to follow the calendar (mascot-theme.ts); read once per mount. */
+  /** Outfit. Leave it out to wear what the admin chose (/admin/mascot); read once per mount. */
   theme?: MascotTheme;
 };
 
@@ -66,7 +67,8 @@ export default function SmoothieRig({
   alt = "",
   theme: themeProp,
 }: Props) {
-  const theme = themeProp ?? mascotTheme();
+  const siteTheme = useMascotTheme();
+  const theme = themeProp ?? siteTheme;
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shadowRef = useRef<HTMLSpanElement>(null);

@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import SmoothieRig, { type SmoothieRigHandle } from "@/components/mascot/SmoothieRig";
-import { mascotTheme, type MascotTheme } from "@/components/mascot/mascot-theme";
+import { type MascotTheme } from "@/components/mascot/mascot-theme";
+import { useMascotTheme } from "@/components/mascot/mascot-theme-context";
 import { useLang } from "@/lib/lang-context";
 
 // Every move the storefront can ask Smoothie for, so the team can see them in
@@ -17,7 +18,7 @@ const GESTURES: [string, string, string][] = [
   ["think", "คิด", "Think"],
   ["run", "วิ่ง", "Run"],
 ];
-// The outfits, to preview either one whatever the date (the site follows mascot-theme.ts).
+// The outfits, to preview either one whatever the site is wearing (set in /admin/mascot).
 const THEMES: [MascotTheme, string, string][] = [
   ["default", "ชุดปกติ", "Everyday"],
   ["halloween", "ฮาโลวีน", "Halloween"],
@@ -33,7 +34,8 @@ const MOODS: [string, string, string][] = [
 export default function MascotShowcase() {
   const { t } = useLang();
   const rig = useRef<SmoothieRigHandle>(null);
-  const [theme, setTheme] = useState<MascotTheme>(() => mascotTheme());
+  const siteTheme = useMascotTheme();
+  const [theme, setTheme] = useState<MascotTheme>(siteTheme);
   const row = (title: string, items: [string, string, string][]) => (
     <div className="flex flex-col items-center gap-2">
       <p className="text-xs font-semibold tracking-wide text-slate-500">{title}</p>

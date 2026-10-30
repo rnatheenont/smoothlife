@@ -5,7 +5,8 @@ import Image from "next/image";
 import SmoothieRig from "@/components/mascot/SmoothieRig";
 import ChatMascot from "@/components/chat/ChatMascot";
 import { mascotAsset } from "@/components/mascot/smoothie-engine";
-import { mascotTheme, themedFile } from "@/components/mascot/mascot-theme";
+import { themedFile } from "@/components/mascot/mascot-theme";
+import { useMascotTheme } from "@/components/mascot/mascot-theme-context";
 import {
   Send,
   Loader2,
@@ -141,6 +142,7 @@ export default function ChatConversation({
   const { lang, t } = useLang();
   const { user } = useAuth();
   const ui = SIZES[variant];
+  const mascotOutfit = useMascotTheme();
 
   const {
     messages,
@@ -336,7 +338,7 @@ export default function ChatConversation({
                     className={`relative ${ui.mascot} -mt-0.5 shrink-0 overflow-hidden rounded-full bg-brand-50 ring-1 ring-brand-100`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element -- versioned URL (see mascotAsset); 128px file, nothing to optimise */}
-                    <img src={mascotAsset(themedFile(mascotTheme(), "avatar.webp"))} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                    <img src={mascotAsset(themedFile(mascotOutfit, "avatar.webp"))} alt="" className="absolute inset-0 h-full w-full object-cover" />
                   </span>
                 )}
                 <div

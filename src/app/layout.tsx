@@ -20,6 +20,8 @@ import { headerLinks } from "@/lib/pages/header-links-server";
 import { announcementVisible } from "@/lib/pages/announcement";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import OldBrowserNotice from "@/components/OldBrowserNotice";
+import { MascotThemeProvider } from "@/components/mascot/mascot-theme-context";
+import { mascotThemeSetting } from "@/lib/mascot-theme-server";
 
 // Noto Sans Thai, self-hosted through next/font so there is no request to
 // Google at page load and no layout shift when it arrives. Loaded as the
@@ -117,6 +119,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const bar = await announcement();
   const tabs = await mobileTabs();
   const navLinks = await headerLinks();
+  // Smoothie's outfit, chosen in /admin/mascot.
+  const mascotSetting = await mascotThemeSetting();
   const announcementNode = announcementVisible(bar, new Date()) ? <AnnouncementBar bar={bar} /> : null;
   return (
     <html lang="th" className={notoSansThai.variable}>
@@ -140,6 +144,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           dangerouslySetInnerHTML={{ __html: jsonLdScript(organizationJsonLd()) }}
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteJsonLd()) }} />
+        <MascotThemeProvider setting={mascotSetting}>
         <Providers tabs={tabs}>
           <SiteChrome
           ticker={tickerProducts()}
@@ -151,6 +156,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {children}
           </SiteChrome>
         </Providers>
+        </MascotThemeProvider>
         <Analytics />
         <SpeedInsights />
         <GoogleTagManager />

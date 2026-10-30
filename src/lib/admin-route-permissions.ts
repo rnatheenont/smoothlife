@@ -242,6 +242,8 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
     permission: "subscription_products.manage",
   },
   { prefix: "/api/admin/line-rich-menu", permission: "line_rich_menu.manage" },
+  // Smoothie's outfit on the storefront — storefront look, same people as the pages.
+  { prefix: "/api/admin/mascot-theme", permission: "pages.edit" },
   { prefix: "/api/admin/tracking-sync", permission: "tracking_sync.manage" },
   // Reading past signals is part of planning content; only marketing (and
   // owner/admin via '*') can trigger a sync, since it calls an external API
