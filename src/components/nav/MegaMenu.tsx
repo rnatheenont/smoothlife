@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { MenuCategory } from "@/data/nav-menu";
 import { CATEGORY_ICON } from "@/components/icons/CategoryIcons";
+import { iconThemeSrc } from "@/lib/category-icon-theme";
 
 // The shop menu, on a screen with a pointer.
 //
@@ -160,12 +161,29 @@ export default function MegaMenu({
                       }`}
                     >
                       <span className="flex items-center gap-2.5">
-                        {/* The same drawn marks the home and /shop rows use.
-                            These were packshots of whatever each category
-                            sold best that week, which at 28px is a pale
-                            smudge and a different smudge every rebuild. */}
+                        {/* The rendered set the shortcut strip wears, not the
+                            line marks: the same six categories are a row of
+                            little 3D objects a few hundred pixels below this
+                            menu, and two drawings of one thing on one screen
+                            is one drawing too many. Pinned to "3d" rather than
+                            following the strip's theme setting — that setting
+                            is a section's, and this menu is in the header on
+                            every page, including the ones that have no
+                            sections at all. */}
                         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/80 ring-1 ring-slate-200/70">
                           {(() => {
+                            const src = iconThemeSrc("3d", c.slug);
+                            if (src) {
+                              return (
+                                <Image
+                                  src={src}
+                                  alt=""
+                                  width={64}
+                                  height={64}
+                                  className="size-8 object-contain"
+                                />
+                              );
+                            }
                             const Icon = CATEGORY_ICON[c.slug];
                             return Icon ? (
                               <Icon

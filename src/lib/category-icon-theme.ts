@@ -22,26 +22,43 @@ export const ICON_THEME_LABEL: Record<IconTheme, string> = {
 /**
  * Which icon keys each rendered set actually has a picture for.
  *
- * The sale disc is not in here because it carries the word "Sale" rather
- * than a mark, and three of the keys the strip knows (personal-care,
- * body-care, all-categories) were never drawn for these sets. A key that is
- * missing falls back to its line mark rather than to a gap — see
- * CategoryIconRow.
+ * The sale disc is not in here because it carries the word "Sale" rather than
+ * a mark, and all-categories was never drawn. A key that is missing falls back
+ * to its line mark rather than to a gap — see CategoryIconRow.
+ *
+ * personal-care and body-care only exist in the 3d set. They were drawn for
+ * the header menu, whose six categories are the shop's own taxonomy rather
+ * than this strip's eight shortcuts — and those two are in it. The halloween
+ * set has no pictures for them, which is why hasRenderedIcon takes the theme.
  */
-const RENDERED_KEYS = [
-  "top-brand",
-  "skincare",
-  "oral-care",
-  "wellness",
-  "hair-care",
-  "for-men",
-  "accessories",
-  "first-aid",
-] as const;
+const RENDERED_KEYS: Record<Exclude<IconTheme, "line">, readonly string[]> = {
+  "3d": [
+    "top-brand",
+    "skincare",
+    "oral-care",
+    "wellness",
+    "hair-care",
+    "for-men",
+    "accessories",
+    "first-aid",
+    "personal-care",
+    "body-care",
+  ],
+  halloween: [
+    "top-brand",
+    "skincare",
+    "oral-care",
+    "wellness",
+    "hair-care",
+    "for-men",
+    "accessories",
+    "first-aid",
+  ],
+};
 
 export function iconThemeSrc(theme: IconTheme, key: string | undefined): string | null {
   if (!key || theme === "line") return null;
-  if (!(RENDERED_KEYS as readonly string[]).includes(key)) return null;
+  if (!RENDERED_KEYS[theme].includes(key)) return null;
   return `/category-icons/${theme}/${key}.png`;
 }
 
