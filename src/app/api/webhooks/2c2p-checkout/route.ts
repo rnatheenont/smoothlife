@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { twoC2PConfigured, verifyPaymentCallback } from "@/lib/2c2p";
 import { createPaidShopifyOrder } from "@/lib/shopify-admin";
+import { linkedShopifyCustomerId } from "@/lib/link-shopify-customer";
 import { giftOrderTags } from "@/lib/checkout-gifts-rules";
 import { confirmStock, releaseStock } from "@/lib/stock-reservation";
 import { notifyOrderPaid } from "@/lib/order-notify";
@@ -10,6 +11,8 @@ import { handleOrdersPaid } from "@/lib/order-paid";
 type TransactionRow = {
   id: string;
   cart_token: string;
+  /** Null for a guest checkout; the buyer's account otherwise. */
+  user_id: string | null;
   status: string;
   amount: number;
   currency_code: string;
@@ -55,7 +58,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [transaction] = await supabaseRest<TransactionRow[]>(
-    `payment_transactions?invoice_no=eq.${callback.invoiceNo}&select=id,cart_token,status,amount,currency_code,line_items,contact_email,contact_phone,shipping_address,discount_code,discount_amount,campaign_discount_code,campaign_discount_amount`
+    `payment_transactions?invoice_no=eq.${callback.invoiceNo}&select=id,cart_token,status,amount,currency_code,line_items,contact_email,contact_phone,shipping_address,discount_code,discount_amount,campaign_discount_code,campaign_discount_amount,user_id`
   );
   if (!transaction) {
     console.error("[webhooks/2c2p-checkout] no transaction matches invoice", callback.invoiceNo);
@@ -101,6 +104,12 @@ export async function POST(req: NextRequest) {
   try {
     const addr = transaction.shipping_address;
     const order = await createPaidShopifyOrder({
+      // The account's own Shopify record, so the order lands on it instead
+      // of on whatever the email matches — see linkedShopifyCustomerId.
+      // The flash sale and the staff sale have always passed this; the
+      // shop's main checkout never did, which is where the duplicate
+      // customer records came from.
+      customerId: await linkedShopifyCustomerId(transaction.user_id),
       email: transaction.contact_email ?? undefined,
       lineItems: transaction.line_items ?? [],
       currencyCode: transaction.currency_code,
