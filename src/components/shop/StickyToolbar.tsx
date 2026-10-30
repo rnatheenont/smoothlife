@@ -25,8 +25,24 @@ export default function StickyToolbar({ children }: { children: ReactNode }) {
     <div
       ref={bar}
       className={clsx(
-        "bleed-page sticky top-(--app-header-h) z-30 mb-1.5 py-2 transition-colors duration-200",
-        stuck && "glass-bar",
+        "bleed-page sticky top-(--app-header-h) z-30 mb-1.5 py-2",
+        "transition-[background-color,max-width,border-radius,box-shadow,padding] duration-200",
+        stuck
+          // Pinned, it is a card over the grid like the header above it, so
+          // it takes the header's shape: the same 1024px, centred, with the
+          // same corners. Running the full width while the bar above it had
+          // pulled its ends in made the two read as unrelated layers.
+          //
+          // px-4 replaces what bleed-page's padding was doing once the box
+          // stops being full-bleed, and the lg: prefixes keep the phone as it
+          // was — there the header insets by a margin rather than capping its
+          // width, and so does this.
+          //
+          // mx-auto! because bleed-page sets margin-inline itself, to a
+          // negative gutter, and plain mx-auto lost to it: the bar came out
+          // the right width and still hard against the left edge.
+          ? "glass-bar lg:mx-auto! lg:max-w-5xl lg:rounded-2xl lg:px-4"
+          : "",
       )}
     >
       {children}

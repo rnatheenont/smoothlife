@@ -307,7 +307,17 @@ export default function Header({
         </button>
 
         <Link href="/" aria-label="Smoothlife.com หน้าแรก" className="shrink-0 justify-self-center">
-          <BrandLogo priority className="h-6 md:h-7 lg:h-10" />
+          {/* Smaller than it was, and smaller again once the bar detaches.
+              40px of wordmark was set when the bar was a full-width band
+              three rows deep; in a 70px floating card next to a 40px search
+              field it was the loudest thing in the row. The height animates
+              with the rest of the bar rather than snapping. */}
+          <BrandLogo
+            priority
+            className={`transition-[height] duration-300 ${
+              scrolled ? "h-5 md:h-6 lg:h-7" : "h-6 md:h-7 lg:h-8"
+            }`}
+          />
         </Link>
 
         {/* A plain grey field with the magnifier inside it, per the design —
