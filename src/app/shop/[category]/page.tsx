@@ -9,7 +9,6 @@ import { categoryBanner } from "@/lib/category-banner";
 import ShopFilters from "@/components/ShopFilters";
 import SortMenu from "@/components/shop/SortMenu";
 import StickyToolbar from "@/components/shop/StickyToolbar";
-import CategoryChips from "@/components/CategoryChips";
 import SortSelect from "@/components/SortSelect";
 import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";

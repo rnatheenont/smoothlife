@@ -73,6 +73,12 @@ const collection = (): PageDoc =>
  * what the hand-written page did, and the room above is the tighter one
  * (12px on a phone against 40 on a desktop) for the same reason.
  *
+ * No chip row above the banner. It was seven pills naming the six
+ * categories and "ทั้งหมด", sitting above the thing that already says
+ * which category you are in — and the toolbar under the banner carries a
+ * หมวดหมู่ menu that does the same job from where the filters are. The
+ * section stays in the registry for anyone who wants it back on a page.
+ *
  * The trail sits under the banner rather than over it. Above, it was the
  * first thing on the page and it pushed the banner down off the fold; the
  * banner is what says where you are, so it goes first and the trail says
@@ -81,7 +87,6 @@ const collection = (): PageDoc =>
  */
 const category = (): PageDoc =>
   doc([
-    { type: "category_chips", v: 1, settings: {} },
     { type: "category_header", v: 1, settings: { countSuffix: "รายการ" } },
     {
       type: "breadcrumb",
