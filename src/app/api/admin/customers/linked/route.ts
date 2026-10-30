@@ -26,7 +26,7 @@ type UserRow = {
   shopify_customer_id: string | null;
   created_at: string;
 };
-type IdentityRow = { user_id: string; provider_uid: string };
+type IdentityRow = { user_id: string; provider: string; provider_uid: string };
 
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
@@ -57,13 +57,27 @@ export async function GET(req: NextRequest) {
   // One more read for the sign-in addresses: a row with only a display name
   // is not enough to recognise someone by, and the e-mail is what support
   // has in front of them.
+  //
+  // The number comes from here too, not only from users.phone. That column
+  // is the one somebody types into their profile, and a person who signed
+  // up by OTP has never been asked to — 43 of the 59 phone accounts have it
+  // empty, so the list showed "—" beside a number we had all along, and
+  // four of them had nothing on the row at all. /api/auth/session has
+  // always read it this way (`user.phone || phoneIdentity`); this is the
+  // same rule, in the one place that shows these rows side by side.
   const list = accounts.map((a) => `"${a.id}"`).join(",");
   const identities = list
     ? await supabaseRest<IdentityRow[]>(
-        `auth_identities?select=user_id,provider_uid&provider=eq.email&user_id=in.(${encodeURIComponent(list)})`
+        `auth_identities?select=user_id,provider,provider_uid&provider=in.(email,phone_otp)` +
+          `&user_id=in.(${encodeURIComponent(list)})`
       ).catch((): IdentityRow[] => [])
     : [];
-  const emailOf = new Map(identities.map((i) => [i.user_id, i.provider_uid]));
+  const emailOf = new Map(
+    identities.filter((i) => i.provider === "email").map((i) => [i.user_id, i.provider_uid]),
+  );
+  const otpPhoneOf = new Map(
+    identities.filter((i) => i.provider === "phone_otp").map((i) => [i.user_id, i.provider_uid]),
+  );
 
   return NextResponse.json({
     ok: true,
@@ -73,7 +87,7 @@ export async function GET(req: NextRequest) {
     accounts: accounts.map((a) => ({
       id: a.id,
       displayName: a.display_name,
-      phone: a.phone,
+      phone: a.phone ?? otpPhoneOf.get(a.id) ?? null,
       email: emailOf.get(a.id) ?? null,
       shopifyCustomerId: a.shopify_customer_id,
       createdAt: a.created_at,
