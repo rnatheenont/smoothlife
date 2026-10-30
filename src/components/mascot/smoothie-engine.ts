@@ -118,12 +118,16 @@ const FACES: Record<string, number[]> = {
   happy: [176, 6, 818, 568], laugh: [176, 14, 818, 568],
   surprised: [176, 20, 818, 568], curious: [176, 17, 858, 568], worried: [176, 17, 818, 568],
 };
-// Halloween props: boxes come from smoothlife-mascot/halloween/build_halloween.py.
+// Halloween props (the hat box is still named HAT_BOX): boxes come from smoothlife-mascot/halloween/build_halloween.py.
 const HAT_BOX = [346, -51, 690, 157];
 const PUMPKIN_BOX = [11, 740, 225, 956];
+// Christmas props: smoothlife-mascot/christmas/build_christmas.py.
+const SANTA_HAT_BOX = [374, -71, 718, 167];
+const GIFT_BOX = [20, 755, 217, 959];
 const LAYERS: LayerDef[] = [
   // stands on the ground beside the feet — the "world" bone never moves, so it stays put when he jumps
   { name: "halloween-pumpkin", theme: "halloween", bbox: PUMPKIN_BOX, texBox: PUMPKIN_BOX, grid: [1, 1], w: () => [["world", 1]] },
+  { name: "christmas-gift", theme: "christmas", bbox: GIFT_BOX, texBox: GIFT_BOX, grid: [1, 1], w: () => [["world", 1]] },
   { name: "leg-left", bbox: [268, 769, 474, 930], grid: [6, 6], w: () => [["legL", 1]] },
   { name: "leg-right", bbox: [518, 772, 724, 932], grid: [6, 6], w: () => [["legR", 1]] },
   { name: "arm-right", armRSide: "down", bbox: [597, 559, 795, 825], grid: [12, 12], w: ARM_R },
@@ -141,6 +145,7 @@ const LAYERS: LayerDef[] = [
   ...Object.entries(FACES).map(([id, bbox]): LayerDef => ({ name: "face-" + id, react: id, bbox, grid: [26, 22], w: headWeights })),
   // over the hood and every face, under the raised mittens
   { name: "halloween-hat", theme: "halloween", bbox: HAT_BOX, texBox: HAT_BOX, grid: [4, 3], w: () => [["head", 1]] },
+  { name: "christmas-hat", theme: "christmas", bbox: SANTA_HAT_BOX, texBox: SANTA_HAT_BOX, grid: [4, 3], w: () => [["head", 1]] },
   { name: "arm-left-hand", armSide: "front", bbox: [129, 406, 377, 657], grid: [16, 16], w: ARM_L },
   { name: "arm-right-hand", armRSide: "up", bbox: [614, 553, 802, 829], grid: [16, 16], w: ARM_R },
 ];

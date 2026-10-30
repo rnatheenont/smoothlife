@@ -5,16 +5,17 @@
 // To add a season: a row in SEASONS, its layers in smoothie-engine.ts, the
 // value in MASCOT_THEMES, and the same value in the table's check constraint.
 
-export type MascotTheme = "default" | "halloween";
+export type MascotTheme = "default" | "halloween" | "christmas";
 export type MascotThemeSetting = "auto" | MascotTheme;
 
-export const MASCOT_THEMES: MascotTheme[] = ["default", "halloween"];
+export const MASCOT_THEMES: MascotTheme[] = ["default", "halloween", "christmas"];
 export const isMascotThemeSetting = (v: unknown): v is MascotThemeSetting =>
   v === "auto" || MASCOT_THEMES.includes(v as MascotTheme);
 
 /** Inclusive date windows, as month-day in Bangkok time. */
 export const SEASONS: { theme: MascotTheme; from: string; to: string }[] = [
   { theme: "halloween", from: "10-25", to: "11-01" },
+  { theme: "christmas", from: "12-01", to: "12-31" },
 ];
 
 /** What the calendar says, ignoring the setting. */
