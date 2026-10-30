@@ -24,7 +24,7 @@ export const VIEW_BUST: View = { x0: 110, x1: 890, y0: -40, y1: 740 };
  * so a changed file under the same URL never reaches anyone who has visited
  * before — the query string makes it a new URL.
  */
-export const MASCOT_ASSET_VERSION = "2026-10-30";
+export const MASCOT_ASSET_VERSION = "2026-10-30b";
 export const mascotAsset = (file: string) => `/mascot/rig/${file}?v=${MASCOT_ASSET_VERSION}`;
 
 /** Gestures and moods the storefront may trigger (sad / angry / love are left out on purpose). */
@@ -119,7 +119,7 @@ const FACES: Record<string, number[]> = {
   surprised: [176, 20, 818, 568], curious: [176, 17, 858, 568], worried: [176, 17, 818, 568],
 };
 // Halloween props: boxes come from smoothlife-mascot/halloween/build_halloween.py.
-const HAT_BOX = [368, -31, 667, 151];
+const HAT_BOX = [346, -51, 690, 157];
 const PUMPKIN_BOX = [11, 740, 225, 956];
 const LAYERS: LayerDef[] = [
   // stands on the ground beside the feet — the "world" bone never moves, so it stays put when he jumps
