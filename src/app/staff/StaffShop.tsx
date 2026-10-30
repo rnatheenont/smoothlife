@@ -522,6 +522,30 @@ export default function StaffShop() {
   const [query, setQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
 
+  /**
+   * How tall the bottom bar actually is.
+   *
+   * It was a constant — 80 — chosen when the bar was one row of buttons.
+   * Then the unpaid-order state gave it a clock and three rows, and the
+   * delivery strip gave the ordinary one a line above the total, and the
+   * back-to-top button went on sitting 80px up, behind both. A bar whose
+   * height is a design decision is a number that goes stale every time
+   * somebody adds a line to it, so it is measured instead.
+   *
+   * A callback ref rather than an effect, because the element itself is
+   * swapped when the order state changes: the ref fires on each new node,
+   * which an effect keyed on the old one would not.
+   */
+  const [barH, setBarH] = useState(0);
+  const barRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return setBarH(0);
+    setBarH(el.offsetHeight);
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setBarH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Read straight off the URL rather than through useSearchParams: that hook
   // puts the whole page behind a Suspense boundary, for one boolean that
   // only matters on the first paint after 2C2P sends the browser back.
@@ -991,7 +1015,10 @@ export default function StaffShop() {
           strip. The round is long enough to need the ride back up anyway.
           80px clears that strip; the storefront's own default would put it
           behind it. */}
-      <BackToTop bottomPx={80} />
+      {/* Clears whatever the bar turned out to be, plus a thumb's gap. The
+          fallback is the plain one-row bar, for the frame before the
+          measurement lands. */}
+      <BackToTop bottomPx={(barH || 72) + 12} />
       <header className="mb-6">
         {/* The same back control the product and category pages carry, and
             for the same reason: this page is opened from a link in a chat
@@ -1866,8 +1893,9 @@ export default function StaffShop() {
           acted on. */}
       {shop && (shop.canOrder || shop.pending) && (
         <>
-          {/* The page needs somewhere to end that is not underneath the bar. */}
-          <div className="h-24 lg:hidden" aria-hidden />
+          {/* The page needs somewhere to end that is not underneath the bar —
+              the bar's own height, not a guess at it. */}
+          <div className="lg:hidden" style={{ height: barH || 96 }} aria-hidden />
 
           <div
             // The safe-area padding belongs to each sheet, not to this: with
@@ -1980,7 +2008,10 @@ export default function StaffShop() {
               // width and squeezed "ยกเลิก" against the edge — a destructive
               // action pressed into the corner beside the one everybody is
               // aiming for.
-              <div className="overflow-hidden rounded-t-2xl bg-amber-50 pb-[env(safe-area-inset-bottom)] motion-safe:animate-slideUp">
+              <div
+                ref={barRef}
+                className="overflow-hidden rounded-t-2xl bg-amber-50 pb-[env(safe-area-inset-bottom)] motion-safe:animate-slideUp"
+              >
                 <WindowStrip
                   to={shop.pending.expires_at}
                   windowMin={shop.round.payment_window_min ?? 30}
@@ -2049,6 +2080,7 @@ export default function StaffShop() {
               </div>
             ) : (
               <div
+                ref={barRef}
                 className={`bg-brand-ink px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] motion-safe:animate-slideUp ${
                   cartOpen && cartCount > 0 ? "" : "rounded-t-2xl"
                 }`}

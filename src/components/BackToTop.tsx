@@ -53,6 +53,13 @@ export default function BackToTop({ bottomPx }: { bottomPx?: number } = {}) {
   // passes the height it needs to clear instead, gap included.
   const bottom = bottomPx ?? TAB_BAR_H + (stickyBarVisible ? BUY_BAR_H : 0) + GAP;
 
+  // The two numbers above are the bars' heights with no notch in them, so
+  // the inset has to be added back. A page that passes its own number
+  // measured it off the real element, which already stands on whatever the
+  // notch left — adding the inset a second time would float the button an
+  // inch above the bar it is meant to sit on.
+  const offset = bottomPx != null ? `${bottom}px` : `calc(${bottom}px + env(safe-area-inset-bottom))`;
+
   return (
     <button
       type="button"
@@ -64,7 +71,7 @@ export default function BackToTop({ bottomPx }: { bottomPx?: number } = {}) {
       // Through a variable rather than straight onto `bottom`, so the
       // lg:bottom-3 below can still win on desktop — an inline bottom would
       // beat any class, and there is no tab bar up there to clear.
-      style={{ "--btt-bottom": `calc(${bottom}px + env(safe-area-inset-bottom))` } as CSSProperties}
+      style={{ "--btt-bottom": offset } as CSSProperties}
       className={`fixed bottom-[var(--btt-bottom)] left-4 z-80 grid size-11 place-items-center rounded-full border border-slate-200 bg-white/90 text-brand-800 shadow-card backdrop-blur-md transition duration-200 active:scale-90 lg:bottom-3 lg:left-5 ${
         shown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
       }`}
