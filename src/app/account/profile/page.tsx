@@ -722,12 +722,20 @@ export default function ProfilePage() {
       </div>
       <h1 className="text-2xl font-bold text-brand-ink mb-6">ตั้งค่าบัญชี</h1>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-start">
-        <ProfileContent />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)] lg:items-start">
+        {/* Who the account is and how you get into it. Both are short, and
+            both are about the person rather than about an order, so they
+            share a column — which is also what stopped the left side from
+            running out of card halfway down the page. */}
         <div className="flex flex-col gap-4">
+          <ProfileContent />
           <EmailLinkCard />
           <PhoneChangeCard />
           <SettingsSummary />
+        </div>
+        {/* The two books. They are lists that grow, so they get the side
+            with room to grow into. */}
+        <div className="flex flex-col gap-4">
           <AddressBookCard />
           <TaxAddressBookCard />
         </div>
