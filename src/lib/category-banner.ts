@@ -26,6 +26,18 @@ const CATEGORY_BANNERS = [
   "body-care",
 ] as const;
 
+/**
+ * The two listing pages that are not one category.
+ *
+ * Drawn to the same rule as the six above — subject at the edges, the middle
+ * third left empty — because the band draws them the same way. "All products"
+ * is a little of everything the shop sells; "all brands" is a shelf of blank
+ * containers, unbranded on purpose, since a directory of sixty brands cannot
+ * put one of them on its own banner.
+ */
+export const ALL_PRODUCTS_BANNER = "/categories/banners/all-products.webp";
+export const BRANDS_BANNER = "/categories/banners/brands.webp";
+
 export function categoryBanner(slug: string | undefined): string | null {
   if (!slug) return null;
   if (!(CATEGORY_BANNERS as readonly string[]).includes(slug)) return null;

@@ -9,7 +9,7 @@ import StickyToolbar from "@/components/shop/StickyToolbar";
 import Pagination from "@/components/Pagination";
 import InfiniteProducts from "@/components/shop/InfiniteProducts";
 import ShopHero from "@/components/shop/ShopHero";
-import { categoryBanner } from "@/lib/category-banner";
+import { ALL_PRODUCTS_BANNER, categoryBanner } from "@/lib/category-banner";
 import ViewToggle from "@/components/shop/ViewToggle";
 import ProductRow from "@/components/shop/ProductRow";
 import { pageMetadata } from "@/lib/site-pages";
@@ -44,7 +44,7 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
         title={activeCategory ? activeCategory.nameTh : "สินค้าทั้งหมด"}
         subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
         count={allItems.length}
-        banner={categoryBanner(activeCategory?.slug)}
+        banner={categoryBanner(activeCategory?.slug) ?? ALL_PRODUCTS_BANNER}
       >
       </ShopHero>
 

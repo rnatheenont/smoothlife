@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import ShopHero from "@/components/shop/ShopHero";
+import { BRANDS_BANNER } from "@/lib/category-banner";
 import { Search, X } from "lucide-react";
 import { categories } from "@/data/categories";
 import type { Category } from "@/data/types";
@@ -138,14 +140,21 @@ export default function BrandsDirectory({
   const total = filtered.length + houseShown.length;
 
   return (
-    <div className="container-page py-8 md:py-12">
-      <h1 className="text-2xl font-bold text-brand-ink md:text-3xl">
-        แบรนด์ทั้งหมด
-      </h1>
-      <p className="mt-1.5 text-sm text-slate-500">
-        {house.length + brands.length} แบรนด์ที่วางขายจริงบนเว็บ
-        คัดมาแล้วว่ามีของ ไม่ใช่รายชื่อเปล่า
-      </p>
+    <>
+      {/* The same band every listing page wears. The count is the whole
+          directory rather than what the search box has left: the banner is
+          the page's name, and a heading that changed while you typed would
+          be answering a different question from the one it asks. */}
+      <ShopHero
+        eyebrow="BRANDS"
+        title="แบรนด์ทั้งหมด"
+        subtitle="คัดมาแล้วว่ามีของ ไม่ใช่รายชื่อเปล่า"
+        count={house.length + brands.length}
+        countLabel="แบรนด์ที่วางขายจริงบนเว็บ"
+        banner={BRANDS_BANNER}
+      />
+
+      <div className="container-page pt-5 pb-8 md:pt-6 md:pb-12">
 
       {/* The one thing most people came to do, at the size that says so. It
           was a 230x36 field tucked beside the filters, smaller than the
@@ -307,6 +316,7 @@ export default function BrandsDirectory({
           ))}
         </ul>
       )}
-    </div>
+      </div>
+    </>
   );
 }
