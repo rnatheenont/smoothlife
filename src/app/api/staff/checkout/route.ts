@@ -8,6 +8,7 @@ import { paymentChannelsFor } from "@/lib/payment-limits";
 import { releaseStock, reserveStock } from "@/lib/stock-reservation";
 import { reasonTh, type StaffOrderLine } from "@/lib/staff-sale";
 import { staffRpc, type RpcResult } from "@/lib/staff-sale-rpc";
+import { fulfilmentAddress, isPickup, parseStaffFulfilment } from "@/lib/staff-fulfilment";
 import {
   currentStaffRound,
   staffInvoiceNo,
@@ -59,8 +60,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const body = (await req.json().catch(() => null)) as { lines?: unknown } | null;
-  const rawLines = Array.isArray(body?.lines) ? body!.lines : [];
+  const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
+  const rawLines = Array.isArray(body?.lines) ? (body!.lines as unknown[]) : [];
   if (rawLines.length === 0) {
     return NextResponse.json({ ok: false, error: "ยังไม่ได้เลือกสินค้า" }, { status: 400 });
   }
@@ -78,20 +79,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "รายการสินค้าไม่ถูกต้อง" }, { status: 400 });
   }
 
+  // Posted, or collected. Checked before anything is written, because a
+  // refusal here is a typo in a text box and not something to roll an order
+  // back for.
+  const parsed = parseStaffFulfilment(body);
+  if ("error" in parsed) {
+    return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
+  }
+  const fulfilment = parsed.value;
+  const collecting = isPickup(fulfilment.method);
+
   const address = await staffShippingAddress(userId);
   // A name as well as a number: a staff parcel is a parcel, and the courier
   // asks for somebody at the door. Same rule the customer checkout now
   // holds to.
+  //
+  // A collection still needs the two of them — somebody signs for the box
+  // and somebody gets the call saying it is ready — but not the street,
+  // which is the whole reason the option exists.
   if (!address || !address.phone || !address.firstName) {
     return NextResponse.json(
       {
         ok: false,
-        error: "กรุณาเพิ่มชื่อผู้รับ ที่อยู่จัดส่ง และเบอร์โทรในหน้าโปรไฟล์ก่อนสั่งซื้อ",
+        error: collecting
+          ? "กรุณาเพิ่มชื่อผู้รับและเบอร์โทรในหน้าโปรไฟล์ก่อนสั่งซื้อ"
+          : "กรุณาเพิ่มชื่อผู้รับ ที่อยู่จัดส่ง และเบอร์โทรในหน้าโปรไฟล์ก่อนสั่งซื้อ",
         needsAddress: true,
       },
       { status: 400 },
     );
   }
+
+  // What goes on the label from here on: the collection point for a
+  // collection, the employee's own address otherwise.
+  const shipTo = fulfilmentAddress(fulfilment, address);
 
   // 1. The cap, the per-person limit and the quota, in one locked step.
   const created = await staffRpc<RpcResult>("staff_create_order", {
@@ -132,7 +153,14 @@ export async function POST(req: NextRequest) {
     await supabaseRest(`staff_orders?id=eq.${pgValue(orderId)}`, {
       method: "PATCH",
       returning: false,
-      body: JSON.stringify({ payment_reference: invoiceNo }),
+      body: JSON.stringify({
+        payment_reference: invoiceNo,
+        // Written in the same breath as the reference, so an order that can
+        // be paid for is an order the warehouse can already read.
+        fulfilment: fulfilment.method,
+        pickup_name: fulfilment.pickup_name,
+        pickup_floor: fulfilment.pickup_floor,
+      }),
     });
   } catch (err) {
     await rollback("could not set payment reference");
@@ -179,7 +207,7 @@ export async function POST(req: NextRequest) {
       status: "pending",
       contact_email: standing.staff_email,
       contact_phone: address.phone ?? null,
-      shipping_address: address,
+      shipping_address: shipTo,
       line_items: orderLines.map((l) => ({
         variantId: l.variant_id,
         quantity: Number(l.qty),
@@ -210,11 +238,11 @@ export async function POST(req: NextRequest) {
       backendReturnUrl: `${origin}/api/webhooks/2c2p-staff`,
       customer: { email: standing.staff_email, mobileNo: address.phone },
       shippingAddress: {
-        address1: address.address1,
-        city: address.city,
-        postalCode: address.zip,
-        countryCode: address.countryCode,
-        state: address.province,
+        address1: shipTo.address1,
+        city: shipTo.city,
+        postalCode: shipTo.zip,
+        countryCode: shipTo.countryCode,
+        state: shipTo.province,
       },
       // The page and the hold expire together. A payment page that outlives
       // the reservation behind it is the flash sale's late-refund bug.

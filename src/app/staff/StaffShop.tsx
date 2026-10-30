@@ -14,10 +14,14 @@ import {
   Check,
   Minus,
   Plus,
+  Building2,
+  Home,
   Search,
   ShieldCheck,
   ShoppingCart,
+  Truck,
   Wallet,
+  Warehouse,
   X,
 } from "lucide-react";
 import { Button } from "@heroui/react";
@@ -28,6 +32,14 @@ import { HaloRing, RIM } from "@/components/Halo";
 import { formatTHB } from "@/lib/format";
 import { shopifyImage, shopifySquare, shopifySquareSrcSet } from "@/lib/shopify-image";
 import type { StaffShopVariant } from "@/lib/staff-sale";
+import {
+  DEFAULT_FULFILMENT,
+  FULFILMENT_OPTIONS,
+  fulfilmentOption,
+  isPickup,
+  type StaffFulfilment,
+  type StaffFulfilmentMethod,
+} from "@/lib/staff-fulfilment";
 import { useStuck } from "@/components/shop/use-stuck";
 import BackButton from "@/components/BackButton";
 import BackToTop from "@/components/BackToTop";
@@ -282,6 +294,163 @@ function WindowStrip({ to, windowMin }: { to: string; windowMin: number }) {
   );
 }
 
+/**
+ * Where this order goes — the one decision the cart did not let anybody
+ * make.
+ *
+ * It used to post everything to whatever address the profile carried, said
+ * in grey type under the total: "ส่งไปที่ …". Half the people buying work
+ * in the building the stock is in, and were waiting two days for a courier
+ * to bring them a box from a shelf they walk past.
+ *
+ * So: three options, the posted one first and chosen by default, because
+ * that is what every order before this one did and a changed default is a
+ * parcel sent somewhere nobody expected. Collecting asks for the nickname
+ * the box gets labelled with — the warehouse has eighteen employees and
+ * four of them are called by the same first name — and the office asks
+ * which floor to bring it to.
+ *
+ * One component for both the desktop column and the phone sheet. Two
+ * copies of a form is two sets of rules about when the button lights up.
+ */
+function DeliveryChoice({
+  value,
+  onChange,
+  shipTo,
+  compact,
+}: {
+  value: StaffFulfilment;
+  onChange: (next: StaffFulfilment) => void;
+  shipTo: { summary: string; hasPhone: boolean } | null;
+  /** The phone sheet, where there is less room for the small print. */
+  compact?: boolean;
+}) {
+  const ICONS: Record<StaffFulfilmentMethod, typeof Home> = {
+    ship: Home,
+    pickup_warehouse: Warehouse,
+    pickup_office: Building2,
+  };
+  const option = fulfilmentOption(value.method);
+
+  function pick(method: StaffFulfilmentMethod) {
+    // The nickname is kept when moving between the two collection points —
+    // it is the same person either way — and dropped on the way back to
+    // posting, so nothing stale is ever sent.
+    if (!isPickup(method)) return onChange(DEFAULT_FULFILMENT);
+    onChange({
+      method,
+      pickup_name: value.pickup_name,
+      pickup_floor: method === "pickup_office" ? value.pickup_floor : null,
+    });
+  }
+
+  const field =
+    "mt-1 w-full rounded-xl border border-surface-line bg-white px-3 py-2 text-[13px] text-brand-ink " +
+    "outline-none transition-colors placeholder:text-slate-300 focus:border-brand-emerald";
+
+  return (
+    <div className="mt-3 rounded-2xl bg-surface-soft/70 p-2.5">
+      <p className="flex items-center gap-1.5 px-0.5 text-[12px] font-bold text-brand-ink">
+        <Truck className="h-3.5 w-3.5 text-brand-emerald" aria-hidden />
+        รับของยังไง
+      </p>
+
+      <div className="mt-2 flex flex-col gap-1.5" role="radiogroup" aria-label="วิธีรับสินค้า">
+        {FULFILMENT_OPTIONS.map((o) => {
+          const Icon = ICONS[o.method];
+          const on = value.method === o.method;
+          // Posting with nothing to post to is not a choice anybody can
+          // make: it stays visible and says why, rather than vanishing.
+          const blocked = o.method === "ship" && !shipTo;
+          return (
+            <button
+              key={o.method}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => pick(o.method)}
+              className={clsx(
+                "flex w-full items-start gap-2.5 rounded-xl p-2.5 text-left transition-colors",
+                on
+                  ? "bg-white ring-2 ring-brand-emerald"
+                  : "bg-white/60 ring-1 ring-surface-line hover:bg-white",
+              )}
+            >
+              <span
+                className={clsx(
+                  "mt-0.5 grid size-7 shrink-0 place-items-center rounded-full transition-colors",
+                  on ? "bg-brand-emerald text-white" : "bg-surface-soft text-slate-500",
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] font-bold text-brand-ink">{o.label}</span>
+                {/* Where it actually ends up. For the posted option that is
+                    the address on file, not a description of it — somebody
+                    choosing between home and the office is choosing between
+                    two places, and only one of them was ever named. */}
+                <span className="mt-0.5 block text-[11.5px] leading-snug text-slate-500">
+                  {o.method === "ship" ? (shipTo ? shipTo.summary : "ยังไม่มีที่อยู่ในโปรไฟล์") : o.where}
+                </span>
+                {!compact && (
+                  <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">{o.detail}</span>
+                )}
+              </span>
+              {on && <Check className="mt-1 h-4 w-4 shrink-0 text-brand-emerald" aria-hidden />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Shown whichever option is chosen, not only the posted one: the
+          name and the number the warehouse rings live on the same address
+          record, so an account without one cannot collect either. Saying
+          "หรือเลือกรับเอง" here sent somebody to a button that was still
+          grey. */}
+      {!shipTo && (
+        <p className="mt-2 px-0.5 text-[12px] text-amber-700">
+          ยังไม่มีข้อมูลผู้รับ —{" "}
+          <Link href="/account/addresses" className="font-semibold underline">
+            เพิ่มที่อยู่และเบอร์โทร
+          </Link>{" "}
+          ก่อนสั่งซื้อ (ใช้ชื่อกับเบอร์จากตรงนี้ตอนรับเองด้วย)
+        </p>
+      )}
+
+      {option.needsName && (
+        <div className="mt-2 rounded-xl bg-white p-2.5 ring-1 ring-surface-line">
+          <label className="block text-[11.5px] font-semibold text-slate-600">
+            ชื่อเล่นสำหรับติดกล่อง
+            <input
+              value={value.pickup_name ?? ""}
+              onChange={(e) => onChange({ ...value, pickup_name: e.target.value })}
+              maxLength={40}
+              placeholder="เช่น ต้น"
+              className={field}
+            />
+          </label>
+          {option.needsFloor && (
+            <label className="mt-2 block text-[11.5px] font-semibold text-slate-600">
+              ชั้นที่รับของ
+              <input
+                value={value.pickup_floor ?? ""}
+                onChange={(e) => onChange({ ...value, pickup_floor: e.target.value })}
+                maxLength={20}
+                placeholder="เช่น 12"
+                className={field}
+              />
+            </label>
+          )}
+          <p className="mt-2 text-[11px] leading-snug text-slate-400">
+            {option.detail} · จะมีคนติดต่อกลับตามเบอร์ในโปรไฟล์เมื่อของพร้อมให้รับ
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function StaffShop() {
   const [data, setData] = useState<State>({ state: "loading" });
   const [error, setError] = useState<string | null>(null);
@@ -290,6 +459,8 @@ export default function StaffShop() {
   // checkout stays until it is dealt with.
   const [cartNotice, setCartNotice] = useState<string | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
+  // Posted, by default, which is what every order before this one did.
+  const [fulfilment, setFulfilment] = useState<StaffFulfilment>(DEFAULT_FULFILMENT);
   const [busy, setBusy] = useState(false);
   const [justPaid, setJustPaid] = useState(false);
   const [category, setCategory] = useState<string>("all");
@@ -315,6 +486,29 @@ export default function StaffShop() {
    * asked for are above the fold, and what is on screen is wherever the old
    * list happened to reach.
    */
+  /**
+   * Why the payment button is off, or null when it is on.
+   *
+   * One function rather than a condition repeated on the desktop button and
+   * the phone one: the two drifted once already, and a cart you can check
+   * out from on a laptop but not on a phone is a bug nobody reports.
+   */
+  function blockedBecause(shop: Extract<State, { state: "shop" }>): string | null {
+    if (Object.keys(cart).length === 0) return "ยังไม่ได้เลือกสินค้า";
+    const option = fulfilmentOption(fulfilment.method);
+    if (option.needsName && !(fulfilment.pickup_name ?? "").trim()) {
+      return "กรุณาระบุชื่อเล่นสำหรับติดกล่อง";
+    }
+    if (option.needsFloor && !(fulfilment.pickup_floor ?? "").trim()) {
+      return "กรุณาระบุชั้นที่รับของ";
+    }
+    // A collection needs somebody to hand it to and a number to ring, but
+    // not a street — that is the point of the option.
+    if (!shop.shipTo) return "ยังไม่มีข้อมูลผู้รับในโปรไฟล์";
+    if (!shop.shipTo.hasPhone) return "ยังไม่มีเบอร์โทรในโปรไฟล์";
+    return null;
+  }
+
   function narrow(apply: () => void) {
     apply();
     window.scrollTo({ top: 0 });
@@ -685,6 +879,9 @@ export default function StaffShop() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lines: Object.entries(cart).map(([variant_id, qty]) => ({ variant_id, qty })),
+          fulfilment: fulfilment.method,
+          pickup_name: fulfilment.pickup_name,
+          pickup_floor: fulfilment.pickup_floor,
         }),
       });
       const json = await res.json();
@@ -1625,31 +1822,23 @@ export default function StaffShop() {
                   </p>
                 )}
 
-                {shop.shipTo ? (
-                  <p className="mt-3 text-[11px] text-slate-400">ส่งไปที่ {shop.shipTo.summary}</p>
-                ) : (
-                  <p className="mt-3 text-[12px] text-amber-700">
-                    ยังไม่มีที่อยู่จัดส่ง —{" "}
-                    <Link href="/account/addresses" className="font-semibold underline">
-                      เพิ่มที่อยู่ก่อนสั่งซื้อ
-                    </Link>
-                  </p>
-                )}
+                <DeliveryChoice value={fulfilment} onChange={setFulfilment} shipTo={shop.shipTo} />
 
                 <button
                   type="button"
                   onClick={checkout}
-                  disabled={
-                    busy ||
-                    Object.keys(cart).length === 0 ||
-                    capUsed > shop.standing.left_thb ||
-                    !shop.shipTo ||
-                    !shop.shipTo.hasPhone
-                  }
+                  disabled={busy || capUsed > shop.standing.left_thb || blockedBecause(shop) !== null}
                   className={`${CHECKOUT_BUTTON} mt-3 w-full`}
                 >
                   {busy ? "กำลังเปิดหน้าชำระเงิน…" : "ไปชำระเงิน"}
                 </button>
+                {/* Why it is grey, rather than leaving it to be guessed at.
+                    An empty cart is the one case that needs no caption. */}
+                {Object.keys(cart).length > 0 && blockedBecause(shop) && (
+                  <p className="mt-2 text-center text-[12px] font-semibold text-amber-700">
+                    {blockedBecause(shop)}
+                  </p>
+                )}
                 <p className="mt-2 text-[11px] text-slate-400">
                   ชำระเงินแยกจากตะกร้าปกติ · มีเวลาชำระ {shop.round.payment_window_min ?? 30} นาที
                   หลังกดปุ่มนี้ ถ้าไม่ชำระ วงเงินจะคืนให้อัตโนมัติ
@@ -1696,7 +1885,15 @@ export default function StaffShop() {
                 lowest — and a list that opens underneath the thing that
                 opened it reads as a second bar. */}
             {cartOpen && cartCount > 0 && !shop.pending && (
-              <div className="max-h-[45vh] overflow-y-auto rounded-t-2xl border-b border-slate-100 bg-white px-4 py-3">
+              <div
+                className={clsx(
+                  "overflow-y-auto rounded-t-2xl border-b border-slate-100 bg-white px-4 py-3",
+                  // The two text boxes and a soft keyboard do not fit in
+                  // 45vh, and a field you cannot see while typing in it is
+                  // the reason the sheet grows only when one is there.
+                  isPickup(fulfilment.method) ? "max-h-[72vh]" : "max-h-[45vh]",
+                )}
+              >
                 <ul className="space-y-2">
                   {Object.entries(cart).map(([variantId, qty]) => {
                     const item = shop.items.find((i) => i.variant_id === variantId);
@@ -1755,16 +1952,12 @@ export default function StaffShop() {
                   <span>รวม {cartCount} ชิ้น</span>
                   <span className="font-mono text-[15px] tabular-nums">฿{baht(subtotal)}</span>
                 </div>
-                {!shop.shipTo ? (
-                  <p className="mt-3 text-[12px] text-amber-700">
-                    ยังไม่มีที่อยู่จัดส่ง —{" "}
-                    <Link href="/account/addresses" className="font-semibold underline">
-                      เพิ่มที่อยู่ก่อนสั่งซื้อ
-                    </Link>
-                  </p>
-                ) : (
-                  <p className="mt-3 text-[11px] text-slate-400">ส่งไปที่ {shop.shipTo.summary}</p>
-                )}
+                <DeliveryChoice
+                  value={fulfilment}
+                  onChange={setFulfilment}
+                  shipTo={shop.shipTo}
+                  compact
+                />
               </div>
             )}
 
@@ -1908,14 +2101,18 @@ export default function StaffShop() {
 
                 <button
                   type="button"
-                  onClick={checkout}
-                  disabled={
-                    busy ||
-                    cartCount === 0 ||
-                    capUsed > shop.standing.left_thb ||
-                    !shop.shipTo ||
-                    !shop.shipTo.hasPhone
-                  }
+                  // The chooser is inside the sheet, and the button is on
+                  // the bar. A press that cannot go through opens the sheet
+                  // at the thing that is missing rather than sitting there
+                  // grey with the reason hidden behind a tap nobody knows
+                  // to make.
+                  onClick={() => {
+                    const why = blockedBecause(shop);
+                    if (!why) return void checkout();
+                    setCartOpen(true);
+                    setCartNotice(why);
+                  }}
+                  disabled={busy || cartCount === 0 || capUsed > shop.standing.left_thb}
                   // On a dark bar the call-to-action can be the shop's own
                   // colour rather than an inverted white pill, which is what
                   // it had to be while the bar itself was the gradient.

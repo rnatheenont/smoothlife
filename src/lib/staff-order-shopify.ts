@@ -6,6 +6,7 @@ import {
   shopifyAdminConfigured,
 } from "@/lib/shopify-admin";
 import { ORDER_COLUMNS, type StaffOrder } from "@/lib/staff-sale";
+import { fulfilmentSummary, fulfilmentTag } from "@/lib/staff-fulfilment";
 
 // Turning a paid staff order into a Shopify order.
 //
@@ -121,7 +122,14 @@ export async function syncStaffOrderToShopify(orderId: string): Promise<StaffSyn
   const tx = txs?.[0];
   if (!tx) return { ok: false, shopifyOrderId: null, note: "no payment row for this order" };
 
+  // The address the checkout settled on — already the collection point when
+  // this is one to be collected, nickname and floor included.
   const address = tx.shipping_address ?? {};
+  const where = fulfilmentSummary({
+    method: order.fulfilment ?? "ship",
+    pickup_name: order.pickup_name ?? null,
+    pickup_floor: order.pickup_floor ?? null,
+  });
   try {
     const created = await createPaidShopifyOrder({
       customerId: (await resolveCustomerId(tx.user_id, tx.contact_email ?? order.staff_email)) ?? undefined,
@@ -145,12 +153,22 @@ export async function syncStaffOrderToShopify(orderId: string): Promise<StaffSyn
         countryCode: address.countryCode ?? "TH",
         phone: address.phone,
       },
-      note: `Staff Sale ${order.round_id} · 2C2P ${tx.invoice_no}`,
+      // Where it goes, first: the note is the line somebody packing reads,
+      // and "รับเองที่สาทร · ชื่อ ต้น · ชั้น 12" is the difference between a
+      // box on the right shelf and a box in a courier's van.
+      note: [where, `Staff Sale ${order.round_id} · 2C2P ${tx.invoice_no}`].join("\n"),
       tranRef: tx.tran_ref ?? tx.invoice_no,
       // What the profile badge, the admin filter and every revenue report
       // read. An order sold below retail with no tag saying why is an order
       // nobody can account for later.
-      tags: ["staff-purchase", `staff-round:${order.round_id}`],
+      //
+      // The collection tag is the warehouse's own filter: these never go to
+      // a courier, so a picking list that mixes them with the posted ones is
+      // a list that creates a shipping label for a box somebody is coming in
+      // for.
+      tags: ["staff-purchase", `staff-round:${order.round_id}`, fulfilmentTag(order.fulfilment ?? "ship")].filter(
+        (t): t is string => Boolean(t),
+      ),
     });
 
     await supabaseRest(`staff_orders?id=eq.${pgValue(orderId)}`, {

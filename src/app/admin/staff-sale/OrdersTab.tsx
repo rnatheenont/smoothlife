@@ -6,6 +6,7 @@ import { Button } from "@heroui/react";
 import { Badge } from "@/components/ui";
 import { FilterChip, Panel, adminTable } from "@/components/admin/layout-kit";
 import type { StaffOrderStatus } from "@/lib/staff-sale";
+import { fulfilmentOption, isPickup } from "@/lib/staff-fulfilment";
 import type { AdminStaffOrder } from "./types";
 
 // Staff orders, and the two buttons an admin has over one.
@@ -195,6 +196,7 @@ export default function OrdersTab({
             <tr>
               <th>พนักงาน</th>
               <th>สินค้า</th>
+              <th>รับของ</th>
               <th>ยอด</th>
               <th>สถานะ</th>
               <th>Shopify</th>
@@ -205,14 +207,14 @@ export default function OrdersTab({
           <tbody>
             {loading && (
               <tr>
-                <td className={adminTable.muted} colSpan={7}>
+                <td className={adminTable.muted} colSpan={8}>
                   กำลังโหลด…
                 </td>
               </tr>
             )}
             {!loading && orders.length === 0 && (
               <tr>
-                <td className={adminTable.muted} colSpan={7}>
+                <td className={adminTable.muted} colSpan={8}>
                   {filter === "flagged" ? "ไม่มีออร์เดอร์ที่ต้องจัดการ" : "ยังไม่มีออร์เดอร์"}
                 </td>
               </tr>
@@ -237,6 +239,23 @@ export default function OrdersTab({
                       </li>
                     ))}
                   </ul>
+                </td>
+                {/* Where this one goes. A collection that is packed and
+                    handed to a courier is a box the employee is standing in
+                    the lobby waiting for, so it is a column rather than a
+                    line in the note. */}
+                <td className={adminTable.cell}>
+                  {isPickup(o.fulfilment ?? "ship") ? (
+                    <>
+                      <Badge tone="brand">{fulfilmentOption(o.fulfilment).label}</Badge>
+                      <p className="mt-1 text-[11px] text-slate-500">
+                        {o.pickup_name ?? "—"}
+                        {o.pickup_floor ? ` · ชั้น ${o.pickup_floor}` : ""}
+                      </p>
+                    </>
+                  ) : (
+                    <span className="text-[11px] text-slate-400">ส่งตามที่อยู่</span>
+                  )}
                 </td>
                 <td className={adminTable.mono}>{baht(o.subtotal_thb)}</td>
                 <td className={adminTable.cell}>

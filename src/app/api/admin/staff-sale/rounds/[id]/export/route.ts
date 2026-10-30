@@ -3,6 +3,7 @@ import { pgValue, supabaseRest } from "@/lib/supabase-server";
 import { auditStaffSale, guard } from "@/lib/staff-sale-admin";
 import { ORDER_COLUMNS, ROUND_COLUMNS, type StaffOrder, type StaffRound } from "@/lib/staff-sale";
 import { csvDocument, csvSlug } from "@/lib/csv";
+import { fulfilmentOption } from "@/lib/staff-fulfilment";
 
 // Admin: one round as a CSV, for HR and accounting.
 //
@@ -32,6 +33,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     "เลขออร์เดอร์ Shopify",
     "เวลาที่สั่ง",
     "เวลาที่จ่าย",
+    "วิธีรับของ",
+    "ชื่อเล่นที่ติดกล่อง",
+    "ชั้น",
     "สินค้า",
     "ตัวเลือก",
     "จำนวน",
@@ -54,6 +58,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           o.shopify_order_id ?? "",
           o.created_at,
           o.paid_at ?? "",
+          // Whoever packs the round sorts on this column: a collection
+          // never goes near a courier.
+          fulfilmentOption(o.fulfilment ?? "ship").label,
+          o.pickup_name ?? "",
+          o.pickup_floor ?? "",
           l.product_slug,
           l.variant_id,
           l.qty,

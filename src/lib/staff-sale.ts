@@ -1,3 +1,5 @@
+import type { StaffFulfilmentMethod } from "@/lib/staff-fulfilment";
+
 // The staff sale, from the server's side: types, the RPC calls, and the Thai
 // the shop and the console both have to say.
 //
@@ -177,11 +179,16 @@ export type StaffOrder = {
   note: string | null;
   created_at: string;
   paid_at: string | null;
+  /** Posted, or collected — see @/lib/staff-fulfilment. */
+  fulfilment: StaffFulfilmentMethod;
+  pickup_name: string | null;
+  pickup_floor: string | null;
 };
 
 export const ORDER_COLUMNS =
   "id,round_id,user_id,staff_email,status,lines,subtotal_thb,expires_at," +
-  "payment_reference,payment_url,shopify_order_id,shopify_sync_status,needs_refund,note,created_at,paid_at";
+  "payment_reference,payment_url,shopify_order_id,shopify_sync_status,needs_refund,note,created_at,paid_at," +
+  "fulfilment,pickup_name,pickup_floor";
 
 /**
  * The same canonicalisation the database does, in TypeScript.
