@@ -6,13 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutGrid,
   User,
-  MapPin,
-  Receipt,
   Package,
   Award,
   Heart,
-  KeyRound,
-  ShieldCheck,
   LogOut,
   CalendarCheck,
   Trophy,
@@ -70,20 +66,16 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "ตั้งค่าบัญชี",
-    items: [
-      { href: "/account/profile", label: "ข้อมูลส่วนตัว", icon: User },
-      // Above the addresses rather than beside the password, because what it
-      // settles — which account this even is — comes before anything stored
-      // in one.
-      { href: "/account/verify", label: "ช่องทางเข้าสู่ระบบ", icon: ShieldCheck },
-      { href: "/account/addresses", label: "ที่อยู่จัดส่ง", icon: MapPin },
-      { href: "/account/tax-addresses", label: "ที่อยู่ใบกำกับภาษี", icon: Receipt },
-      { href: "/account/change-password", label: "เปลี่ยนรหัสผ่าน", icon: KeyRound },
-    ],
+    // One entry, not five. Login channels, both address books and the
+    // password now show their current state on the profile page itself and
+    // link out only to change something — see account/profile/page.tsx.
+    // The four pages still exist and still work when opened directly; what
+    // went away is five sidebar rows for four pages of a few hundred lines
+    // each, which cost a click and a page load to answer a question the
+    // profile page can answer by being looked at.
+    items: [{ href: "/account/profile", label: "ข้อมูลส่วนตัว", icon: User }],
   },
 ];
-
-const NAV = NAV_GROUPS.flatMap((g) => g.items);
 
 function isActive(pathname: string, href: string) {
   if (href === "/account") return pathname === "/account";

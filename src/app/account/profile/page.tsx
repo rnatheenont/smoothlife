@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
@@ -16,6 +15,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
+import SettingsSummary from "@/components/account/SettingsSummary";
 import { useAuth } from "@/lib/auth-context";
 import { resizeForAvatar } from "@/lib/image-utils";
 import {
@@ -35,9 +35,13 @@ const inputClass =
   "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-hidden focus:border-brand-teal";
 const labelClass = "text-xs font-semibold text-slate-500 mb-1.5 block";
 
+// One shell for every card on the page. They used to carry their own
+// max-w-md and top margin because each was the only thing on its row;
+// in a column that reads as a stack of boxes of different widths.
+const CARD = "rounded-xl2 border border-slate-200 bg-white p-5";
+
 function ProfileContent() {
   const { user, refreshUser } = useAuth();
-  const router = useRouter();
   const [name, setName] = useState(user?.name || "");
   const [gender, setGender] = useState(user?.gender || "");
   const [birthdate, setBirthdate] = useState(user?.birthdate || "");
@@ -47,6 +51,11 @@ function ProfileContent() {
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Closed by default. Almost nobody opens this page to change their name —
+  // they open it to check something, and three filled-in boxes waiting for
+  // a Save press is a worse answer to "is my information right?" than the
+  // information itself.
+  const [editing, setEditing] = useState(false);
 
   if (!user) return null;
 
@@ -99,110 +108,152 @@ function ProfileContent() {
     }
     await refreshUser();
     setSaved(true);
-    setTimeout(() => router.push("/account"), 800);
+    setEditing(false);
   }
 
-  return (
-    <div>
-      <div className="flex items-center gap-2 text-brand-800 mb-2">
-        <UserIcon size={18} />
-        <span className="text-xs font-semibold">Profile</span>
-      </div>
-      <h1 className="text-2xl font-bold text-brand-ink mb-6">แก้ไขโปรไฟล์</h1>
+  const genderTh =
+    { male: "ชาย", female: "หญิง", other: "อื่นๆ" }[user.gender ?? ""] ?? "ไม่ระบุ";
+  // The stored value is ISO so it sorts; nobody reads a birthday that way.
+  const birthdateTh = user.birthdate
+    ? user.birthdate.split("-").reverse().join("/")
+    : "ไม่ระบุ";
 
-      <form onSubmit={submit} className="flex flex-col gap-4">
-        <div className="flex items-center gap-4 mb-2">
-          <div className="relative shrink-0">
-            <div className="grid h-16 w-16 place-items-center rounded-full bg-brand-gradient text-white text-xl font-bold overflow-hidden">
-              <Avatar
-                src={user.avatar}
-                name={user.name}
-                className="h-16 w-16"
-                fallback={name.charAt(0).toUpperCase() || "?"}
-              />
-              {avatarBusy && (
-                <div className="absolute inset-0 grid place-items-center rounded-full bg-black/40">
-                  <Loader2 size={18} className="animate-spin text-white" />
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={avatarBusy}
-              aria-label="เปลี่ยนรูปโปรไฟล์"
-              // The disc that is drawn stays 24px — it sits on the corner of
-              // an avatar and a bigger one would cover the face. The target
-              // around it is 44px, reaching outward where there is nothing
-              // else to hit.
-              className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border border-slate-200 bg-white text-brand-800 shadow-xs after:absolute after:-inset-2.5 after:content-[''] disabled:opacity-60"
-            >
-              <Camera size={12} />
-            </button>
+  return (
+    <div className={CARD}>
+      <div className="flex flex-col items-center gap-3 border-b border-slate-100 pb-5 text-center">
+        <div className="relative shrink-0">
+          <div className="grid h-16 w-16 place-items-center rounded-full bg-brand-gradient text-white text-xl font-bold overflow-hidden">
+            <Avatar
+              src={user.avatar}
+              name={user.name}
+              className="h-16 w-16"
+              fallback={(user.name || "?").charAt(0).toUpperCase()}
+            />
+            {avatarBusy && (
+              <div className="absolute inset-0 grid place-items-center rounded-full bg-black/40">
+                <Loader2 size={18} className="animate-spin text-white" />
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={avatarBusy}
+            aria-label="เปลี่ยนรูปโปรไฟล์"
+            // The disc that is drawn stays 24px — it sits on the corner of
+            // an avatar and a bigger one would cover the face. The target
+            // around it is 44px, reaching outward where there is nothing
+            // else to hit.
+            className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border border-slate-200 bg-white text-brand-800 shadow-xs after:absolute after:-inset-2.5 after:content-[''] disabled:opacity-60"
+          >
+            <Camera size={12} />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarPick}
+          />
+        </div>
+        <div>
+          <p className="text-base font-bold text-brand-ink">{user.name}</p>
+          <p className="text-xs text-slate-500">{user.email || user.phone}</p>
+          {avatarError && <p className="mt-1 text-xs text-rose-700">{avatarError}</p>}
+        </div>
+        {!editing && (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-brand-ink hover:bg-slate-50"
+          >
+            แก้ไขข้อมูล
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <form onSubmit={submit} className="flex flex-col gap-4 pt-5">
+          <div>
+            <label className={labelClass}>ชื่อ-นามสกุล</label>
             <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarPick}
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={inputClass}
             />
           </div>
           <div>
-            <p className="text-sm font-bold text-brand-ink">{user.name}</p>
-            <p className="text-xs text-slate-500">{user.email || user.phone}</p>
-            {avatarError && (
-              <p className="text-xs text-rose-700 mt-1">{avatarError}</p>
-            )}
+            <label className={labelClass}>เพศ</label>
+            <select
+              value={gender || ""}
+              onChange={(e) => setGender(e.target.value)}
+              className={`${inputClass} pe-9`}
+            >
+              <option value="">ไม่ระบุ</option>
+              <option value="male">ชาย</option>
+              <option value="female">หญิง</option>
+              <option value="other">อื่นๆ</option>
+            </select>
           </div>
-        </div>
+          <div>
+            <label className={labelClass}>วันเกิด</label>
+            {/* iOS renders the native date value in the device's locale
+                format (e.g. Thai Buddhist-era "22 Jan BE 2537"), which can be
+                wider than the box and overflow — appearance-none + max-w-full
+                stops WebKit's native control from ignoring the width. */}
+            <input
+              type="date"
+              value={birthdate || ""}
+              onChange={(e) => setBirthdate(e.target.value)}
+              className={`${inputClass} appearance-none max-w-full`}
+            />
+          </div>
 
-        <div>
-          <label className={labelClass}>ชื่อ-นามสกุล</label>
-          <input
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>เพศ</label>
-          <select
-            value={gender || ""}
-            onChange={(e) => setGender(e.target.value)}
-            className={`${inputClass} pe-9`}
-          >
-            <option value="">ไม่ระบุ</option>
-            <option value="male">ชาย</option>
-            <option value="female">หญิง</option>
-            <option value="other">อื่นๆ</option>
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>วันเกิด</label>
-          {/* iOS renders the native date value in the device's locale
-              format (e.g. Thai Buddhist-era "22 Jan BE 2537"), which can be
-              wider than the box and overflow — appearance-none + max-w-full
-              stops WebKit's native control from ignoring the width. */}
-          <input
-            type="date"
-            value={birthdate || ""}
-            onChange={(e) => setBirthdate(e.target.value)}
-            className={`${inputClass} appearance-none max-w-full`}
-          />
-        </div>
+          {error && <p className="text-sm text-rose-700">{error}</p>}
 
-        {error && <p className="text-sm text-rose-700">{error}</p>}
-        {saved && <p className="text-sm text-brand-800">บันทึกแล้ว</p>}
-
-        <button
-          disabled={busy}
-          className="flex items-center justify-center gap-2 rounded-full bg-brand-ink text-white font-semibold py-3.5 text-sm disabled:opacity-60"
-        >
-          {busy && <Loader2 size={15} className="animate-spin" />}
-          บันทึกโปรไฟล์
-        </button>
-      </form>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                // Back to whatever is actually stored, not to whatever was
+                // half-typed before giving up.
+                setName(user.name || "");
+                setGender(user.gender || "");
+                setBirthdate(user.birthdate || "");
+                setError(null);
+                setEditing(false);
+              }}
+              className="h-12 flex-1 rounded-full border border-slate-200 text-sm font-semibold text-slate-600"
+            >
+              ยกเลิก
+            </button>
+            <button
+              disabled={busy}
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-brand-ink text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {busy && <Loader2 size={15} className="animate-spin" />}
+              บันทึก
+            </button>
+          </div>
+        </form>
+      ) : (
+        <dl className="flex flex-col gap-3 pt-5 text-sm">
+          <div>
+            <dt className="text-xs text-slate-500">ชื่อ-นามสกุล</dt>
+            <dd className="text-brand-ink">{user.name || "ไม่ระบุ"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-slate-500">เพศ</dt>
+            <dd className="text-brand-ink">{genderTh}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-slate-500">วันเกิด</dt>
+            <dd className="text-brand-ink">{birthdateTh}</dd>
+          </div>
+          {saved && <p className="text-sm font-semibold text-brand-800">บันทึกแล้ว</p>}
+        </dl>
+      )}
     </div>
   );
 }
@@ -252,7 +303,7 @@ function EmailLinkCard() {
 
   if (hasEmail && !editing) {
     return (
-      <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
+      <div className={CARD}>
         <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Mail size={16} />
           <span className="text-xs font-semibold">Email</span>
@@ -326,7 +377,7 @@ function EmailLinkCard() {
 
   if (justLinked) {
     return (
-      <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
+      <div className={CARD}>
         <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Mail size={16} />
           <span className="text-xs font-semibold">Email</span>
@@ -340,7 +391,7 @@ function EmailLinkCard() {
   }
 
   return (
-    <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
+    <div className={CARD}>
       <div className="flex items-center gap-2 text-brand-800 mb-1">
         <Mail size={16} />
         <span className="text-xs font-semibold">Email</span>
@@ -468,7 +519,7 @@ function PhoneChangeCard() {
 
   if (hasPhone && !editing) {
     return (
-      <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
+      <div className={CARD}>
         <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Phone size={16} />
           <span className="text-xs font-semibold">Phone</span>
@@ -558,7 +609,7 @@ function PhoneChangeCard() {
 
   if (justLinked) {
     return (
-      <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
+      <div className={CARD}>
         <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Phone size={16} />
           <span className="text-xs font-semibold">Phone</span>
@@ -572,7 +623,7 @@ function PhoneChangeCard() {
   }
 
   return (
-    <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
+    <div className={CARD}>
       <div className="flex items-center gap-2 text-brand-800 mb-1">
         <Phone size={16} />
         <span className="text-xs font-semibold">Phone</span>
@@ -651,12 +702,32 @@ function PhoneChangeCard() {
   );
 }
 
+// Everything that used to be five entries under "ตั้งค่าบัญชี" in the
+// sidebar. Four of those pages were under 250 lines each, so the sidebar
+// was charging a click and a page load for very little; what somebody
+// actually wants on arriving — is my address right, is LINE connected, is
+// there a password on this account — now answers itself in one screen.
+//
+// Two columns from lg: who you are on the left, what the account is wired
+// up to on the right. Below that it is one column in the same order, which
+// is the reading order on a phone anyway.
 export default function ProfilePage() {
   return (
     <AccountLayout>
-      <ProfileContent />
-      <EmailLinkCard />
-      <PhoneChangeCard />
+      <div className="flex items-center gap-2 text-brand-800 mb-2">
+        <UserIcon size={18} />
+        <span className="text-xs font-semibold">Profile</span>
+      </div>
+      <h1 className="text-2xl font-bold text-brand-ink mb-6">ตั้งค่าบัญชี</h1>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-start">
+        <ProfileContent />
+        <div className="flex flex-col gap-4">
+          <EmailLinkCard />
+          <PhoneChangeCard />
+          <SettingsSummary />
+        </div>
+      </div>
     </AccountLayout>
   );
 }
