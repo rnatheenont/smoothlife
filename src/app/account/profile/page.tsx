@@ -46,7 +46,7 @@ const CARD = "rounded-xl2 border border-slate-200 bg-white p-5";
 // way — only the shell changes.
 const ROW = "border-t border-slate-100 pt-4 mt-4";
 
-function ProfileContent() {
+function ProfileContent({ children }: { children?: React.ReactNode }) {
   const { user, refreshUser } = useAuth();
   const [name, setName] = useState(user?.name || "");
   const [gender, setGender] = useState(user?.gender || "");
@@ -260,6 +260,11 @@ function ProfileContent() {
           {saved && <p className="text-sm font-semibold text-brand-800">บันทึกแล้ว</p>}
         </dl>
       )}
+      {/* The address and the number sit with the name and the birthday: they
+          are what the account knows about the person, and the two of them
+          are what a shopper came here to check. How they are *signed in*
+          with is the card below. */}
+      {children}
     </div>
   );
 }
@@ -732,15 +737,11 @@ export default function ProfilePage() {
             share a column — which is also what stopped the left side from
             running out of card halfway down the page. */}
         <div className="flex flex-col gap-4">
-          <ProfileContent />
-          <SettingsSummary
-            channelRows={
-              <>
-                <EmailLinkCard embedded />
-                <PhoneChangeCard embedded />
-              </>
-            }
-          />
+          <ProfileContent>
+            <EmailLinkCard embedded />
+            <PhoneChangeCard embedded />
+          </ProfileContent>
+          <SettingsSummary />
         </div>
         {/* The two books. They are lists that grow, so they get the side
             with room to grow into. */}

@@ -259,7 +259,7 @@ export default function LoginChannels({ embedded = false }: { embedded?: boolean
         </header>
       )}
 
-      {account && (
+      {account && !embedded && (
         <div className="mb-5 rounded-xl2 bg-brand-gradient-soft p-5">
           <p className="text-xs text-slate-500">บัญชีที่ใช้อยู่ตอนนี้</p>
           <p className="text-base font-bold text-brand-ink">{account.name}</p>
