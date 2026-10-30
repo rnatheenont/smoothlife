@@ -19,7 +19,7 @@ type State = {
   seasons: { theme: MascotTheme; from: string; to: string }[];
 };
 
-const NAMES: Record<MascotTheme, string> = { default: "ชุดปกติ", halloween: "ฮาโลวีน", christmas: "คริสต์มาส" };
+const NAMES: Record<MascotTheme, string> = { default: "ชุดปกติ", halloween: "ฮาโลวีน", christmas: "คริสต์มาส", newyear: "ปีใหม่" };
 const MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 const day = (md: string) => {
   const [m, d] = md.split("-").map(Number);
@@ -76,6 +76,7 @@ export default function MascotAdminPage() {
         { id: "default", title: NAMES.default, detail: "ใส่ชุดนี้ตลอด ไม่สนวันที่", preview: "default" },
         { id: "halloween", title: NAMES.halloween, detail: "ใส่ชุดนี้ตลอด ไม่สนวันที่", preview: "halloween" },
         { id: "christmas", title: NAMES.christmas, detail: "ใส่ชุดนี้ตลอด ไม่สนวันที่", preview: "christmas" },
+        { id: "newyear", title: NAMES.newyear, detail: "ใส่ชุดนี้ตลอด ไม่สนวันที่", preview: "newyear" },
       ]
     : [];
 
@@ -105,7 +106,7 @@ export default function MascotAdminPage() {
             <Spinner />
           </div>
         ) : (
-          <div role="radiogroup" aria-label="ชุดของน้อง Smoothie" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div role="radiogroup" aria-label="ชุดของน้อง Smoothie" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
             {options.map((o) => {
               const on = state.setting === o.id;
               return (

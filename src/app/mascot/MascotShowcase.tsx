@@ -23,6 +23,7 @@ const THEMES: [MascotTheme, string, string][] = [
   ["default", "ชุดปกติ", "Everyday"],
   ["halloween", "ฮาโลวีน", "Halloween"],
   ["christmas", "คริสต์มาส", "Christmas"],
+  ["newyear", "ปีใหม่", "New Year"],
 ];
 const MOODS: [string, string, string][] = [
   ["happy", "ดีใจ", "Happy"],

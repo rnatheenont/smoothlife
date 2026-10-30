@@ -129,10 +129,14 @@ const SUIT: Partial<Record<MascotTheme, string[]>> = {
   christmas: ["body", "arm-left", "arm-left-down", "arm-right", "arm-right-up", "arm-left-hand", "arm-right-hand"],
 };
 const GIFT_BOX = [20, 755, 217, 959];
+// New Year props: smoothlife-mascot/newyear/build_newyear.py.
+const PARTY_HAT_BOX = [440, -61, 605, 160];
+const BALLOONS_BOX = [786, 749, 993, 941];
 const LAYERS: LayerDef[] = [
   // stands on the ground beside the feet — the "world" bone never moves, so it stays put when he jumps
   { name: "halloween-pumpkin", theme: "halloween", bbox: PUMPKIN_BOX, texBox: PUMPKIN_BOX, grid: [1, 1], w: () => [["world", 1]] },
   { name: "christmas-gift", theme: "christmas", bbox: GIFT_BOX, texBox: GIFT_BOX, grid: [1, 1], w: () => [["world", 1]] },
+  { name: "newyear-balloons", theme: "newyear", bbox: BALLOONS_BOX, texBox: BALLOONS_BOX, grid: [1, 1], w: () => [["world", 1]] },
   { name: "leg-left", bbox: [268, 769, 474, 930], grid: [6, 6], w: () => [["legL", 1]] },
   { name: "leg-right", bbox: [518, 772, 724, 932], grid: [6, 6], w: () => [["legR", 1]] },
   { name: "arm-right", armRSide: "down", bbox: [597, 559, 795, 825], grid: [12, 12], w: ARM_R },
@@ -151,6 +155,7 @@ const LAYERS: LayerDef[] = [
   // over the hood and every face, under the raised mittens
   { name: "halloween-hat", theme: "halloween", bbox: HAT_BOX, texBox: HAT_BOX, grid: [4, 3], w: () => [["head", 1]] },
   { name: "christmas-hat", theme: "christmas", bbox: SANTA_HAT_BOX, texBox: SANTA_HAT_BOX, grid: [4, 3], w: () => [["head", 1]] },
+  { name: "newyear-hat", theme: "newyear", bbox: PARTY_HAT_BOX, texBox: PARTY_HAT_BOX, grid: [3, 3], w: () => [["head", 1]] },
   { name: "arm-left-hand", armSide: "front", bbox: [129, 406, 377, 657], grid: [16, 16], w: ARM_L },
   { name: "arm-right-hand", armRSide: "up", bbox: [614, 553, 802, 829], grid: [16, 16], w: ARM_R },
 ];
