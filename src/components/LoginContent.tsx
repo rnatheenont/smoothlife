@@ -76,7 +76,7 @@ import { Button } from "@/components/ui";
 import OtpField from "./OtpField";
 import { SHOPIFY_EMAIL_LOGIN, shopifyAuthStartPath } from "@/lib/shopify-email-login";
 
-type View = "start" | "password" | "phone-otp" | "email-otp" | "line";
+type View = "start" | "password" | "phone-start" | "phone-otp" | "email-otp" | "line";
 
 const OAUTH_ERRORS: Record<string, string> = {
   line_not_configured: "ระบบ LINE Login ยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ",
@@ -150,10 +150,15 @@ export default function LoginContent({
   /** Set by the dialog, which has no query string of its own to read. */
   returnTo?: string;
 } = {}) {
-  // Phone OTP and LINE are the primary methods (matches the homepage promise
-  // "เข้าสู่ระบบด้วย OTP หรือ LINE" and how Thai users expect Shopee/Lazada-style
-  // sites to work) — email+password starts one tap further in, not as the
-  // landing view.
+  // Email is the front door, phone and LINE are beside it.
+  //
+  // It was the other way round, on the Shopee/Lazada reading that a Thai
+  // shopper expects to type a number. What that costs here is an SMS per
+  // attempt and a quota that runs dry — the OTP code already has two
+  // separate "ระบบส่ง SMS เต็มโควตา, ใช้อีเมลไปก่อน" messages, which is a
+  // front door that tells people to use the side one. Email costs nothing
+  // to send and is the address every order, receipt and campaign already
+  // goes to. Password sign-in stays one tap further in, as before.
   const [view, setView] = useState<View>("start");
   const [mode, setMode] = useState<"login" | "register">("login");
   const { registerWithEmail, confirmRegisterUpdate, loginWithEmail, completePhoneLogin } = useAuth();
@@ -260,6 +265,43 @@ export default function LoginContent({
     router.push(returnTo);
   }
 
+  /**
+   * The front door's submit.
+   *
+   * Two things live behind one field, because which of them runs is our
+   * configuration and not a choice anybody signing in should have to make:
+   * with Shopify customer accounts on, the code is Shopify's to send and
+   * the address rides along as the login hint so nobody types it twice;
+   * without it, we send our own.
+   *
+   * The consent box is checked here rather than by greying the button —
+   * a grey primary under an unticked box reads as "this page is broken",
+   * and the one thing it does not say is which box to tick. Same rule the
+   * phone form has always followed.
+   */
+  async function handleStartEmail(e: React.FormEvent) {
+    e.preventDefault();
+    const address = emailOtpAddress.trim();
+    if (!address) {
+      setEmailOtpError("กรุณากรอกอีเมล");
+      return;
+    }
+    if (!agreedTerms) {
+      setEmailOtpError("กรุณายอมรับข้อกำหนดการใช้บริการและนโยบายความเป็นส่วนตัวก่อน");
+      return;
+    }
+    if (SHOPIFY_EMAIL_LOGIN) {
+      setEmailOtpError("");
+      // Left on: the navigation takes a moment on a phone, and a button
+      // that comes back to life before the page changes invites a second
+      // press.
+      setEmailOtpSending(true);
+      window.location.href = shopifyAuthStartPath({ intent: "login", returnTo, hint: address });
+      return;
+    }
+    await handleSendEmailOtp(e);
+  }
+
   async function handleSendEmailOtp(e: React.FormEvent) {
     e.preventDefault();
     if (!emailOtpAddress.trim()) return;
@@ -279,6 +321,9 @@ export default function LoginContent({
       }
       if (!data.emailSent && data.devCode) setEmailOtpDevCode(data.devCode);
       setEmailOtpSent(true);
+      // The send can now be fired from the start view, so the code box has
+      // to be somewhere the person is actually looking.
+      setView("email-otp");
     } catch (err) {
       console.error("[email-otp] send failed", err);
       setEmailOtpError("ส่งรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
@@ -422,7 +467,7 @@ export default function LoginContent({
         </h1>
         {view === "start" && (
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            กรอกเบอร์โทรเพื่อรับรหัส OTP — ถ้ายังไม่มีบัญชี ระบบจะสมัครให้อัตโนมัติ
+            กรอกอีเมลเพื่อรับรหัสยืนยัน — ถ้ายังไม่มีบัญชี ระบบจะสมัครให้อัตโนมัติ
           </p>
         )}
         {view === "password" && (
@@ -462,33 +507,34 @@ export default function LoginContent({
             <DemoBadge text="ระบบ OTP เบอร์โทรยังไม่ได้ตั้งค่า Firebase — ใช้ LINE หรืออีเมลแทนได้ค่ะ" />
           )}
 
-          {/* The number is asked for here rather than behind a button that
-              only reveals this same field. It is how most people here sign
-              in, and making the commonest path the one that costs an extra
-              tap is backwards. */}
-          <div id="recaptcha-container" key={recaptchaKey} />
+          {/* The address is asked for here rather than behind a button that
+              only reveals this same field. The front door costs no extra
+              tap; everything else does. */}
           {/* noValidate so the consent box's own `required` cannot stop the
-              submit with a browser bubble before handleSendOtp says, in Thai
+              submit with a browser bubble before the handler says, in Thai
               and in the page, which box is missing. The checkbox keeps the
               attribute — a screen reader should still announce it. */}
-          <form onSubmit={handleSendOtp} noValidate className="flex flex-col gap-3">
-            <label htmlFor="login-phone" className="text-xs font-semibold text-slate-500">
-              เบอร์โทรศัพท์
+          <form onSubmit={handleStartEmail} noValidate className="flex flex-col gap-3">
+            <label htmlFor="login-email" className="text-xs font-semibold text-slate-500">
+              อีเมล
             </label>
-            <input
-              id="login-phone"
-              disabled={!firebaseConfigured()}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="08X-XXX-XXXX"
-              autoComplete="tel"
-              inputMode="tel"
-              className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40 disabled:opacity-50"
-            />
+            <div className="relative">
+              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                id="login-email"
+                type="email"
+                value={emailOtpAddress}
+                onChange={(e) => setEmailOtpAddress(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                inputMode="email"
+                className="w-full rounded-full bg-surface-soft py-3.5 pl-11 pr-4 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
+              />
+            </div>
             <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
-            {otpError && <p className="text-xs text-rose-700">{otpError}</p>}
-            <Button type="submit" size="lg" loading={otpSending} disabled={!firebaseConfigured()}>
-              {otpSending ? "กำลังส่งรหัส…" : "ส่งรหัส OTP"}
+            {emailOtpError && <p className="text-xs text-rose-700">{emailOtpError}</p>}
+            <Button type="submit" size="lg" loading={emailOtpSending}>
+              {emailOtpSending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
             </Button>
           </form>
 
@@ -506,30 +552,20 @@ export default function LoginContent({
               Reference: Turo and Uber both keep their alternates to a short
               block under the field. */}
           <div className="grid grid-cols-2 gap-2.5">
+            {/* The number, now that the address is the field above. Behind a
+                button rather than a second field: two "fill this in" boxes
+                stacked ask somebody to choose between them before they have
+                read either. */}
+            <AltButton
+              onClick={() => setView("phone-start")}
+              icon={<Phone size={19} className="text-slate-500" />}
+              label="เบอร์โทร"
+            />
             <AltButton
               href={`/api/auth/line/start?returnTo=${encodeURIComponent(returnTo)}`}
               icon={<LineIcon size={20} />}
               label="LINE"
             />
-            {/* One email door, not two. "อีเมล" and "อีเมลและรหัสผ่าน" sat
-                next to each other as separate buttons, which asks somebody
-                to know which kind of email account they have before they
-                are allowed through. The password form is a line under this
-                grid, where it belongs — it is the way back in for people who
-                already made one, not a way to start. */}
-            {SHOPIFY_EMAIL_LOGIN ? (
-              <AltButton
-                onClick={() => (window.location.href = shopifyAuthStartPath({ intent: "login", returnTo }))}
-                icon={<Mail size={19} className="text-slate-500" />}
-                label="อีเมล"
-              />
-            ) : (
-              <AltButton
-                onClick={() => setView("email-otp")}
-                icon={<Mail size={19} className="text-slate-500" />}
-                label="อีเมล"
-              />
-            )}
             {GOOGLE_CONFIGURED && (
               <AltButton
                 onClick={() => (window.location.href = `/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`)}
@@ -569,6 +605,39 @@ export default function LoginContent({
         </div>
       )}
 
+
+      {/* The number, one tap in. Same form it was when it sat on the start
+          view, reCAPTCHA container and all — that element has to exist in
+          the DOM when signInWithPhoneNumber is called, so it travels with
+          the form rather than staying behind on a view nobody is on. */}
+      {view === "phone-start" && (
+        <div className="flex flex-col gap-4">
+          {!firebaseConfigured() && (
+            <DemoBadge text="ระบบ OTP เบอร์โทรยังไม่ได้ตั้งค่า Firebase — ใช้ LINE หรืออีเมลแทนได้ค่ะ" />
+          )}
+          <div id="recaptcha-container" key={recaptchaKey} />
+          <form onSubmit={handleSendOtp} noValidate className="flex flex-col gap-3">
+            <label htmlFor="login-phone" className="text-xs font-semibold text-slate-500">
+              เบอร์โทรศัพท์
+            </label>
+            <input
+              id="login-phone"
+              disabled={!firebaseConfigured()}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="08X-XXX-XXXX"
+              autoComplete="tel"
+              inputMode="tel"
+              className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40 disabled:opacity-50"
+            />
+            <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
+            {otpError && <p className="text-xs text-rose-700">{otpError}</p>}
+            <Button type="submit" size="lg" loading={otpSending} disabled={!firebaseConfigured()}>
+              {otpSending ? "กำลังส่งรหัส…" : "ส่งรหัส OTP"}
+            </Button>
+          </form>
+        </div>
+      )}
 
       {view === "password" && (
         <div className="flex flex-col gap-5">
