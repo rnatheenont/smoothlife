@@ -1,11 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { filterProducts } from "@/lib/filter-products";
 import { categories} from "@/data/categories";
 import { categoryImage } from "@/lib/category-image";
 import ProductCard from "@/components/ProductCard";
 import ShopHero from "@/components/shop/ShopHero";
+import AdvisorPopup from "@/components/shop/AdvisorPopup";
 import { categoryBanner } from "@/lib/category-banner";
 import ShopFilters from "@/components/ShopFilters";
 import SortMenu from "@/components/shop/SortMenu";
@@ -94,20 +93,17 @@ async function CategoryPageWritten({
         <BackButton fallbackHref="/shop" />
         <Breadcrumb items={breadcrumbItems} />
       </div>
+      {/* A popup in the corner rather than a slab across the page — see
+          AdvisorPopup, and sections/advisor_entry, which is the same thing
+          for the document-rendered half of this route. */}
       {ADVISOR_ENTRY[params.category] && (
-        <Link
+        <AdvisorPopup
+          category={params.category}
           href={ADVISOR_ENTRY[params.category].href}
-          className="group mb-6 flex items-center gap-4 rounded-xl2 bg-brand-ink p-4 md:p-5 text-white shadow-cardHover transition-transform hover:"
-        >
-          <div className="relative h-12 w-12 shrink-0">
-            <Image src="/mascot/smoothie-hi.png" alt="Smoothie" fill sizes="48px" className="object-contain" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold leading-tight">{ADVISOR_ENTRY[params.category].title}</p>
-            <p className="text-xs text-white/60 mt-0.5">{ADVISOR_ENTRY[params.category].subtitle}</p>
-          </div>
-          <ChevronRight size={20} className="text-white/50 shrink-0 group-hover:translate-x-0.5 transition-transform" />
-        </Link>
+          title={ADVISOR_ENTRY[params.category].title}
+          subtitle={ADVISOR_ENTRY[params.category].subtitle}
+          image="/mascot/smoothie-hi.png"
+        />
       )}
 
       <div className="flex flex-col gap-6">

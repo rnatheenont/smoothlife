@@ -55,7 +55,11 @@ export default function ShopHero({
     // with the rest of the page, because the container is on the inner row.
     // The gradient stays under the picture as well as instead of it: it is
     // what the band is while the image is still arriving.
-    <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#cfe9f8_0%,#e4f3fb_52%,#f7fcfe_100%)]">
+    // Curved along the bottom, square across the top: the band meets the
+    // header flush and then lets the page out from under it. overflow-hidden
+    // is doing two jobs now — it kept the clouds in, and it is what clips the
+    // photograph to the curve.
+    <section className="relative isolate overflow-hidden rounded-b-[1.75rem] bg-[linear-gradient(180deg,#cfe9f8_0%,#e4f3fb_52%,#f7fcfe_100%)] md:rounded-b-[2.5rem]">
       {banner ? (
         <>
           <Image

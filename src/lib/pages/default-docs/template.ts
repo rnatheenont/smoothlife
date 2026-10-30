@@ -72,9 +72,17 @@ const collection = (): PageDoc =>
  * The trail and the "กลับ" button share a line here — "beside" — which is
  * what the hand-written page did, and the room above is the tighter one
  * (12px on a phone against 40 on a desktop) for the same reason.
+ *
+ * The trail sits under the banner rather than over it. Above, it was the
+ * first thing on the page and it pushed the banner down off the fold; the
+ * banner is what says where you are, so it goes first and the trail says
+ * how you got there underneath it. This is also the order the hand-written
+ * route has always used, so the flag no longer changes the layout.
  */
 const category = (): PageDoc =>
   doc([
+    { type: "category_chips", v: 1, settings: {} },
+    { type: "category_header", v: 1, settings: { countSuffix: "รายการ" } },
     {
       type: "breadcrumb",
       v: 1,
@@ -86,8 +94,6 @@ const category = (): PageDoc =>
         backHref: "/shop",
       },
     },
-    { type: "category_chips", v: 1, settings: {} },
-    { type: "category_header", v: 1, settings: { countSuffix: "รายการ" } },
     {
       type: "advisor_entry",
       v: 1,

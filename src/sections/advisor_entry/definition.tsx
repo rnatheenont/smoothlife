@@ -1,10 +1,9 @@
-import Image from "next/image";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { z } from "zod";
+import AdvisorPopup from "@/components/shop/AdvisorPopup";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
-// The way in to an advisor, for the categories that have one.
+// The way in to an advisor, for the categories that have one. It draws a
+// popup in the corner — see components/shop/AdvisorPopup.
 //
 // This is the editable half of the category template. Today the two entries
 // that exist — oral care and wellness — are a map hard-coded in the route, so
@@ -33,32 +32,25 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
   const entry = settings.items.find((i) => i.category === category && i.href && i.title);
   if (!entry) return null;
 
+  // A popup rather than the card this used to draw — see AdvisorPopup for
+  // why. The section still owns the copy and which categories get one; all
+  // that changed is where it appears.
   return (
-    <section className="container-page">
-      <Link
-        href={entry.href}
-        className="group mb-6 flex items-center gap-4 rounded-xl2 bg-brand-ink p-4 text-white shadow-cardHover transition-transform md:p-5"
-      >
-        {settings.image && (
-          <div className="relative h-12 w-12 shrink-0">
-            <Image src={settings.image} alt="Smoothie" fill sizes="48px" className="object-contain" />
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="font-bold leading-tight">{entry.title}</p>
-          {entry.subtitle && <p className="mt-0.5 text-xs text-white/60">{entry.subtitle}</p>}
-        </div>
-        <ChevronRight size={20} className="shrink-0 text-white/50 transition-transform group-hover:translate-x-0.5" />
-      </Link>
-    </section>
+    <AdvisorPopup
+      category={entry.category}
+      href={entry.href}
+      title={entry.title}
+      subtitle={entry.subtitle}
+      image={settings.image || undefined}
+    />
   );
 }
 
 export const advisorEntry: SectionDefinition<typeof schema> = {
   type: "advisor_entry",
   version: 1,
-  label: "การ์ดชวนไปที่ปรึกษา",
-  description: "การ์ดดำพร้อมรูปน้อง Smoothie — ใส่ได้หมวดละแถว หมวดที่ไม่มีแถวก็ไม่มีการ์ด",
+  label: "ป๊อปอัปชวนไปที่ปรึกษา",
+  description: "ป๊อปอัปมุมจอพร้อมรูปน้อง Smoothie — ใส่ได้หมวดละแถว หมวดที่ไม่มีแถวก็ไม่มีป๊อปอัป",
   category: "promo",
   schema,
   defaults: {
@@ -79,11 +71,11 @@ export const advisorEntry: SectionDefinition<typeof schema> = {
     ],
   },
   fields: [
-    { key: "image", type: "image", label: "รูปในการ์ด" },
+    { key: "image", type: "image", label: "รูปในป๊อปอัป" },
     {
       key: "items",
       type: "list",
-      label: "การ์ดแต่ละหมวด",
+      label: "ป๊อปอัปแต่ละหมวด",
       item: "หมวด",
       max: 12,
       columns: [
