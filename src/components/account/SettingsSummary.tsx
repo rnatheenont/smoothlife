@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Modal } from "@/components/ui";
+import LoginChannels from "@/components/account/LoginChannels";
 import { KeyRound, ShieldCheck } from "lucide-react";
 import GoogleIcon from "@/components/icons/GoogleIcon";
 import { channelLabel, type ChannelKey } from "@/lib/account-identities";
@@ -37,6 +39,7 @@ function Pill({ ok, children }: { ok: boolean; children: React.ReactNode }) {
 
 export default function SettingsSummary() {
   const [identities, setIdentities] = useState<Identity[] | null>(null);
+  const [channelsOpen, setChannelsOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -68,9 +71,9 @@ export default function SettingsSummary() {
             <ShieldCheck size={16} className="text-brand-800" />
             ช่องทางเข้าสู่ระบบ
           </p>
-          <Link href="/account/verify" className={LINK}>
+          <button type="button" onClick={() => setChannelsOpen(true)} className={LINK}>
             จัดการ
-          </Link>
+          </button>
         </div>
         <p className="mt-1 text-xs text-slate-500">ทุกช่องทางนี้เข้าบัญชีเดียวกัน</p>
         <div className="mt-3">
@@ -91,14 +94,24 @@ export default function SettingsSummary() {
               ) : s.linked ? (
                 <Pill ok>เชื่อมแล้ว</Pill>
               ) : (
-                <Link href="/account/verify" className={LINK}>
+                <button type="button" onClick={() => setChannelsOpen(true)} className={LINK}>
                   เชื่อม
-                </Link>
+                </button>
               )}
             </div>
           ))}
         </div>
       </div>
+
+      <Modal
+        open={channelsOpen}
+        onClose={() => setChannelsOpen(false)}
+        title="ช่องทางเข้าสู่ระบบ"
+        description="เข้าสู่ระบบด้วยช่องทางไหนก็ได้ แล้วมาที่บัญชีเดียวกัน"
+        size="lg"
+      >
+        <LoginChannels embedded />
+      </Modal>
 
       <div className={CARD}>
         <div className={HEAD}>

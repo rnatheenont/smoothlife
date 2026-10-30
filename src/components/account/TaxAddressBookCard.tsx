@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Building2, Check, Loader2, Pencil, Plus, Receipt, Trash2 } from "lucide-react";
+import { Modal } from "@/components/ui";
 import TaxAddressFields, {
   TaxAddressFormValue,
   emptyTaxAddressForm,
@@ -81,7 +82,7 @@ export default function TaxAddressBookCard() {
           <Receipt size={16} className="text-brand-800" />
           ที่อยู่ใบกำกับภาษี
         </p>
-        {isReal && openId === null && (
+        {isReal && (
           <button
             type="button"
             onClick={() => {
@@ -102,11 +103,12 @@ export default function TaxAddressBookCard() {
         </div>
       )}
 
-      {openId !== null && (
-        <form onSubmit={submit} className="mt-4 flex flex-col gap-5 border-t border-slate-100 pt-4">
-          <p className="text-sm font-bold text-brand-ink">
-            {openId === "new" ? "เพิ่มที่อยู่ใบกำกับภาษี" : "แก้ไขที่อยู่ใบกำกับภาษี"}
-          </p>
+      <Modal
+        open={openId !== null}
+        onClose={() => setOpenId(null)}
+        title={openId === "new" ? "เพิ่มที่อยู่ใบกำกับภาษี" : "แก้ไขที่อยู่ใบกำกับภาษี"}
+      >
+        <form onSubmit={submit} className="flex flex-col gap-5">
           <TaxAddressFields value={value} onChange={setValue} />
           {error && <p className="text-sm text-rose-700">{error}</p>}
           <div className="flex gap-2">
@@ -126,9 +128,9 @@ export default function TaxAddressBookCard() {
             </button>
           </div>
         </form>
-      )}
+      </Modal>
 
-      {isReal && openId === null && (
+      {isReal && (
         <div className="mt-3 flex flex-col gap-3">
           {rows === null && <p className="text-sm text-slate-500">กำลังโหลด…</p>}
           {rows?.length === 0 && (

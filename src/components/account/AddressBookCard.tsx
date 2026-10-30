@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, Loader2, MapPin, Pencil, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { Modal } from "@/components/ui";
 import AddressFields, { AddressFormValue, emptyAddressForm } from "@/components/account/AddressFields";
 import DemoBadge from "@/components/DemoBadge";
 import { countryName } from "@/components/AddressForm";
@@ -11,12 +12,16 @@ import type { AddressRow } from "@/app/api/account/addresses/route";
 
 // The shipping address book, on the page it is used from.
 //
-// Adding and editing happen in place rather than on their own routes. The
-// two pages this replaces did the same work, but a page change to fill in
-// four fields and a page change back is a lot of movement for an edit
-// somebody usually makes because they noticed a typo while looking at it.
-// The routes still exist and still work; this is simply the way in that
-// does not leave the page.
+// Adding and editing happen in a dialog over this page rather than on their
+// own routes. The two pages this replaces did the same work, but a page
+// change to fill in four fields and a page change back is a lot of movement
+// for an edit somebody usually makes because they noticed a typo while
+// looking at it. The routes still exist and still work.
+//
+// A dialog rather than a panel that pushes the card open: the list stays
+// where it was, so closing the form puts you back exactly where you were
+// reading. Modal gives it Escape, a focus trap and a locked background, and
+// on a phone it arrives as a sheet from the bottom.
 
 type AddressSuggestion = {
   address_line: string;
@@ -134,7 +139,7 @@ export default function AddressBookCard() {
           <MapPin size={16} className="text-brand-800" />
           ที่อยู่จัดส่ง
         </p>
-        {isReal && openId === null && (
+        {isReal && (
           <button
             type="button"
             onClick={() => openNew()}
@@ -154,7 +159,7 @@ export default function AddressBookCard() {
       {/* Shown whether or not the book is empty: a customer who saved a work
           address is exactly the one who still needs their home one offered.
           The API withholds it once it is actually in the book. */}
-      {isReal && suggestion && openId === null && (
+      {isReal && suggestion && (
         <div className="mt-3 rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-4">
           <div className="flex items-start gap-3">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white">
@@ -217,11 +222,12 @@ export default function AddressBookCard() {
         </div>
       )}
 
-      {openId !== null && (
-        <form onSubmit={submit} className="mt-4 flex flex-col gap-5 border-t border-slate-100 pt-4">
-          <p className="text-sm font-bold text-brand-ink">
-            {openId === "new" ? "เพิ่มที่อยู่จัดส่ง" : "แก้ไขที่อยู่จัดส่ง"}
-          </p>
+      <Modal
+        open={openId !== null}
+        onClose={() => setOpenId(null)}
+        title={openId === "new" ? "เพิ่มที่อยู่จัดส่ง" : "แก้ไขที่อยู่จัดส่ง"}
+      >
+        <form onSubmit={submit} className="flex flex-col gap-5">
           <AddressFields value={value} onChange={setValue} />
           {error && <p className="text-sm text-rose-700">{error}</p>}
           <div className="flex gap-2">
@@ -241,9 +247,9 @@ export default function AddressBookCard() {
             </button>
           </div>
         </form>
-      )}
+      </Modal>
 
-      {isReal && openId === null && (
+      {isReal && (
         <div className="mt-3 flex flex-col gap-3">
           {rows === null && <p className="text-sm text-slate-500">กำลังโหลด…</p>}
           {rows?.length === 0 && (
