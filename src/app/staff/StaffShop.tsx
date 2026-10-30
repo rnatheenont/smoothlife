@@ -1711,7 +1711,7 @@ export default function StaffShop() {
                                   {added ? (
                                     <Check className="h-5 w-5" strokeWidth={2.75} aria-hidden />
                                   ) : (
-                                    <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
+                                    <ShoppingCart className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
                                   )}
                                 </button>
                               );

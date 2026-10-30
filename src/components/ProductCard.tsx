@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import { shopifySquare, shopifySquareSrcSet } from "@/lib/shopify-image";
 import Link from "next/link";
-import { Heart, Check, Flame, Plus, Star } from "lucide-react";
+import { Heart, Check, Flame, ShoppingCart, Star } from "lucide-react";
 import type { ProductCardData } from "@/data/card";
 import { formatTHB } from "@/lib/format";
 import { useCart, useWishlist } from "@/lib/cart-context";
@@ -361,15 +361,17 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
                 }
                 title={added ? t("เพิ่มแล้ว", "Added") : t("ใส่ตะกร้า", "Add to cart")}
                 className={clsx(
-                  // Where the pill was, at the end of its row, now a round +
-                  // — the same control the staff shop uses, so the two shops
-                  // stop looking like two different products.
+                  // Where the pill was, at the end of its row, now a round
+                  // cart — the same control the staff shop uses, so the two
+                  // shops stop looking like two different products. A cart
+                  // rather than a +, which only said "add" and left what it
+                  // added to for the label to explain.
                   //
                   // One size at every card width. The pill needed container
-                  // queries because its label changed length; a + is a + at
-                  // 176px and at 280px, and 40px is the smallest comfortable
-                  // target, so the row no longer has a size condition on it
-                  // at all.
+                  // queries because its label changed length; the icon is the
+                  // same at 176px and at 280px, and 40px is the smallest
+                  // comfortable target, so the row no longer has a size
+                  // condition on it at all.
                   //
                   // Confirmation goes flat: a state that keeps moving reads
                   // as still working.
@@ -380,7 +382,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
                 {added ? (
                   <Check className="h-5 w-5" strokeWidth={2.75} aria-hidden />
                 ) : (
-                  <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
+                  <ShoppingCart className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
                 )}
               </button>
             )}
