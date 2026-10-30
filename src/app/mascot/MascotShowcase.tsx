@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import SmoothieRig, { type SmoothieRigHandle } from "@/components/mascot/SmoothieRig";
+import { mascotTheme, type MascotTheme } from "@/components/mascot/mascot-theme";
 import { useLang } from "@/lib/lang-context";
 
 // Every move the storefront can ask Smoothie for, so the team can see them in
@@ -16,6 +17,11 @@ const GESTURES: [string, string, string][] = [
   ["think", "คิด", "Think"],
   ["run", "วิ่ง", "Run"],
 ];
+// The outfits, to preview either one whatever the date (the site follows mascot-theme.ts).
+const THEMES: [MascotTheme, string, string][] = [
+  ["default", "ชุดปกติ", "Everyday"],
+  ["halloween", "ฮาโลวีน", "Halloween"],
+];
 const MOODS: [string, string, string][] = [
   ["happy", "ดีใจ", "Happy"],
   ["laugh", "หัวเราะ", "Laugh"],
@@ -27,6 +33,7 @@ const MOODS: [string, string, string][] = [
 export default function MascotShowcase() {
   const { t } = useLang();
   const rig = useRef<SmoothieRigHandle>(null);
+  const [theme, setTheme] = useState<MascotTheme>(() => mascotTheme());
   const row = (title: string, items: [string, string, string][]) => (
     <div className="flex flex-col items-center gap-2">
       <p className="text-xs font-semibold tracking-wide text-slate-500">{title}</p>
@@ -50,7 +57,24 @@ export default function MascotShowcase() {
         <h1 className="text-2xl font-bold text-brand-ink md:text-3xl">{t("น้อง Smoothie", "Meet Smoothie")}</h1>
         <p className="mt-1 text-sm text-slate-500">{t("กดปุ่มหรือแตะที่น้องเพื่อดูท่าทาง", "Tap a button or Smoothie to see a move")}</p>
       </div>
-      <SmoothieRig ref={rig} className="aspect-[1100/1180] w-full max-w-[380px]" shadow alt={t("น้อง Smoothie มาสคอตของ Smoothlife", "Smoothie, the Smoothlife mascot")} />
+      <div role="radiogroup" aria-label={t("ชุด", "Outfit")} className="flex gap-1 rounded-full border border-slate-200 bg-white p-1">
+        {THEMES.map(([id, th, en]) => (
+          <button
+            key={id}
+            type="button"
+            role="radio"
+            aria-checked={theme === id}
+            onClick={() => setTheme(id)}
+            className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
+              theme === id ? "bg-brand-800 font-semibold text-white" : "text-slate-600 hover:text-brand-800"
+            }`}
+          >
+            {t(th, en)}
+          </button>
+        ))}
+      </div>
+      {/* keyed: the rig picks its outfit once, when it is built */}
+      <SmoothieRig key={theme} theme={theme} ref={rig} className="aspect-[1100/1180] w-full max-w-[380px]" shadow alt={t("น้อง Smoothie มาสคอตของ Smoothlife", "Smoothie, the Smoothlife mascot")} />
       <div className="flex w-full max-w-xl flex-col gap-5">
         {row(t("ท่าทาง", "Moves"), GESTURES)}
         {row(t("อารมณ์", "Moods"), MOODS)}

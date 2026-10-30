@@ -10,6 +10,7 @@
 // it is given, so a page can hold the chat launcher and the hero at once.
 
 import { ANIMS, ARM_DOWN, BONES, EASE, REST_CH, type Anim } from "./smoothie-anims";
+import type { MascotTheme } from "./mascot-theme";
 
 export type View = { x0: number; x1: number; y0: number; y1: number };
 /** Whole body with headroom for jumps. */
@@ -23,7 +24,7 @@ export const VIEW_BUST: View = { x0: 110, x1: 890, y0: -40, y1: 740 };
  * so a changed file under the same URL never reaches anyone who has visited
  * before — the query string makes it a new URL.
  */
-export const MASCOT_ASSET_VERSION = "2026-10-22";
+export const MASCOT_ASSET_VERSION = "2026-10-30";
 export const mascotAsset = (file: string) => `/mascot/rig/${file}?v=${MASCOT_ASSET_VERSION}`;
 
 /** Gestures and moods the storefront may trigger (sad / angry / love are left out on purpose). */
@@ -87,6 +88,11 @@ type Weight = [bone: string, w: number];
 type LayerDef = {
   name: string; src?: string; bbox: number[]; grid: number[]; w: (x: number, y: number) => Weight[];
   group?: "base-head" | "base"; react?: string; armSide?: "front" | "back"; armRSide?: "up" | "down";
+  /** Only drawn in this outfit (see mascot-theme.ts). */
+  theme?: MascotTheme;
+  /** The artboard box the texture covers. Body parts are full 1000×1000 artboards; props are
+   *  tight pictures that may reach past its edges (the witch hat pokes above y=0). */
+  texBox?: number[];
 };
 const FACE_C = [512, 395];
 const headWeights = (x: number, y: number): Weight[] => {
@@ -112,7 +118,12 @@ const FACES: Record<string, number[]> = {
   happy: [176, 6, 818, 568], laugh: [176, 14, 818, 568],
   surprised: [176, 20, 818, 568], curious: [176, 17, 858, 568], worried: [176, 17, 818, 568],
 };
+// Halloween props: boxes come from smoothlife-mascot/halloween/build_halloween.py.
+const HAT_BOX = [368, -31, 667, 151];
+const PUMPKIN_BOX = [11, 740, 225, 956];
 const LAYERS: LayerDef[] = [
+  // stands on the ground beside the feet — the "world" bone never moves, so it stays put when he jumps
+  { name: "halloween-pumpkin", theme: "halloween", bbox: PUMPKIN_BOX, texBox: PUMPKIN_BOX, grid: [1, 1], w: () => [["world", 1]] },
   { name: "leg-left", bbox: [268, 769, 474, 930], grid: [6, 6], w: () => [["legL", 1]] },
   { name: "leg-right", bbox: [518, 772, 724, 932], grid: [6, 6], w: () => [["legR", 1]] },
   { name: "arm-right", armRSide: "down", bbox: [597, 559, 795, 825], grid: [12, 12], w: ARM_R },
@@ -128,6 +139,8 @@ const LAYERS: LayerDef[] = [
   { name: "nose", bbox: [477, 357, 537, 397], grid: [1, 1], w: () => [["face", 1]], group: "base" },
   { name: "mouth", bbox: [466, 394, 543, 448], grid: [2, 2], w: () => [["mouth", 1]], group: "base" },
   ...Object.entries(FACES).map(([id, bbox]): LayerDef => ({ name: "face-" + id, react: id, bbox, grid: [26, 22], w: headWeights })),
+  // over the hood and every face, under the raised mittens
+  { name: "halloween-hat", theme: "halloween", bbox: HAT_BOX, texBox: HAT_BOX, grid: [4, 3], w: () => [["head", 1]] },
   { name: "arm-left-hand", armSide: "front", bbox: [129, 406, 377, 657], grid: [16, 16], w: ARM_L },
   { name: "arm-right-hand", armRSide: "up", bbox: [614, 553, 802, 829], grid: [16, 16], w: ARM_R },
 ];
@@ -141,6 +154,8 @@ export type EngineOptions = {
   assetBase?: string;
   view?: View;
   reducedMotion?: boolean;
+  /** Outfit; layers tagged with another theme are left out. Default "default". */
+  theme?: MascotTheme;
   /** Called with how far the body has lifted off the ground (0 = standing), for a drop shadow. */
   onGround?: (scale: number, opacity: number) => void;
 };
@@ -179,6 +194,9 @@ export class SmoothieEngine {
     this.onGround = opts.onGround;
     this.sec.mouth.x = this.sec.mouth.target = 1;
     for (const [n, p, x, y] of BONES) this.B[n] = { name: n, parent: p, px: x, py: y, m: [1, 0, 0, 1, 0, 0] };
+    // Not in BONES, so solve() never moves it: for props that stand on the ground.
+    this.B.world = { name: "world", parent: null, px: 0, py: 0, m: [1, 0, 0, 1, 0, 0] };
+    const theme = opts.theme ?? "default";
 
     const sh = (t: number, src: string) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s); return s; };
     const prog = gl.createProgram();
@@ -191,11 +209,13 @@ export class SmoothieEngine {
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
     for (const def of LAYERS) {
+      if (def.theme && def.theme !== theme) continue;
       const [x0, y0, x1, y1] = def.bbox, [nx, ny] = def.grid, n = (nx + 1) * (ny + 1);
+      const [tx0, ty0, tx1, ty1] = def.texBox ?? [0, 0, 1000, 1000];
       const rest = new Float32Array(n * 2), uv = new Float32Array(n * 2), idx: number[] = [], wts: [BoneState, number][][] = [];
       for (let j = 0, k = 0; j <= ny; j++) for (let i = 0; i <= nx; i++, k++) {
         const x = x0 + ((x1 - x0) * i) / nx, y = y0 + ((y1 - y0) * j) / ny;
-        rest[k * 2] = x; rest[k * 2 + 1] = y; uv[k * 2] = x / 1000; uv[k * 2 + 1] = y / 1000;
+        rest[k * 2] = x; rest[k * 2 + 1] = y; uv[k * 2] = (x - tx0) / (tx1 - tx0); uv[k * 2 + 1] = (y - ty0) / (ty1 - ty0);
         wts.push(def.w(x, y).filter(([, w]) => w > 1e-4).map(([b, w]) => [this.B[b], w] as [BoneState, number]));
       }
       for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {

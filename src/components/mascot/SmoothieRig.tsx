@@ -9,6 +9,7 @@
 
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 import { SMOOTHIE_ACTIONS, SmoothieEngine, VIEW_BUST, VIEW_FULL, mascotAsset, type View } from "./smoothie-engine";
+import { mascotTheme, themedFile, type MascotTheme } from "./mascot-theme";
 
 export type SmoothieRigHandle = {
   play: (action: string) => void;
@@ -35,9 +36,10 @@ type Props = {
   /** Soft shadow under the feet that shrinks when it jumps. */
   shadow?: boolean;
   alt?: string;
+  /** Outfit. Leave it out to follow the calendar (mascot-theme.ts); read once per mount. */
+  theme?: MascotTheme;
 };
 
-const STILL = mascotAsset("still.webp");
 
 function stillStyle(v: View): React.CSSProperties {
   const w = v.x1 - v.x0, h = v.y1 - v.y0;
@@ -62,7 +64,9 @@ export default function SmoothieRig({
   playOnClick = true,
   shadow = false,
   alt = "",
+  theme: themeProp,
 }: Props) {
+  const theme = themeProp ?? mascotTheme();
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shadowRef = useRef<HTMLSpanElement>(null);
@@ -112,6 +116,7 @@ export default function SmoothieRig({
       try {
         engine = new SmoothieEngine(canvas, {
           view,
+          theme,
           reducedMotion: reduce,
           onGround: shadow ? (s, o) => {
             const el = shadowRef.current;
@@ -188,7 +193,7 @@ export default function SmoothieRig({
       )}
       {/* eslint-disable-next-line @next/next/no-img-element -- positioned to the rig's own framing, not a layout image */}
       <img
-        src={STILL}
+        src={mascotAsset(themedFile(theme, "still.webp"))}
         alt=""
         draggable={false}
         style={{ ...stillStyle(view), opacity: ready ? 0 : 1, transition: "opacity .2s" }}
