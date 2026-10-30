@@ -165,15 +165,30 @@ export default function QuickChat() {
   const [tucked, setTucked] = useState(false);
   const lastScrollY = useRef(0);
   useEffect(() => {
+    let idle: ReturnType<typeof setTimeout> | undefined;
     function onScroll() {
       const y = window.scrollY;
-      // Wide screens have room for both; the header does not collapse there
-      // either.
-      setTucked(window.innerWidth < 1024 && y > lastScrollY.current && y > 80);
+      // Either direction, not just downward. Down-only was the first rule
+      // and it left the launcher sitting on a card's add-to-cart button for
+      // the whole of a scroll back up a grid — which is the half of the
+      // journey where somebody is looking for a particular card to press.
+      // Wide screens have room for both and keep it out of this, as the
+      // header's own collapse does.
+      if (window.innerWidth < 1024 && y > 80 && y !== lastScrollY.current) {
+        setTucked(true);
+        clearTimeout(idle);
+        // Back as soon as the page settles. Long enough not to flicker
+        // between flicks, short enough that it is waiting by the time
+        // anyone has decided to ask something.
+        idle = setTimeout(() => setTucked(false), 450);
+      }
       lastScrollY.current = y;
     }
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      clearTimeout(idle);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
   // Never while it is being used, dragged, or saying hello — a thing that
   // slides away mid-sentence reads as broken, not as tactful.
