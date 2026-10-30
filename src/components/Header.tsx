@@ -191,8 +191,13 @@ export default function Header({
           // The strip keeps its own grey, and on a desktop it stays open
           // while the bar is detached — so it has to take the bar's top
           // corners with it, or its square ones sit proud of them.
-          className={`overflow-hidden bg-slate-100 transition-[max-height,opacity] duration-300 lg:max-h-16 lg:opacity-100 ${
-            scrolled ? "max-h-0 opacity-0 rounded-t-2xl" : "max-h-16 opacity-100"
+          // Folds away on the first scroll at every width. It used to be
+          // pinned open on a desktop — there was room for it — but there is
+          // no room for it on a bar that has left the top of the page and
+          // become a card, where it was the one square-cornered band in a
+          // rounded box.
+          className={`overflow-hidden bg-slate-100 transition-[max-height,opacity] duration-300 ${
+            scrolled ? "max-h-0 opacity-0" : "max-h-16 opacity-100"
           }`}
         >
           <div className="flex items-center gap-2 py-1.5 pl-3 pr-0">
@@ -270,7 +275,15 @@ export default function Header({
       <div className="container-page grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-2 md:flex md:gap-6 lg:py-2.5">
         {/* -m-2.5 p-2.5: 44px of thumb around a 24px icon, without the
             padding pushing anything in the row along. */}
-        <button className="-m-2.5 shrink-0 justify-self-start p-2.5 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
+        {/* Below lg it is the only way into the menu. From lg it appears
+            when the bar detaches and the nav row folds away with the promo
+            strip — the row's four links and the mega menu go behind it
+            rather than disappearing. */}
+        <button
+          className={`-m-2.5 shrink-0 justify-self-start p-2.5 ${scrolled ? "" : "lg:hidden"}`}
+          onClick={() => setOpen(true)}
+          aria-label="Open menu"
+        >
           <Menu size={24} />
         </button>
 
@@ -374,7 +387,9 @@ export default function Header({
       </div>
 
       {/* relative: the mega panel hangs off this bar, edge to edge. */}
-      <nav className="relative hidden lg:block border-t border-slate-100">
+      <nav
+        className={`relative border-t border-slate-100 ${scrolled ? "hidden" : "hidden lg:block"}`}
+      >
         <div className="container-page flex items-center gap-8 py-2.5 text-sm font-medium text-slate-700">
           {deskNav.map((l) =>
             l.mega ? (
@@ -423,7 +438,7 @@ export default function Header({
     </header>
 
       {open && (
-        <div className="fixed inset-0 z-100 lg:hidden">
+        <div className="fixed inset-0 z-100">
           <div aria-hidden="true" className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <div className="absolute left-0 top-0 flex max-h-dvh w-80 max-w-[85vw] flex-col bg-white shadow-xl overflow-y-auto overscroll-contain rounded-br-2xl animate-fadeUp">
             <div className="bg-brand-gradient-soft px-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-5">
