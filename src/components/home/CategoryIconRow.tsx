@@ -47,9 +47,13 @@ const shortcuts: Shortcut[] = [
   { href: "/collections/first-aid-smoothllife", label: "ปฐมพยาบาล", Icon: FirstAidIcon, iconKey: "first-aid" },
 ];
 
+// October 2026: the row is wearing the Halloween set. The published home
+// page does not name a theme, so this default is what it renders — switching
+// it back is this one word, or the "ชุดไอคอน" select in the admin, whichever
+// comes first.
 export default function CategoryIconRow({
   items = shortcuts,
-  theme = "line",
+  theme = "halloween",
 }: {
   items?: Shortcut[];
   theme?: IconTheme;

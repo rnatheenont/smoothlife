@@ -29,7 +29,7 @@ const schema = z.object({
   /** Which set of marks the discs wear. Validated against the list rather
    *  than taken as a string: a typo here would otherwise point every disc at
    *  a folder that does not exist. */
-  theme: z.enum(ICON_THEMES).default("line"),
+  theme: z.enum(ICON_THEMES).default("halloween"),
 });
 
 function Component({ settings }: SectionProps<z.output<typeof schema>>) {
@@ -63,7 +63,7 @@ export const iconShortcuts: SectionDefinition<typeof schema> = {
       { href: "/collections/medical-equipment", label: "อุปกรณ์เสริม", icon: "accessories" },
       { href: "/collections/first-aid-smoothllife", label: "ปฐมพยาบาล", icon: "first-aid" },
     ],
-    theme: "line",
+    theme: "halloween",
   },
   fields: [
     {
