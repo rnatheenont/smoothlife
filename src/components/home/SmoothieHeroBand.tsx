@@ -14,9 +14,6 @@ import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
 import { useQuickChat } from "@/lib/quickchat-context";
 import SkyClouds from "@/components/SkyClouds";
 import HalloweenSky from "@/components/home/HalloweenSky";
-import ChristmasSky from "@/components/home/ChristmasSky";
-import NewYearSky from "@/components/home/NewYearSky";
-import { useMascotTheme } from "@/components/mascot/mascot-theme-context";
 import SmoothieRig from "@/components/mascot/SmoothieRig";
 
 // The first thing on the page is a question, not a banner.
@@ -51,9 +48,7 @@ let visitSeed = 0;
  * enough to need white text at the top still has to be pale enough for dark
  * text where the question sits.
  */
-export type HeroTheme = "sky" | "halloween" | "christmas" | "newyear";
-/** "auto": dress the band in whatever Smoothie is wearing (/admin/mascot). */
-export type HeroThemeSetting = HeroTheme | "auto";
+export type HeroTheme = "sky" | "halloween";
 
 const THEMES: Record<
   HeroTheme,
@@ -77,28 +72,7 @@ const THEMES: Record<
     wordmark: "text-white/12",
     chip: "border-white/30 bg-white/15 text-amber-50 hover:border-amber-300 hover:text-white",
   },
-  // A winter night that pales to snow at the bottom, where the chips sit.
-  christmas: {
-    sky: "bg-[linear-gradient(180deg,#0b2545_0%,#134074_30%,#2e6aa0_55%,#8fbfe0_78%,#e9f4fb_100%)]",
-    eyebrow: "text-sky-100/85",
-    head: "text-white",
-    mark: "text-amber-200",
-    wordmark: "text-white/12",
-    // on the pale lower sky white-on-glass is too faint: the chips carry the night with them
-    chip: "border-white/40 bg-[#134074]/60 text-white hover:border-amber-200 hover:text-white",
-  },
-  // Night over the city; the skyline is dark, so the chips stay on the sky.
-  newyear: {
-    sky: "bg-[linear-gradient(180deg,#0a0f2e_0%,#1c1a4f_35%,#3b2a6e_62%,#6b4596_84%,#8f62b0_100%)]",
-    eyebrow: "text-violet-100/85",
-    head: "text-white",
-    mark: "text-amber-300",
-    wordmark: "text-white/10",
-    chip: "border-white/30 bg-white/15 text-amber-50 hover:border-amber-300 hover:text-white",
-  },
 };
-
-const FROM_MASCOT: Record<string, HeroTheme> = { default: "sky", halloween: "halloween", christmas: "christmas", newyear: "newyear" };
 
 // The headline is an invitation that keeps rephrasing itself.
 //
@@ -131,9 +105,7 @@ const HEADLINES_EN: HeadLine[] = [
 
 const HEADLINE_MS = 3800;
 
-export default function SmoothieHeroBand({ theme: themeSetting = "auto" }: { theme?: HeroThemeSetting }) {
-  const outfit = useMascotTheme();
-  const theme: HeroTheme = themeSetting === "auto" ? FROM_MASCOT[outfit] ?? "sky" : themeSetting;
+export default function SmoothieHeroBand({ theme = "sky" }: { theme?: HeroTheme }) {
   const skin = THEMES[theme] ?? THEMES.sky;
   const [q, setQ] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -259,15 +231,7 @@ export default function SmoothieHeroBand({ theme: themeSetting = "auto" }: { the
         showHits && "z-20"
       )}
     >
-      {theme === "halloween" ? (
-        <HalloweenSky />
-      ) : theme === "christmas" ? (
-        <ChristmasSky />
-      ) : theme === "newyear" ? (
-        <NewYearSky />
-      ) : (
-        <SkyClouds />
-      )}
+      {theme === "halloween" ? <HalloweenSky /> : <SkyClouds />}
       {/* The wordmark drifts left on a loop rather than sitting still.
           Two identical copies inside a track as wide as they are, moving
           exactly -50%: the second copy is where the first was when the
