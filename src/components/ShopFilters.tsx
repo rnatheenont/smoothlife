@@ -5,9 +5,8 @@ import { categories, concerns } from "@/data/categories";
 import type { BrandOption } from "@/lib/brand-options";
 import { multi, PROMO_FILTERS, RATING_STEPS, type FilterCounts, ShopSearchParams } from "@/lib/shop-params";
 import { SlidersHorizontal, Check, X, ChevronDown, Search, Star } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import clsx from "clsx";
-import { createPortal } from "react-dom";
 import Dropdown from "@/components/shop/Dropdown";
 
 // Fewer than this and there's nothing to collapse — the toggle would just
@@ -80,7 +79,6 @@ export default function ShopFilters({
   current,
   mobileExtra,
   counts,
-  resultCount,
   houseBrands,
   otherBrands,
 }: {
@@ -91,44 +89,9 @@ export default function ShopFilters({
   otherBrands: BrandOption[];
   mobileExtra?: ReactNode;
   counts?: FilterCounts;
-  /** How many products the filters currently leave, for the sheet's own
-   *  button — so the sheet answers "and how many is that?" without closing. */
-  resultCount?: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  /** Which section of the sheet to land on. A chip names one; the plain
-   *  "ตัวกรอง" button names none and opens at the top. */
-  const [sheetSection, setSheetSection] = useState<string | null>(null);
-  const sheetBody = useRef<HTMLDivElement>(null);
-
-  function openSheet(section?: string) {
-    setSheetSection(section ?? null);
-    setMobileOpen(true);
-  }
-
-  // Lock the page while the sheet is up. Without it the page carried on
-  // scrolling behind a sheet that covers the whole screen, so closing it put
-  // you somewhere you never chose to be — and overscroll-contain on the list
-  // inside stops a flick past the last brand from doing the same thing.
-  // Jump to the chip's own section once the sheet is on screen. Instant,
-  // not smooth: the sheet is still sliding up, and a second animation
-  // underneath it reads as the content having been knocked loose.
-  useEffect(() => {
-    if (!mobileOpen || !sheetSection) return;
-    const el = sheetBody.current?.querySelector(`[data-sec="${sheetSection}"]`);
-    el?.scrollIntoView({ block: "start" });
-  }, [mobileOpen, sheetSection]);
-
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [mobileOpen]);
   // Which filter menu is showing, or none. One at a time.
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [showAllBrands, setShowAllBrands] = useState(false);
@@ -547,22 +510,6 @@ export default function ShopFilters({
   // range set on desktop and carried to a phone by the URL was invisible
   // here, and an unexplained short list is how a shopper decides the shop is
   // out of stock.
-  /** The same facets the desktop row has, in the same order, each carrying
-   *  the count its own dropdown shows. */
-  const mobileFacets = [
-    { key: "category", label: "หมวดหมู่", count: current.category ? 1 : 0 },
-    { key: "brand", label: "แบรนด์", count: activeBrands.length },
-    { key: "price", label: "ช่วงราคา", count: current.minPrice || current.maxPrice ? 1 : 0 },
-    { key: "promo", label: "โปรโมชัน", count: activePromos.length },
-    { key: "rating", label: "คะแนนสินค้า", count: current.rating ? 1 : 0 },
-    { key: "concern", label: "ปัญหาผิวที่กังวล", count: activeConcerns.length },
-  ];
-
-  const appliedCount =
-    activeSecondaryCount +
-    activePromos.length +
-    (current.rating ? 1 : 0) +
-    (current.minPrice || current.maxPrice ? 1 : 0);
 
   const mobileContent = (
     <div className="flex flex-col gap-7">
@@ -687,53 +634,17 @@ export default function ShopFilters({
 
   return (
     <>
-      {/* One scrollable row of chips instead of two half-width buttons.
-          Two buttons split the width whatever was in them and said nothing
-          about what could be filtered — everything was behind one word.
-          A chip per facet says what the shop sorts by before anything is
-          tapped, and the ones that are doing something carry their count.
-          It bleeds to the gutters so the row scrolls under the edge rather
-          than stopping short of it. */}
-      <div className="lg:hidden bleed-page scrollbar-none flex items-center gap-2 overflow-x-auto">
-        <button
-          onClick={() => openSheet()}
-          className="glass-pill relative flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-transform active:scale-95"
-        >
-          <SlidersHorizontal size={15} aria-hidden="true" /> ตัวกรอง
-          {appliedCount > 0 && (
-            <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-gradient px-1 text-[10px] font-bold text-white">
-              {appliedCount}
-            </span>
-          )}
-        </button>
-        {mobileFacets.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => openSheet(f.key)}
-            className={clsx(
-              "flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm transition-transform active:scale-95",
-              f.count > 0
-                ? "border-brand-emerald bg-brand-gradient-soft font-semibold text-brand-800"
-                : "glass-pill font-medium text-slate-700",
-            )}
-          >
-            {f.label}
-            {f.count > 0 && (
-              <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-gradient px-1 text-[10px] font-bold text-white">
-                {f.count}
-              </span>
-            )}
-            <ChevronDown size={13} aria-hidden="true" className="text-slate-400" />
-          </button>
-        ))}
-        {/* Last, and kept whole: ordering is not a filter, and the sort
-            control is a select of its own. */}
-        <div className="shrink-0">{mobileExtra}</div>
-      </div>
-      {/* Desktop: the same filters as a row above the grid. The phone keeps
-          its sheet — a row of five menus is a sidebar again on a 375px
-          screen, only sideways. */}
-      <div className="hidden flex-wrap items-center gap-2 lg:flex">
+      {/* One row of menus, at every width.
+          
+          The phone used to get a scrolling row of chips that opened a
+          bottom sheet instead, on the reasoning that five menus on a 375px
+          screen is a sidebar again, only sideways. The objection to that
+          was simpler than the reasoning: the phone was the only place where
+          tapping "แบรนด์" did not open แบรนด์. It wraps here rather than
+          scrolls, so every facet is on screen at once instead of hiding
+          past the right edge, and Dropdown already caps its panel at the
+          window width. */}
+      <div className="flex flex-wrap items-center gap-2">
         <FilterMenu
           label="หมวดหมู่"
           openMenu={openMenu}
@@ -784,56 +695,11 @@ export default function ShopFilters({
             ล้างทั้งหมด ({activeFilterCount})
           </button>
         )}
+        {/* Ordering is not a filter, and on a desktop the page puts the sort
+            menu at the far end of the toolbar itself. On a phone there is no
+            far end, so it comes in here, last. */}
+        {mobileExtra && <div className="shrink-0 lg:hidden">{mobileExtra}</div>}
       </div>
-      {/* Portalled to the body, and it has to be.
-          
-          The toolbar above is a glass bar, and an element with a
-          backdrop-filter becomes the containing block for every fixed
-          descendant — so "fixed inset-0" stopped meaning the window and
-          started meaning the bar, which is 56 pixels tall and scrolls. The
-          sheet opened mostly off the top of the screen with only its
-          footer showing. Nothing about the sheet was wrong; it was being
-          measured against the wrong box. */}
-      {mobileOpen &&
-        createPortal(
-        <div className="fixed inset-0 z-100 lg:hidden">
-          <div aria-hidden="true" className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
-          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] flex flex-col rounded-t-2xl bg-white shadow-xl animate-slideUp">
-            <div className="flex items-center justify-center pt-2.5 pb-1 shrink-0">
-              <span className="h-1.5 w-10 rounded-full bg-slate-200" />
-            </div>
-            <div className="flex items-center justify-between px-5 pb-3 shrink-0">
-              <h3 className="font-bold">ตัวกรองสินค้า</h3>
-              <button
-                onClick={() => setMobileOpen(false)}
-                aria-label="ปิด"
-                className="grid h-8 w-8 place-items-center rounded-full bg-surface-soft text-slate-500"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div ref={sheetBody} className="flex-1 overflow-y-auto overscroll-contain px-5">
-              {mobileContent}
-            </div>
-            <div className="p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shrink-0">
-              {/* The count belongs on the button, not only behind it. Filters
-                  here apply the moment they are tapped, so this number is the
-                  real answer to "how many did that leave me", and a shopper
-                  who sees 3 can take a filter back off without closing the
-                  sheet to find out. */}
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="w-full rounded-full bg-brand-gradient py-3 text-sm font-semibold text-white shadow-card"
-              >
-                {typeof resultCount === "number"
-                  ? `ดูสินค้า ${resultCount.toLocaleString("th-TH")} รายการ`
-                  : "ดูสินค้า"}
-              </button>
-            </div>
-          </div>
-        </div>,
-          document.body,
-        )}
     </>
   );
 }

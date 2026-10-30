@@ -89,7 +89,11 @@ const category = (): PageDoc =>
       settings: {
         showHome: true,
         display: "row",
-        room: "page_tight",
+        // "compact", not "page_tight": page_tight is 40px of air on a
+        // desktop, which is what a trail needs when it is the first thing
+        // under the header. This one sits under the banner now, and 40px
+        // there is a hole between two things that belong together.
+        room: "compact",
         back: "beside",
         backHref: "/shop",
       },

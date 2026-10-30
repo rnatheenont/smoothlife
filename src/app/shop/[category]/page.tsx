@@ -88,8 +88,10 @@ async function CategoryPageWritten({
       >
       </ShopHero>
 
-      <div className="container-page pt-5 pb-8 md:pt-8 md:pb-10">
-      <div className="flex items-center gap-3 mb-4">
+      {/* Tight at the top: the banner is directly above, and the trail
+          belongs to it rather than opening a new stretch of page. */}
+      <div className="container-page pt-3 pb-8 md:pt-4 md:pb-10">
+      <div className="mb-3 flex items-center gap-3">
         <BackButton fallbackHref="/shop" />
         <Breadcrumb items={breadcrumbItems} />
       </div>

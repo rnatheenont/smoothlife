@@ -104,7 +104,7 @@ export default function ShopHero({
               anything less, two lines overlap by the difference whether or
               not the particular words happen to collide. On a title that
               does not wrap this costs a few pixels of band height. */}
-          <h1 className="mt-3 text-[28px] font-extrabold leading-[1.5] text-brand-1000 md:mt-4 md:text-5xl">
+          <h1 className="mt-3 text-[28px] font-semibold leading-[1.5] text-brand-1000 md:mt-4 md:text-5xl">
             {title}
           </h1>
           {subtitle && (

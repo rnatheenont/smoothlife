@@ -70,7 +70,6 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
                   otherBrands={brandOptions().other}
                   current={searchParams}
                   counts={counts}
-                  resultCount={allItems.length}
                   mobileExtra={<SortSelect current={searchParams} />}
                 />
                 <div className="hidden items-center gap-2 lg:flex">

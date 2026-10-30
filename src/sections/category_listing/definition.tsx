@@ -56,7 +56,11 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
     // that used to head this block carried its own mb-6, and when the row
     // became a dropdown in the toolbar the gap went with it — leaving the
     // filter pills sitting against the bottom edge of the banner.
-    <section className="container-page pt-5 pb-8 md:pt-8 md:pb-10">
+    // Top padding is small because something always sits directly above this
+    // — the trail, or the banner when the trail is off — and this block
+    // opening with 32px of its own put a gap between the page and its own
+    // controls. The bottom keeps its room: below it is the end.
+    <section className="container-page pt-2 pb-8 md:pt-3 md:pb-10">
       <div className="flex flex-col gap-6">
         <div className="flex-1">
           {/* One toolbar, the same as /shop: filters on the left, ordering

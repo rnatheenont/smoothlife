@@ -103,7 +103,6 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
                 otherBrands={data.other}
                 current={data.params}
                 counts={data.counts}
-                resultCount={data.total}
                 mobileExtra={<SortSelect current={data.params} />}
               />
               <div className="hidden items-center gap-2 lg:flex">
