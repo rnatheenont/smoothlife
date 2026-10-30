@@ -62,6 +62,27 @@ export function iconThemeSrc(theme: IconTheme, key: string | undefined): string 
   return `/category-icons/${theme}/${key}.png`;
 }
 
+/**
+ * The same picture at four times the size, for the one place that draws it big.
+ *
+ * The files above are 160px on their long side, which is all the shortcut
+ * strip (46–60px) and the header menu (32px) ever needed, and they were cut
+ * down to that on purpose — sixteen of them at ~420px was 3MB on the home
+ * page, and `images.unoptimized` is on, so nothing resizes them on the way
+ * out. The shop banner draws the same mark at up to 320px, where a 160px file
+ * is a 3x bilinear stretch on a retina screen and looks it.
+ *
+ * So: a second copy, 4x, resampled and sharpened rather than left to the
+ * browser, and WebP because 640px of soft 3D render is 35KB there against
+ * ~200KB as PNG. Only the 3d set has one — it is the only set the banner
+ * draws — and only one of them loads per page.
+ */
+export function iconThemeSrcLarge(theme: IconTheme, key: string | undefined): string | null {
+  if (theme !== "3d") return null;
+  if (!iconThemeSrc(theme, key)) return null;
+  return `/category-icons/3d/lg/${key}.webp`;
+}
+
 export function isIconTheme(v: unknown): v is IconTheme {
   return typeof v === "string" && (ICON_THEMES as readonly string[]).includes(v);
 }

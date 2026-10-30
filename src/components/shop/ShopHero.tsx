@@ -1,6 +1,6 @@
 import Image from "next/image";
 import SkyClouds from "@/components/SkyClouds";
-import { iconThemeSrc } from "@/lib/category-icon-theme";
+import { iconThemeSrc, iconThemeSrcLarge } from "@/lib/category-icon-theme";
 
 // The banner at the top of the shop: what you are looking at, how much of it
 // there is, and the row of categories to move between.
@@ -37,7 +37,10 @@ export default function ShopHero({
   // Pinned to "3d" rather than following the shortcut strip's theme setting,
   // for the reason the header menu is: that setting belongs to a section, and
   // this banner is the top of a route that may carry no sections at all.
-  const icon = iconThemeSrc("3d", categorySlug);
+  // The 4x copy, because this is the one place that draws it big — see
+  // iconThemeSrcLarge. iconThemeSrc is what says whether there is art at
+  // all, and the large file exists for exactly the same keys.
+  const icon = iconThemeSrcLarge("3d", categorySlug);
 
   return (
     // The same sky the home page opens with. The banner used to be a flat
@@ -53,14 +56,21 @@ export default function ShopHero({
     // the only thing here that did.
     <section className="relative isolate bg-[linear-gradient(180deg,#cfe9f8_0%,#e4f3fb_52%,#f7fcfe_100%)]">
       <SkyClouds />
-      <div className="container-page relative py-7 md:py-10">
+      <div
+        className={`container-page relative ${
+          // A bigger object needs a deeper band to come out of: at the sizes
+          // below, the banner's own height would put the top of the mark up
+          // in the nav bar.
+          icon ? "py-10 md:py-[4.5rem]" : "py-7 md:py-10"
+        }`}
+      >
         {/* The heading gives the mark its side of the band rather than
             running under it: the mark is out of flow, so nothing else
             reserves the space for it. */}
         <div
           className={
             icon
-              ? "max-w-[calc(100%-9rem)] sm:max-w-[calc(100%-12.5rem)] md:max-w-[calc(100%-15rem)] lg:max-w-[calc(100%-17rem)]"
+              ? "max-w-[calc(100%-10rem)] sm:max-w-[calc(100%-14.5rem)] md:max-w-[calc(100%-18rem)] lg:max-w-[calc(100%-22rem)]"
               : undefined
           }
         >
@@ -92,10 +102,10 @@ export default function ShopHero({
           <Image
             src={icon}
             alt=""
-            width={160}
-            height={160}
+            width={640}
+            height={640}
             priority
-            className="pointer-events-none absolute bottom-0 end-[var(--page-gutter)] z-10 w-32 translate-y-[20%] object-contain drop-shadow-[0_14px_30px_rgba(0,53,41,0.18)] sm:w-44 md:w-52 lg:w-60"
+            className="pointer-events-none absolute bottom-0 end-[var(--page-gutter)] z-10 w-36 translate-y-[18%] object-contain drop-shadow-[0_18px_36px_rgba(0,53,41,0.20)] sm:w-52 md:w-64 lg:w-80"
           />
         )}
       </div>
