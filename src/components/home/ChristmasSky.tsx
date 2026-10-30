@@ -1,3 +1,5 @@
+import SkyCastle from "@/components/home/SkyCastle";
+
 // The hero band's Christmas dress: a winter night going pale towards the
 // bottom, snow falling, and a skyline of snowy hills, pines and a lit cottage.
 //
@@ -67,17 +69,11 @@ export default function ChristmasSky() {
       </span>
 
       {/* Skyline sized by width, like HalloweenSky's, so nothing is cropped on
-          a wide screen. The cottage stands left of the mascot (pinned right
-          from xl, ~300 units wide), not behind it. */}
+          a wide screen. The castle stands where HalloweenSky's does: left of
+          the mascot (pinned right from xl), its base sunk into the ridge. */}
       <svg viewBox="0 0 1440 180" className="absolute inset-x-0 bottom-0 w-full">
         <path fill="#cfe3f2" d="M0 128c120-18 210 8 320 6 100-2 160-20 262-18 96 2 150 20 246 20 100 0 160-22 262-22 92 0 150 16 240 16 52 0 80-4 110-8v58H0Z" />
-        <g transform="translate(860 92)">
-          <path fill="#7a3b2e" d="M0 70V30h70v40Z" />
-          <path fill="#f4fbff" d="M-8 32 35 0l43 32Z" />
-          <rect x="14" y="40" width="14" height="14" rx="2" fill="#ffd27a" />
-          <rect x="42" y="40" width="14" height="14" rx="2" fill="#ffd27a" />
-          <path fill="#4a2a20" d="M50 6h8v14h-8Z" />
-        </g>
+        <SkyCastle transform="translate(872 44) scale(0.62)" wall="#22324a" roof="#1a2638" light="#ffd27a" snow flag="#c0392b" />
         <path fill="#eef6fc" d="M0 158c120-12 200 6 310 5 100-2 150-11 250-9 92 1 140 10 232 10 100 0 156-12 256-12 96 0 150 9 242 9 56 0 106-3 150-7v26H0Z" />
         <Pine x={96} h={86} />
         <Pine x={150} h={58} />

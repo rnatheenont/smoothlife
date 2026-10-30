@@ -1,3 +1,5 @@
+import SkyCastle from "@/components/home/SkyCastle";
+
 // The hero band's Halloween dress: a dusk sky, a moon, bats that beat their
 // wings, and a skyline of dead trees and a castle along the bottom edge.
 //
@@ -221,33 +223,7 @@ export default function HalloweenSky() {
             to sit at 137 — a touch under the ridge's near edge, which buries
             the bottom corners in the hill instead of leaving the whole
             thing hanging in the air above it. */}
-        <g transform="translate(872 44) scale(0.62)">
-          <path fill="#190e29" d="M0 150V74h18V60h14v14h16V40h16v34h18V60h14v14h18v76Z" />
-          {/* Left tower */}
-          <path fill="#190e29" d="M-34 150V62h36v88Z" />
-          <path fill="#190e29" d="M-16 22-40 64h48Z" />
-          {/* Right tower, taller */}
-          <path fill="#190e29" d="M112 150V52h38v98Z" />
-          <path fill="#190e29" d="M131 6 105 54h52Z" />
-          {/* Centre keep */}
-          <path fill="#190e29" d="M44 150V34h30v116Z" />
-          <path fill="#190e29" d="M59 0 36 36h46Z" />
-          {/* A flag, because a tower without one is a chimney. */}
-          <path stroke="#190e29" strokeWidth="3" d="M131 8V-14" />
-          <path fill="#190e29" d="M131-14l18 5.5-18 5.5Z" />
-          {[
-            [-22, 88],
-            [-22, 112],
-            [54, 70],
-            [54, 96],
-            [124, 82],
-            [124, 108],
-            [6, 104],
-            [84, 104],
-          ].map(([x, y]) => (
-            <rect key={`${x}-${y}`} x={x} y={y} width="9" height="13" rx="4.5" fill="#ffc46b" />
-          ))}
-        </g>
+        <SkyCastle transform="translate(872 44) scale(0.62)" wall="#190e29" roof="#140a22" light="#ffc46b" flag="#190e29" />
 
         {/* Near ground, darkest, with everything standing on it. */}
         <path

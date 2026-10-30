@@ -1,5 +1,7 @@
-// The hero band's New Year dress: a night sky with fireworks over a city
-// skyline with its windows lit.
+import SkyCastle from "@/components/home/SkyCastle";
+
+// The hero band's New Year dress: a night sky with fireworks over the
+// castle on its ridge (SkyCastle), windows lit.
 //
 // Drawn like HalloweenSky and SkyClouds, for the same reasons. Each burst is
 // one SVG of rays that grows from its centre and fades on its own clock, so
@@ -33,15 +35,6 @@ function Rays({ color }: { color: string }) {
   );
 }
 
-// Buildings as [x, width, height] on a 1440×180 ground line at y=180.
-const TOWERS: [number, number, number][] = [
-  [0, 70, 70], [62, 46, 104], [104, 60, 82], [160, 38, 126], [196, 72, 92], [270, 54, 66],
-  [320, 40, 112], [358, 66, 78], [420, 50, 96], [466, 80, 60], [540, 44, 118], [580, 70, 86],
-  [646, 52, 70], [694, 40, 132], [730, 76, 90], [800, 58, 74], [852, 46, 108], [894, 72, 84],
-  [960, 50, 64], [1006, 42, 120], [1044, 70, 88], [1110, 56, 72], [1160, 44, 104],
-  [1200, 74, 80], [1270, 48, 116], [1314, 66, 76], [1376, 64, 96],
-];
-
 export default function NewYearSky() {
   return (
     <span aria-hidden="true" className="pointer-events-none absolute inset-0 -z-20 overflow-hidden">
@@ -70,20 +63,17 @@ export default function NewYearSky() {
         </span>
       ))}
 
+      {/* The same ridge and castle as the other seasons, lit for the night. */}
       <svg viewBox="0 0 1440 180" className="absolute inset-x-0 bottom-0 w-full">
-        {TOWERS.map(([x, w, h]) => (
-          <g key={x}>
-            <rect x={x} y={180 - h} width={w} height={h} fill="#161233" />
-            {Array.from({ length: Math.floor((h - 16) / 20) }, (_, row) =>
-              Array.from({ length: Math.floor((w - 10) / 16) }, (_, col) =>
-                // a fixed scatter of lit windows, not every one
-                (x + row * 7 + col * 3) % 5 < 2 ? (
-                  <rect key={`${row}-${col}`} x={x + 8 + col * 16} y={180 - h + 10 + row * 20} width="7" height="9" rx="1.5" fill="#ffd27a" opacity="0.85" />
-                ) : null
-              )
-            )}
-          </g>
-        ))}
+        <path
+          fill="#2a2152"
+          d="M0 132c112-16 186 10 288 7 94-3 144-19 244-16 88 3 134 19 224 19 94 0 150-20 244-20 90 0 140 16 230 16 86 0 144-10 210-16v58H0Z"
+        />
+        <SkyCastle transform="translate(872 44) scale(0.62)" wall="#161233" roof="#110e29" light="#ffd27a" flag="#ffd166" />
+        <path
+          fill="#120f2b"
+          d="M0 158c120-12 200 6 310 5 100-2 150-11 250-9 92 1 140 10 232 10 100 0 156-12 256-12 96 0 150 9 242 9 56 0 106-3 150-7v26H0Z"
+        />
       </svg>
     </span>
   );
