@@ -249,6 +249,11 @@
   --animate-chatBadgeLife: chatBadgeLife 11s linear forwards;
   --animate-scanSweep: scanSweep 2.6s ease-in-out infinite;
   --animate-iconBob: iconBob 0.6s ease-out;
+  /* A bat's wings, one up while the other is down. Rotation around the
+     body rather than a second drawing: two frames of a wing look like two
+     frames, and this costs one transform per wing. */
+  --animate-batWingL: batWingL 0.42s ease-in-out infinite;
+  --animate-batWingR: batWingR 0.42s ease-in-out infinite;
 
   @keyframes fadeUp {
     0% {
@@ -504,6 +509,16 @@
      wobbling away under the hero would be a row that cannot keep still.
      Lift and tilt together, because a mark that only moves up reads as the
      whole tile shifting rather than the drawing reacting. */
+  @keyframes batWingL {
+    0%, 100% { transform: rotate(-26deg); }
+    50% { transform: rotate(14deg); }
+  }
+
+  @keyframes batWingR {
+    0%, 100% { transform: rotate(26deg); }
+    50% { transform: rotate(-14deg); }
+  }
+
   @keyframes iconBob {
     0% {
       transform: translateY(0) rotate(0deg);
