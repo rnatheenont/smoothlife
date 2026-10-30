@@ -83,12 +83,38 @@ export default function ShopHero({
             loses its place in on the way back, and the longer the measure the
             worse a centred ragged edge reads. */}
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-[11px] font-medium tracking-[0.3em] text-brand-800">{eyebrow}</p>
-          <h1 className="mt-1.5 text-2xl font-extrabold text-brand-1000 md:text-4xl">{title}</h1>
-          <p className="mt-1.5 text-sm text-slate-600 md:text-base">{subtitle}</p>
+          {/* A rule either side of the eyebrow. Letterspaced caps centred on
+              their own are a line that does not look placed so much as left
+              there; the rules give it a width and make the stack read as one
+              thing with a top. */}
+          <p className="flex items-center justify-center gap-3 text-[11px] font-medium tracking-[0.3em] text-brand-800">
+            <span className="h-px w-7 bg-brand-800/25 md:w-10" aria-hidden />
+            {eyebrow}
+            <span className="h-px w-7 bg-brand-800/25 md:w-10" aria-hidden />
+          </p>
+          {/* leading is set rather than inherited, and set to 1.5: Tailwind's
+              text-5xl comes with 1.1 and text-2xl with 1.33, which are Latin
+              figures. Thai stacks a tone mark above a vowel above the letter
+              and hangs a vowel below it, and the browser reports the rendered
+              line box for this face at 28px as 42px tall — exactly 1.5. At
+              anything less, two lines overlap by the difference whether or
+              not the particular words happen to collide. On a title that
+              does not wrap this costs a few pixels of band height. */}
+          <h1 className="mt-3 text-[28px] font-extrabold leading-[1.5] text-brand-1000 md:mt-4 md:text-5xl">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="mx-auto mt-2.5 max-w-md text-sm text-slate-600 md:text-base">
+              {subtitle}
+            </p>
+          )}
           {typeof count === "number" && (
-            <p className="mt-2 text-sm font-semibold text-brand-800">
-              {count.toLocaleString("th-TH")} {countLabel}
+            // A chip rather than a fourth line of centred text: it is the one
+            // thing in the stack that is a fact rather than a name, and on the
+            // category banners it has a photograph behind it.
+            <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3.5 py-1.5 text-[13px] text-brand-800 ring-1 ring-brand-200/70 backdrop-blur-sm md:mt-5">
+              <span className="font-bold">{count.toLocaleString("th-TH")}</span>
+              {countLabel}
             </p>
           )}
         </div>
