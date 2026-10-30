@@ -5,6 +5,7 @@ import { products } from "@/data/products";
 import { subscriptionPlans } from "@/data/subscriptions";
 import { emailConfigured, sendEmail, guestOrderInviteEmailHtml } from "@/lib/email";
 import { notifyOrderPaid } from "@/lib/order-notify";
+import { recalculateLoyaltyForUser } from "@/lib/loyalty-cron";
 
 // Everything that should happen because an order has been paid for: points
 // credited, a guest invited to claim the order, a referral advanced, a
@@ -108,6 +109,24 @@ export async function handleOrdersPaid(order: any, requestUrl: string) {
     });
   }
 
+  // The points above land at once; the twelve-month spend behind the tier
+  // card did not. That number is maintained by the nightly pass, which
+  // reviews 25 accounts against 463 — a rotation of about nineteen days. A
+  // customer reviewed three minutes before their order paid therefore saw
+  // "฿0, 0 orders" next to the points that order had just earned them, and
+  // kept seeing it for a fortnight (found 30 Oct 2026, order #4700).
+  //
+  // Awaited rather than fired and forgotten like the other callers: those
+  // run inside a request a person is waiting on, where the work can finish
+  // after the response. This is a webhook, and the function returning is
+  // the end of the invocation — a promise left running is a promise that
+  // may never resolve. It never throws, and tomorrow's cron still covers
+  // whatever it misses.
+  //
+  // After the backfill above, never before: it reads the Shopify customer
+  // id to know whose orders to add up.
+  const loyalty = await recalculateLoyaltyForUser(userId);
+
   const subscriptionResult = await handleSubscriptionOrder(order, userId);
   const referralResult = await handleReferralOrderPlaced(userId, order, subtotal);
 
@@ -124,7 +143,7 @@ export async function handleOrdersPaid(order: any, requestUrl: string) {
     balance: balanceRow?.balance ?? null,
   });
 
-  return { credited: points, userId, subscriptionResult, referralResult, notified };
+  return { credited: points, userId, loyalty, subscriptionResult, referralResult, notified };
 }
 
 // A referred friend's FIRST paid order moves their referral row from
