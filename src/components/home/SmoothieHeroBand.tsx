@@ -13,6 +13,7 @@ import { resizeForUpload } from "@/lib/image-utils";
 import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
 import { useQuickChat } from "@/lib/quickchat-context";
 import SkyClouds from "@/components/SkyClouds";
+import HalloweenSky from "@/components/home/HalloweenSky";
 import SmoothieRig from "@/components/mascot/SmoothieRig";
 
 // The first thing on the page is a question, not a banner.
@@ -33,6 +34,45 @@ import SmoothieRig from "@/components/mascot/SmoothieRig";
 
 /** Bumped after each mount — see the `seed` note inside the component. */
 let visitSeed = 0;
+
+/**
+ * The band's dress.
+ *
+ * A season is a change of sky and four text colours, not a second copy of
+ * the band: everything that makes this thing work — the rotating headline,
+ * the ask box, the suggestions, the mascot — is the same in either, and a
+ * duplicate would have drifted from the original by the first edit.
+ *
+ * Dusk rather than midnight for the Halloween one. The headline, the
+ * eyebrow and the chips all have to stay readable on it, and a sky dark
+ * enough to need white text at the top still has to be pale enough for dark
+ * text where the question sits.
+ */
+export type HeroTheme = "sky" | "halloween";
+
+const THEMES: Record<
+  HeroTheme,
+  { sky: string; eyebrow: string; head: string; mark: string; wordmark: string; chip: string }
+> = {
+  sky: {
+    sky: "bg-[linear-gradient(180deg,#cbe8f7_0%,#e2f3fb_40%,#f5fbfe_72%,#ffffff_100%)]",
+    eyebrow: "text-slate-500",
+    head: "text-brand-ink",
+    mark: "text-brand-teal",
+    wordmark: "text-white/55",
+    chip: "border-slate-200 bg-white/80 text-slate-600 hover:border-brand-teal hover:text-brand-800",
+  },
+  halloween: {
+    sky: "bg-[linear-gradient(180deg,#241043_0%,#4a1f5e_28%,#8d3a63_52%,#e07a46_74%,#ffd9ab_100%)]",
+    eyebrow: "text-amber-100/85",
+    head: "text-white",
+    mark: "text-amber-300",
+    // Fainter than the blue sky's: white at 55% over a dark gradient is a
+    // second headline, not a watermark.
+    wordmark: "text-white/12",
+    chip: "border-white/30 bg-white/15 text-amber-50 hover:border-amber-300 hover:text-white",
+  },
+};
 
 // The headline is an invitation that keeps rephrasing itself.
 //
@@ -65,7 +105,8 @@ const HEADLINES_EN: HeadLine[] = [
 
 const HEADLINE_MS = 3800;
 
-export default function SmoothieHeroBand() {
+export default function SmoothieHeroBand({ theme = "sky" }: { theme?: HeroTheme }) {
+  const skin = THEMES[theme] ?? THEMES.sky;
   const [q, setQ] = useState("");
   const [uploading, setUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -185,11 +226,12 @@ export default function SmoothieHeroBand() {
     // and the wordmark on their negative layers inside the band either way.
     <section
       className={clsx(
-        "relative isolate overflow-x-clip bg-[linear-gradient(180deg,#cbe8f7_0%,#e2f3fb_40%,#f5fbfe_72%,#ffffff_100%)]",
+        "relative isolate overflow-x-clip",
+        skin.sky,
         showHits && "z-20"
       )}
     >
-      <SkyClouds />
+      {theme === "halloween" ? <HalloweenSky /> : <SkyClouds />}
       {/* The wordmark drifts left on a loop rather than sitting still.
           Two identical copies inside a track as wide as they are, moving
           exactly -50%: the second copy is where the first was when the
@@ -203,7 +245,10 @@ export default function SmoothieHeroBand() {
           {[0, 1].map((copy) => (
             <span
               key={copy}
-              className="whitespace-nowrap pr-[0.25em] font-bold leading-none tracking-tight text-white/55 text-[clamp(7rem,27vw,17rem)]"
+              className={clsx(
+                "whitespace-nowrap pr-[0.25em] font-bold leading-none tracking-tight text-[clamp(7rem,27vw,17rem)]",
+                skin.wordmark,
+              )}
             >
               Smoothlife.com
             </span>
@@ -218,14 +263,19 @@ export default function SmoothieHeroBand() {
           beside the question without being measured into it. */}
       <div className="container-page relative flex flex-col justify-center md:min-h-[360px] lg:min-h-[403px]">
         <div className="mx-auto w-full max-w-[720px] py-10 text-center md:py-0">
-          <p className="text-sm text-slate-500 md:text-base lg:text-lg">
+          <p className={clsx("text-sm md:text-base lg:text-lg", skin.eyebrow)}>
             {t("ผู้ช่วยหาสินค้าที่ใช่สำหรับคุณ", "Your personal product finder")}
           </p>
           {/* All five stacked in one grid cell, so the band's height is the
               tallest of them from the first paint and nothing below it ever
               moves. Only the line on show is readable; the rest are hidden
               from assistive tech rather than announced on a timer. */}
-          <h2 className="mt-2 grid text-[26px] font-bold leading-tight text-brand-ink md:text-[34px] lg:text-[40px]">
+          <h2
+            className={clsx(
+              "mt-2 grid text-[26px] font-bold leading-tight md:text-[34px] lg:text-[40px]",
+              skin.head,
+            )}
+          >
             {headlines.map((h, i) => (
               <span
                 key={h.pre + h.post}
@@ -242,7 +292,7 @@ export default function SmoothieHeroBand() {
                 }`}
               >
                 {h.pre}
-                <span translate="no" className="text-brand-teal">
+                <span translate="no" className={skin.mark}>
                   {h.mark}
                 </span>
                 {h.post}
@@ -339,7 +389,10 @@ export default function SmoothieHeroBand() {
                   <button
                     type="button"
                     onClick={() => go(s)}
-                    className="whitespace-nowrap rounded-full border border-slate-200 bg-white/80 px-3.5 py-2 text-xs text-slate-600 transition-colors hover:border-brand-teal hover:text-brand-800 md:whitespace-normal md:text-[13px]"
+                    className={clsx(
+                      "whitespace-nowrap rounded-full border px-3.5 py-2 text-xs transition-colors md:whitespace-normal md:text-[13px]",
+                      skin.chip,
+                    )}
                   >
                     {s}
                   </button>
