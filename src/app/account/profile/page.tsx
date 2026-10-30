@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import SettingsSummary from "@/components/account/SettingsSummary";
+import AddressBookCard from "@/components/account/AddressBookCard";
+import TaxAddressBookCard from "@/components/account/TaxAddressBookCard";
 import { useAuth } from "@/lib/auth-context";
 import { resizeForAvatar } from "@/lib/image-utils";
 import {
@@ -726,6 +728,8 @@ export default function ProfilePage() {
           <EmailLinkCard />
           <PhoneChangeCard />
           <SettingsSummary />
+          <AddressBookCard />
+          <TaxAddressBookCard />
         </div>
       </div>
     </AccountLayout>

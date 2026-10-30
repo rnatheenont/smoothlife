@@ -2,34 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { KeyRound, MapPin, Receipt, ShieldCheck } from "lucide-react";
+import { KeyRound, ShieldCheck } from "lucide-react";
 import GoogleIcon from "@/components/icons/GoogleIcon";
 import { channelLabel, type ChannelKey } from "@/lib/account-identities";
 
-// The four settings that used to be their own pages in the sidebar.
+// The two settings that are a state rather than a list: which services this
+// account can be signed in with, and whether it has a password.
 //
-// Each is a card that answers the question people actually arrive with —
-// "is my address still right", "is LINE connected" — and nothing more. The
-// page that does the work is still there behind a link, because those pages
-// have lists, defaults and delete buttons, and folding all of that in would
-// have made one long page out of five short ones rather than one useful one.
-//
-// Read first, edit on demand: the shopper sees every current value at once
-// and opens an editor only when something is wrong. It is the shape every
-// store of this size has settled on (lululemon, H&M, Fresha, ZARA).
+// The address books sit beside this in their own cards, because those are
+// lists that get edited in place (AddressBookCard, TaxAddressBookCard).
+// Linking a Google or LINE account is a redirect out to that provider and
+// back, so it stays on /account/verify, where the merge decision it can
+// raise also lives.
 
 type Identity = { provider: ChannelKey; masked: string; verifiedAt: string | null };
-type Address = {
-  id: string;
-  label: string | null;
-  address_line: string;
-  subdistrict: string;
-  district: string;
-  province: string;
-  postal_code: string;
-  is_default: boolean;
-};
-type TaxAddress = { id: string; company_name?: string | null; tax_id?: string | null; is_default: boolean };
 
 const CARD = "rounded-xl2 border border-slate-200 bg-white p-5";
 const HEAD = "flex items-center justify-between gap-3";
@@ -51,23 +37,16 @@ function Pill({ ok, children }: { ok: boolean; children: React.ReactNode }) {
 
 export default function SettingsSummary() {
   const [identities, setIdentities] = useState<Identity[] | null>(null);
-  const [addresses, setAddresses] = useState<Address[] | null>(null);
-  const [taxAddresses, setTaxAddresses] = useState<TaxAddress[] | null>(null);
 
   useEffect(() => {
     let alive = true;
-    // One round trip each, in parallel: three small reads that the page
-    // cannot draw without, and nothing here depends on another's answer.
-    Promise.all([
-      fetch("/api/account/identities").then((r) => r.json()).catch(() => null),
-      fetch("/api/account/addresses").then((r) => r.json()).catch(() => null),
-      fetch("/api/account/tax-addresses").then((r) => r.json()).catch(() => null),
-    ]).then(([ids, addr, tax]) => {
-      if (!alive) return;
-      setIdentities(Array.isArray(ids?.identities) ? ids.identities : []);
-      setAddresses(Array.isArray(addr?.addresses) ? addr.addresses : []);
-      setTaxAddresses(Array.isArray(tax?.addresses) ? tax.addresses : []);
-    });
+    fetch("/api/account/identities")
+      .then((r) => r.json())
+      .catch(() => null)
+      .then((ids) => {
+        if (!alive) return;
+        setIdentities(Array.isArray(ids?.identities) ? ids.identities : []);
+      });
     return () => {
       alive = false;
     };
@@ -80,9 +59,6 @@ export default function SettingsSummary() {
     key,
     linked: identities?.some((i) => i.provider === key) ?? false,
   }));
-
-  const defaultAddress = addresses?.find((a) => a.is_default) ?? addresses?.[0] ?? null;
-  const taxCount = taxAddresses?.length ?? 0;
 
   return (
     <>
@@ -121,72 +97,6 @@ export default function SettingsSummary() {
               )}
             </div>
           ))}
-        </div>
-      </div>
-
-      <div className={CARD}>
-        <div className={HEAD}>
-          <p className={TITLE}>
-            <MapPin size={16} className="text-brand-800" />
-            ที่อยู่จัดส่ง
-          </p>
-          <Link href="/account/addresses" className={LINK}>
-            จัดการ
-          </Link>
-        </div>
-        <div className="mt-3 border-t border-slate-100 pt-3 text-sm">
-          {addresses === null ? (
-            <div className="h-9 w-full animate-pulse rounded-lg bg-slate-100" />
-          ) : defaultAddress ? (
-            <>
-              <p className="flex flex-wrap items-center gap-2 font-semibold text-brand-ink">
-                {defaultAddress.is_default && <Pill ok>ค่าเริ่มต้น</Pill>}
-                {defaultAddress.label || "ที่อยู่จัดส่ง"}
-              </p>
-              <p className="mt-1 text-slate-500">
-                {[
-                  defaultAddress.address_line,
-                  defaultAddress.subdistrict,
-                  defaultAddress.district,
-                  defaultAddress.province,
-                  defaultAddress.postal_code,
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              </p>
-              {addresses.length > 1 && (
-                <p className="mt-1 text-xs text-slate-400">และอีก {addresses.length - 1} ที่อยู่</p>
-              )}
-            </>
-          ) : (
-            <p className="text-slate-500">
-              ยังไม่มีที่อยู่ —{" "}
-              <Link href="/account/addresses/new" className={LINK}>
-                เพิ่มที่อยู่
-              </Link>
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className={CARD}>
-        <div className={HEAD}>
-          <p className={TITLE}>
-            <Receipt size={16} className="text-brand-800" />
-            ที่อยู่ใบกำกับภาษี
-          </p>
-          <Link href="/account/tax-addresses" className={LINK}>
-            จัดการ
-          </Link>
-        </div>
-        <div className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-500">
-          {taxAddresses === null ? (
-            <div className="h-5 w-40 animate-pulse rounded-lg bg-slate-100" />
-          ) : taxCount > 0 ? (
-            <p>บันทึกไว้ {taxCount} รายการ</p>
-          ) : (
-            <p>ยังไม่มี — เพิ่มได้ตอนสั่งซื้อ หรือเพิ่มไว้ล่วงหน้าก็ได้</p>
-          )}
         </div>
       </div>
 
