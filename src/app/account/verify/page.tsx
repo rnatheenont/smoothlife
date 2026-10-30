@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type ComponentType, useCallback, useEffect, useRef, useState } from "react";
 import {
   ConfirmationResult,
   RecaptchaVerifier,
   signInWithPhoneNumber,
 } from "firebase/auth";
-import { AlertTriangle, Check, Loader2, Mail, Phone, ShieldCheck, Sparkles } from "lucide-react";
+import { AlertTriangle, Check, Loader2, Mail, Phone, ShieldCheck } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import { Button } from "@/components/ui";
 import { getFirebaseAuth } from "@/lib/firebase-client";
@@ -14,6 +14,8 @@ import { toE164Thai } from "@/lib/thai-phone";
 import { askToSendOtp } from "@/lib/otp-allowance";
 import { CHANNELS, channelLabel, type ChannelKey } from "@/lib/account-identities";
 import { announceStaffAccessChanged } from "@/lib/use-staff-access";
+import GoogleIcon from "@/components/icons/GoogleIcon";
+import { LineBadgeIcon } from "@/components/icons/LineIcon";
 
 // "ช่องทางเข้าสู่ระบบ" — every way in, and one account behind them.
 //
@@ -38,11 +40,13 @@ type PreviewAccount = {
 };
 type Preview = { survivor: string; accounts: PreviewAccount[]; shopify_conflict: boolean };
 
-const ICONS: Record<ChannelKey, typeof Mail> = {
+// The brands' own marks for the two sign-ins they own — a sparkle there
+// asked people to read the label to find the one they use.
+const ICONS: Record<ChannelKey, ComponentType<{ size?: number; className?: string }>> = {
   email: Mail,
   phone_otp: Phone,
-  google: Sparkles,
-  line: Sparkles,
+  google: GoogleIcon,
+  line: LineBadgeIcon,
 };
 
 function thaiDate(iso: string) {
@@ -289,7 +293,7 @@ function VerifyContent() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface-soft text-brand-800">
-                    <Icon size={18} aria-hidden />
+                    <Icon size={18} />
                   </span>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-brand-ink">{channel.label}</p>
