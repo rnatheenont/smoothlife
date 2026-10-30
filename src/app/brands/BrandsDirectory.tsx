@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import ShopHero from "@/components/shop/ShopHero";
 import { BRANDS_BANNER } from "@/lib/category-banner";
-import { Search, X } from "lucide-react";
 import { categories } from "@/data/categories";
 import type { Category } from "@/data/types";
 
@@ -94,7 +93,6 @@ export default function BrandsDirectory({
   house: BrandEntry[];
   brands: BrandEntry[];
 }) {
-  const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category | null>(null);
   const [sort, setSort] = useState<Sort>("popular");
 
@@ -105,22 +103,11 @@ export default function BrandsDirectory({
     return m;
   }, [house, brands]);
 
-  const q = query.trim().toLowerCase();
-  // One test, used on both lists. The house brands sit in their own row above
-  // the directory, and while the search only ran over the row below them,
-  // typing "ฟัน" found nothing at all — the one brand whose tagline says
-  // ยาสีฟัน is Dentiste, and Dentiste is a house brand.
+  // One test, used on both lists — the house brands sit in their own row
+  // above the directory and have to answer the category chips too.
   const matches = useMemo(() => {
-    return (b: BrandEntry) => {
-      if (category && !b.categories.includes(category)) return false;
-      if (!q) return true;
-      // Name is Latin and the tagline is Thai, and both are worth searching:
-      // somebody after a toothpaste types "ฟัน", not "Dentiste".
-      return (
-        b.name.toLowerCase().includes(q) || b.tagline.toLowerCase().includes(q)
-      );
-    };
-  }, [category, q]);
+    return (b: BrandEntry) => !category || b.categories.includes(category);
+  }, [category]);
 
   const filtered = useMemo(() => {
     const list = brands.filter(matches);
@@ -136,7 +123,7 @@ export default function BrandsDirectory({
   }, [brands, matches, sort]);
 
   const houseShown = house.filter(matches);
-  const searching = Boolean(q) || category !== null;
+  const searching = category !== null;
   const total = filtered.length + houseShown.length;
 
   return (
@@ -155,35 +142,6 @@ export default function BrandsDirectory({
       />
 
       <div className="container-page pt-5 pb-8 md:pt-6 md:pb-12">
-
-      {/* The one thing most people came to do, at the size that says so. It
-          was a 230x36 field tucked beside the filters, smaller than the
-          filters, with its own placeholder cut off. */}
-      <div className="relative mt-5 max-w-xl">
-        <Search
-          size={20}
-          aria-hidden
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-        />
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="ค้นหาแบรนด์"
-          placeholder="ค้นหาแบรนด์ เช่น CeraVe, ยาสีฟัน"
-          className="h-13 w-full rounded-full border border-slate-200 bg-white ps-12 pe-12 text-[15px] text-brand-ink shadow-xs outline-none transition-colors placeholder:text-slate-400 focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 [&::-webkit-search-cancel-button]:hidden"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => setQuery("")}
-            aria-label="ล้างคำค้นหา"
-            className="absolute right-3 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full text-slate-400 transition-colors hover:bg-surface-soft hover:text-brand-ink"
-          >
-            <X size={17} />
-          </button>
-        )}
-      </div>
 
       {/* The house brands, once, above the directory. The three "Life So
           Smooth" badges that used to sit one per card said the same thing
@@ -289,19 +247,15 @@ export default function BrandsDirectory({
         <p className="mt-5 text-sm text-slate-500">
           พบ <span className="font-semibold text-brand-ink">{total}</span>{" "}
           แบรนด์
-          {q && <> สำหรับ “{query.trim()}”</>}
         </p>
       )}
 
       {total === 0 ? (
         <div className="mt-8 rounded-xl2 border border-dashed border-slate-200 py-14 text-center">
-          <p className="text-sm text-slate-500">ไม่พบแบรนด์ที่ตรงกับที่ค้นหา</p>
+          <p className="text-sm text-slate-500">ไม่พบแบรนด์ในหมวดนี้</p>
           <button
             type="button"
-            onClick={() => {
-              setQuery("");
-              setCategory(null);
-            }}
+            onClick={() => setCategory(null)}
             className="mt-3 rounded-full border border-slate-200 px-4 py-2 text-[13px] font-semibold text-brand-ink transition-colors hover:border-brand-teal"
           >
             ล้างตัวกรอง
