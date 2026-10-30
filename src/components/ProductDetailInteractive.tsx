@@ -754,13 +754,23 @@ export default function ProductDetailInteractive({
                   onClick={handleAdd}
                   disabled={!selectedVariant.inStock}
                   size="lg"
-                  className="order-last w-full whitespace-nowrap @[27rem]:order-none @[27rem]:w-auto @[27rem]:flex-1"
+                  className="relative order-last w-full whitespace-nowrap @[27rem]:order-none @[27rem]:w-auto @[27rem]:flex-1"
                 >
-                  {added ? (
-                    <CheckCircle2 size={16} />
-                  ) : (
-                    <ShoppingCart size={16} />
-                  )}
+                  {/* The icon is taken out of the flow and pinned to the left
+                      so the words are what sits in the middle of the button.
+                      As a flex item it was centred together with the label —
+                      measured, and the pair really is dead centre — but the
+                      pair is not what anyone looks at. The eye centres on the
+                      words, and with an icon and a gap ahead of them they sat
+                      12px right of the middle of a 358px button — measured on
+                      the live button, before 207 against a centre of 195, and
+                      0 off after. */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute start-6 inline-flex items-center"
+                  >
+                    {added ? <CheckCircle2 size={16} /> : <ShoppingCart size={16} />}
+                  </span>
                   {added
                     ? "เพิ่มลงตะกร้าแล้ว"
                     : selectedVariant.inStock
