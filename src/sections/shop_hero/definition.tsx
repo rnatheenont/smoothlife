@@ -1,5 +1,6 @@
 import { z } from "zod";
 import ShopHero from "@/components/shop/ShopHero";
+import { categoryBanner } from "@/lib/category-banner";
 import { categories } from "@/data/categories";
 import { filterProducts } from "@/lib/filter-products";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
@@ -35,6 +36,7 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
       title={active ? active.nameTh : settings.title}
       subtitle={settings.subtitle}
       count={count}
+      banner={categoryBanner(active?.slug)}
     >
     </ShopHero>
   );

@@ -6,6 +6,7 @@ import { categories} from "@/data/categories";
 import { categoryImage } from "@/lib/category-image";
 import ProductCard from "@/components/ProductCard";
 import ShopHero from "@/components/shop/ShopHero";
+import { categoryBanner } from "@/lib/category-banner";
 import ShopFilters from "@/components/ShopFilters";
 import SortMenu from "@/components/shop/SortMenu";
 import StickyToolbar from "@/components/shop/StickyToolbar";
@@ -84,6 +85,7 @@ async function CategoryPageWritten({
         title={categoryInfo.nameTh}
         subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
         count={items.length}
+        banner={categoryBanner(categoryInfo.slug)}
       >
       </ShopHero>
 

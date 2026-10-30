@@ -1,5 +1,6 @@
 import { z } from "zod";
 import ShopHero from "@/components/shop/ShopHero";
+import { categoryBanner } from "@/lib/category-banner";
 import { categories } from "@/data/categories";
 import { filterProducts, type ShopSearchParams } from "@/lib/filter-products";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
@@ -21,7 +22,7 @@ const schema = z.object({
   subtitle: z.string().max(200).default("ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"),
 });
 
-type Data = { title: string; count: number; params: ShopSearchParams };
+type Data = { title: string; slug: string; count: number; params: ShopSearchParams };
 
 async function load(
   _settings: z.output<typeof schema>,
@@ -31,7 +32,7 @@ async function load(
   const c = categories.find((x) => x.slug === slug);
   if (!c) return null;
   const current = { ...(ctx.query ?? {}), category: c.slug } as ShopSearchParams;
-  return { title: c.nameTh, count: filterProducts(current).length, params: current };
+  return { title: c.nameTh, slug: c.slug, count: filterProducts(current).length, params: current };
 }
 
 function Component({ settings, data }: SectionProps<z.output<typeof schema>, Data | null>) {
@@ -41,7 +42,12 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
   // "N รายการ" itself, and a document that still carries the old setting
   // should keep validating rather than fail on a field nobody can see.
   return (
-    <ShopHero title={data.title} subtitle={settings.subtitle} count={data.count}>
+    <ShopHero
+      title={data.title}
+      subtitle={settings.subtitle}
+      count={data.count}
+      banner={categoryBanner(data.slug)}
+    >
     </ShopHero>
   );
 }
