@@ -122,7 +122,15 @@ export default function Header({
     if (!el) return;
     const publish = () => {
       const hidden = hideHeader && !open;
-      document.documentElement.style.setProperty("--app-header-h", `${hidden ? 0 : el.offsetHeight}px`);
+      // offsetHeight is the bar's own box and says nothing about the gap it
+      // now floats in. Without the top offset a toolbar sticking to
+      // top-(--app-header-h) parks that many pixels too high and the bar
+      // sits on it.
+      const gap = hidden ? 0 : el.getBoundingClientRect().top;
+      document.documentElement.style.setProperty(
+        "--app-header-h",
+        `${hidden ? 0 : el.offsetHeight + Math.max(0, gap)}px`,
+      );
     };
     publish();
     // Both, deliberately. The observer catches the bar changing height in
@@ -138,15 +146,34 @@ export default function Header({
       window.removeEventListener("resize", publish);
       window.removeEventListener("orientationchange", publish);
     };
-  }, [hideHeader, open]);
+    // scrolled is in here because it moves the bar without resizing it: the
+    // observer watches the box, and detaching changes only where the box is.
+  }, [hideHeader, open, scrolled]);
 
   return (
     <>
     <header
       ref={headerRef}
-      className={`sticky top-0 z-40 bg-white/95 backdrop-blur-sm pt-[env(safe-area-inset-top)] transition-transform duration-300 lg:translate-y-0! lg:border-b lg:border-slate-200 ${
+      // Flush to the top of the page while you are at the top of the page,
+      // and a floating bar once the page has moved under it. Not decoration:
+      // at the top the bar is part of the page and a full-bleed white band
+      // with a hairline is the honest shape for that; once the page is
+      // sliding beneath it the bar is a thing on top, and a card that says
+      // so — inset, rounded, glass — reads as one layer rather than as the
+      // page having a white stripe stuck to its forehead.
+      //
+      // No overflow-hidden, whatever the rounding wants: the mega menu's
+      // panel lives inside this element and hangs below it, and clipping to
+      // the header's own box would cut the menu off at its first row. The
+      // promo strip has already folded to zero height by the time any of
+      // this applies, so there is nothing left to spill out of the corners.
+      className={`sticky z-40 pt-[env(safe-area-inset-top)] transition-[transform,top,margin,border-radius,background-color,box-shadow] duration-300 lg:translate-y-0! ${
         hideHeader && !open ? "-translate-y-full" : "translate-y-0"
-      } ${scrolled ? "border-b border-slate-100" : "border-b border-transparent"}`}
+      } ${
+        scrolled
+          ? "top-2 mx-2 rounded-2xl border border-slate-200/70 bg-white/75 shadow-[0_12px_32px_-14px_rgba(0,53,41,0.3)] backdrop-blur-lg sm:mx-4 lg:top-3 lg:mx-6"
+          : "top-0 mx-0 rounded-none border-b border-transparent bg-white/95 backdrop-blur-sm lg:border-b lg:border-slate-200"
+      }`}
     >
       {/* The strip belongs to the top of the page, not to the app bar.
           The header already hides on the way down and comes back on the way
@@ -161,8 +188,11 @@ export default function Header({
           goes in it may as well be the shop. */}
       {ticker.length > 0 && (
         <div
+          // The strip keeps its own grey, and on a desktop it stays open
+          // while the bar is detached — so it has to take the bar's top
+          // corners with it, or its square ones sit proud of them.
           className={`overflow-hidden bg-slate-100 transition-[max-height,opacity] duration-300 lg:max-h-16 lg:opacity-100 ${
-            scrolled ? "max-h-0 opacity-0" : "max-h-16 opacity-100"
+            scrolled ? "max-h-0 opacity-0 rounded-t-2xl" : "max-h-16 opacity-100"
           }`}
         >
           <div className="flex items-center gap-2 py-1.5 pl-3 pr-0">
