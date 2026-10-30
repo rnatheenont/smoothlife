@@ -107,36 +107,26 @@ async function CategoryPageWritten({
         />
       )}
 
-      {/* A rail on a desktop, the row it has always been on a phone — one
-          ShopFilters either way, changing direction with its container. */}
-      <div className="flex flex-col gap-6 lg:flex-row lg:gap-7">
-        {/* Full height, not content height: the sticky lives inside this
-              and sticky can only travel inside its own parent — a wrapper
-              the height of the toolbar makes it scroll away. */}
-          <div className="lg:w-60 lg:shrink-0">
+      <div className="flex flex-col gap-6">
+        <div className="flex-1">
           {/* One toolbar, the same as /shop: filters on the left, ordering
               on the right. */}
           {/* The same sticky glass bar as /shop: the two pages are the same
               screen with a different heading, and one of them scrolling its
               filters away reads as a bug on whichever you saw second. */}
           <StickyToolbar>
-            <div className="flex flex-wrap items-center gap-2 lg:flex-col lg:items-stretch">
+            <div className="flex flex-wrap items-center justify-between gap-2">
             <ShopFilters
               current={current}
               houseBrands={brandOptions().house}
               otherBrands={brandOptions().other}
               mobileExtra={<SortSelect current={current} />}
             />
+            <div className="hidden lg:flex">
+              <SortMenu current={current} />
+            </div>
             </div>
           </StickyToolbar>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          {/* Ordering is not a filter, so it sits over the grid it orders
-              rather than in the rail with the things that narrow it. */}
-          <div className="mb-3 hidden justify-end lg:flex">
-            <SortMenu current={current} />
-          </div>
           {items.length === 0 ? (
             <div className="text-center py-20 text-slate-500">ไม่พบสินค้าในหมวดนี้</div>
           ) : (

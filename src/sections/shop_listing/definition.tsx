@@ -83,11 +83,8 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
 
   return (
     <div className="container-page py-5 md:py-8">
-      <div className="flex flex-col gap-6 lg:flex-row lg:gap-7">
-        {/* Full height, not content height: the sticky lives inside this
-              and sticky can only travel inside its own parent — a wrapper
-              the height of the toolbar makes it scroll away. */}
-          <div className="lg:w-60 lg:shrink-0">
+      <div className="flex flex-col gap-6">
+        <div className="min-w-0 flex-1">
           {/* One toolbar: what narrows the list on the left, how it is
               ordered on the right. */}
           {/* No heading here any more: the banner above says which category
@@ -99,7 +96,7 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
               the tall column, not a wrapper the height of the toolbar:
               sticky can only travel inside its own parent. */}
           <StickyToolbar>
-            <div className="flex flex-wrap items-center gap-2 lg:flex-col lg:items-stretch">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <ShopFilters
                 houseBrands={data.house}
                 otherBrands={data.other}
@@ -107,14 +104,11 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
                 counts={data.counts}
                 mobileExtra={<SortSelect current={data.params} />}
               />
+              <div className="hidden items-center gap-2 lg:flex">
+                <SortMenu current={data.params} />
+              </div>
             </div>
           </StickyToolbar>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="mb-3 hidden justify-end lg:flex">
-            <SortMenu current={data.params} />
-          </div>
 
           <ActiveFilterChips current={data.params} brandNames={data.names} />
 

@@ -61,11 +61,8 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
     // opening with 32px of its own put a gap between the page and its own
     // controls. The bottom keeps its room: below it is the end.
     <section className="container-page pt-2 pb-8 md:pt-3 md:pb-10">
-      <div className="flex flex-col gap-6 lg:flex-row lg:gap-7">
-        {/* Full height, not content height: the sticky lives inside this
-              and sticky can only travel inside its own parent — a wrapper
-              the height of the toolbar makes it scroll away. */}
-          <div className="lg:w-60 lg:shrink-0">
+      <div className="flex flex-col gap-6">
+        <div className="flex-1">
           {/* One toolbar, the same as /shop: filters on the left, ordering
               on the right. The sort appears twice on this page and never at
               the same time — here from lg, and inside the filter drawer on
@@ -74,21 +71,18 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
               screen with a different heading, and one of them scrolling its
               filters away reads as a bug on whichever you saw second. */}
           <StickyToolbar>
-            <div className="flex flex-wrap items-center gap-2 lg:flex-col lg:items-stretch">
+            <div className="flex flex-wrap items-center justify-between gap-2">
             <ShopFilters
               current={data.params}
               houseBrands={data.house}
               otherBrands={data.other}
               mobileExtra={<SortSelect current={data.params} />}
             />
+            <div className="hidden lg:flex">
+              <SortMenu current={data.params} />
+            </div>
             </div>
           </StickyToolbar>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="mb-3 hidden justify-end lg:flex">
-            <SortMenu current={data.params} />
-          </div>
           {data.cards.length === 0 ? (
             <div className="py-20 text-center text-slate-500">{settings.emptyText}</div>
           ) : (

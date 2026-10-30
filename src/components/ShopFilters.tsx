@@ -63,10 +63,6 @@ function FilterMenu({
     <Dropdown
       label={label}
       count={count}
-      // Full width with the label left and the chevron right once the row
-      // becomes a column; a centred pill in a 240px rail reads as a button
-      // that does something rather than as a field you open.
-      triggerClassName="lg:w-full lg:justify-between"
       open={openMenu === label}
       onToggle={() => setOpenMenu((prev) => (prev === label ? null : label))}
       // Only clears the row's value while this menu is still the open one.
@@ -651,7 +647,7 @@ export default function ShopFilters({
           anchored inside it would open into a 40px-tall slot. bleed-page
           lets the row scroll under the gutters rather than stopping short
           of them, and nets out to nothing once it wraps. */}
-      <div className="bleed-page scrollbar-none flex items-center gap-2 overflow-x-auto lg:mx-0! lg:flex-col lg:items-stretch lg:gap-2.5 lg:overflow-x-visible lg:px-0!">
+      <div className="bleed-page scrollbar-none flex items-center gap-2 overflow-x-auto lg:flex-wrap lg:overflow-x-visible">
         <FilterMenu
           label="หมวดหมู่"
           openMenu={openMenu}
