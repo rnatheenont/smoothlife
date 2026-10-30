@@ -85,6 +85,31 @@ export default function Dropdown({
     place();
   }, [open, place]);
 
+  // Bring the pill fully into the row before opening under it. The row
+  // scrolls sideways on a phone, so the pill you just pressed is often the
+  // one half past the right edge — and a menu hanging off a button you can
+  // only see half of looks like the menu is the thing that is broken.
+  // Only the row is scrolled, never the page: walking up to the nearest
+  // sideways-scrolling ancestor is what keeps this from yanking the whole
+  // document when the pill is also near the bottom of the window.
+  useEffect(() => {
+    if (!open) return;
+    const pill = wrap.current;
+    if (!pill) return;
+    let row: HTMLElement | null = pill.parentElement;
+    while (row && !/(auto|scroll)/.test(getComputedStyle(row).overflowX)) {
+      row = row.parentElement;
+    }
+    if (!row || row.scrollWidth <= row.clientWidth) return;
+    const r = pill.getBoundingClientRect();
+    const box = row.getBoundingClientRect();
+    const pad = parseFloat(getComputedStyle(row).paddingLeft) || 0;
+    const over = r.right - (box.right - pad);
+    const under = box.left + pad - r.left;
+    const by = over > 0 ? over : under > 0 ? -under : 0;
+    if (by !== 0) row.scrollBy({ left: by, behavior: "smooth" });
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onMove = () => place();

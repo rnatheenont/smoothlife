@@ -131,6 +131,18 @@ export default function Header({
         "--app-header-h",
         `${hidden ? 0 : el.offsetHeight + Math.max(0, gap)}px`,
       );
+      // How tall the bar is while it is still sitting in the page. A section
+      // that reaches up behind it uses this one and not --app-header-h: that
+      // one shrinks when the bar detaches and the promo strip folds, and a
+      // negative margin tied to it would drag the whole page up by the
+      // difference on the first scroll. This is only ever written while the
+      // bar is attached, so it holds still.
+      if (!scrolled) {
+        document.documentElement.style.setProperty(
+          "--app-header-top-h",
+          `${el.offsetHeight}px`,
+        );
+      }
     };
     publish();
     // Both, deliberately. The observer catches the bar changing height in
@@ -179,7 +191,7 @@ export default function Header({
       } ${
         scrolled
           ? "top-2 mx-2 max-w-full rounded-2xl border border-slate-200/70 bg-white/75 shadow-[0_12px_32px_-14px_rgba(0,53,41,0.3)] backdrop-blur-lg sm:mx-4 lg:top-3 lg:mx-auto lg:max-w-5xl"
-          : "top-0 mx-0 rounded-none border-b border-transparent bg-white/95 backdrop-blur-sm lg:border-b lg:border-slate-200"
+          : "top-0 mx-0 rounded-none border-b border-transparent bg-transparent"
       }`}
     >
       {/* The strip belongs to the top of the page, not to the app bar.

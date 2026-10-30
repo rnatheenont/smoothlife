@@ -59,7 +59,17 @@ export default function ShopHero({
     // header flush and then lets the page out from under it. overflow-hidden
     // is doing two jobs now — it kept the clouds in, and it is what clips the
     // photograph to the curve.
-    <section className="relative isolate overflow-hidden rounded-b-[1.75rem] bg-[linear-gradient(180deg,#cfe9f8_0%,#e4f3fb_52%,#f7fcfe_100%)] md:rounded-b-[2.5rem]">
+    // Reaches up behind the bar. The bar carries no background of its own
+    // until the page moves, so what sits behind it at the top of the page is
+    // this band rather than a white strip — the picture starts at the very
+    // top of the window and the logo and the search field sit on it.
+    //
+    // --app-header-top-h, not --app-header-h: the second one shrinks when the
+    // bar detaches and the promo strip folds away, and a negative margin tied
+    // to it would haul the whole page up by the difference on the first
+    // scroll. The padding puts back exactly what the margin took, so the
+    // heading sits where it would have anyway.
+    <section className="relative isolate -mt-(--app-header-top-h) overflow-hidden rounded-b-[1.75rem] bg-[linear-gradient(180deg,#cfe9f8_0%,#e4f3fb_52%,#f7fcfe_100%)] pt-(--app-header-top-h) md:rounded-b-[2.5rem]">
       {banner ? (
         <>
           <Image
