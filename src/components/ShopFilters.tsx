@@ -634,17 +634,20 @@ export default function ShopFilters({
 
   return (
     <>
-      {/* One row of menus, at every width.
+      {/* One row of menus, at every width: it slides sideways on a phone and
+          wraps once there is room for it to.
           
-          The phone used to get a scrolling row of chips that opened a
-          bottom sheet instead, on the reasoning that five menus on a 375px
-          screen is a sidebar again, only sideways. The objection to that
-          was simpler than the reasoning: the phone was the only place where
-          tapping "แบรนด์" did not open แบรนด์. It wraps here rather than
-          scrolls, so every facet is on screen at once instead of hiding
-          past the right edge, and Dropdown already caps its panel at the
-          window width. */}
-      <div className="flex flex-wrap items-center gap-2">
+          Wrapping on a phone put six pills and the sort menu on four lines,
+          which is a block of controls as tall as a product card sitting
+          between the banner and the first thing anyone came to see. Sliding
+          keeps it to one line.
+          
+          That is what the panels are portalled for — see Dropdown. A row
+          with overflow-x: auto clips its children on both axes, so a panel
+          anchored inside it would open into a 40px-tall slot. bleed-page
+          lets the row scroll under the gutters rather than stopping short
+          of them, and nets out to nothing once it wraps. */}
+      <div className="bleed-page scrollbar-none flex items-center gap-2 overflow-x-auto lg:flex-wrap lg:overflow-x-visible">
         <FilterMenu
           label="หมวดหมู่"
           openMenu={openMenu}
