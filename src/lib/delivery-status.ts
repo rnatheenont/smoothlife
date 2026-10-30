@@ -1,4 +1,5 @@
 import type { getCustomerOrders } from "@/lib/shopify-admin";
+import { courierFromShopifyName } from "@/lib/courier";
 
 // What the chat assistant is allowed to say about a delivery, worked out here
 // rather than by the model.
@@ -136,8 +137,21 @@ export function deliveryStatusForPrompt(orders: Orders | null): string | null {
   const findings = deliveryFindings(orders);
   if (findings.length === 0) return null;
   const urgent = findings.filter((f) => f.needsStaff);
+  // Ours first, Shopify's second — the same rule the customer's own tracker
+  // uses (see tracking.ts). Shopify stores whichever link was right when the
+  // fulfillment was created and never revisits it, so months-old orders still
+  // carry kerryexpress.com, a domain that tracks nothing now. Handing that to
+  // the assistant meant it quoted a dead link to a customer in good faith: it
+  // was not inventing one, it was passing on what we gave it.
   const links = orders
-    .flatMap((o) => o.shipments.filter((s) => s.url).map((s) => `${o.name}: ${s.url}`))
+    .flatMap((o) =>
+      o.shipments
+        .map((s) => {
+          const url = courierFromShopifyName(s.company).trackingUrl(s.number) || s.url;
+          return url ? `${o.name}: ${url}` : null;
+        })
+        .filter((l): l is string => l !== null),
+    )
     .slice(0, 5);
 
   return [
