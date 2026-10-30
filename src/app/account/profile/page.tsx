@@ -41,10 +41,11 @@ const labelClass = "text-xs font-semibold text-slate-500 mb-1.5 block";
 // max-w-md and top margin because each was the only thing on its row;
 // in a column that reads as a stack of boxes of different widths.
 const CARD = "rounded-xl2 border border-slate-200 bg-white p-5";
-// Email and phone are two of the ways into this account, so they are rows in
-// the login-channels card rather than cards beside it. Same markup either
-// way — only the shell changes.
-const ROW = "border-t border-slate-100 pt-4 mt-4";
+// Inside the identity card email and phone are two more facts about the
+// person, so they are set like the birthday above them: label, value, and
+// the action on the same line as the label. A bordered box each made two
+// rows of a list look like two panels that had wandered in.
+const ROW = "mt-3";
 
 function ProfileContent({ children }: { children?: React.ReactNode }) {
   const { user, refreshUser } = useAuth();
@@ -274,7 +275,7 @@ function ProfileContent({ children }: { children?: React.ReactNode }) {
 // emailed-OTP flow already used for email login (see LoginContent.tsx) —
 // never let either happen on just the strength of typing an address, since
 // that's exactly how someone could hijack an account that isn't theirs.
-function EmailLinkCard({ embedded = false }: { embedded?: boolean }) {
+function EmailLinkCard() {
   const { user, refreshUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [email, setEmail] = useState("");
@@ -314,14 +315,9 @@ function EmailLinkCard({ embedded = false }: { embedded?: boolean }) {
 
   if (hasEmail && !editing) {
     return (
-      <div className={embedded ? ROW : CARD}>
-        <div className="flex items-center gap-2 text-brand-800 mb-1">
-          <Mail size={16} />
-          <span className="text-xs font-semibold">Email</span>
-        </div>
-        <h2 className="text-sm font-bold text-brand-ink mb-3">อีเมล</h2>
+      <div className={ROW}>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-slate-600">{user.email}</p>
+          <p className="text-xs text-slate-500">อีเมล</p>
           <button
             type="button"
             onClick={() => setEditing(true)}
@@ -330,6 +326,7 @@ function EmailLinkCard({ embedded = false }: { embedded?: boolean }) {
             เปลี่ยนอีเมล
           </button>
         </div>
+        <p className="text-sm text-brand-ink">{user.email}</p>
       </div>
     );
   }
@@ -388,7 +385,7 @@ function EmailLinkCard({ embedded = false }: { embedded?: boolean }) {
 
   if (justLinked) {
     return (
-      <div className={embedded ? ROW : CARD}>
+      <div className={ROW}>
         <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Mail size={16} />
           <span className="text-xs font-semibold">Email</span>
@@ -402,7 +399,7 @@ function EmailLinkCard({ embedded = false }: { embedded?: boolean }) {
   }
 
   return (
-    <div className={embedded ? ROW : CARD}>
+    <div className={ROW}>
       <div className="flex items-center gap-2 text-brand-800 mb-1">
         <Mail size={16} />
         <span className="text-xs font-semibold">Email</span>
@@ -510,7 +507,7 @@ function EmailLinkCard({ embedded = false }: { embedded?: boolean }) {
 // number always goes through real Firebase SMS verification on the *new*
 // number — mirrors EmailLinkCard's role for email, and the same login-time
 // phone-OTP flow in LoginContent.tsx.
-function PhoneChangeCard({ embedded = false }: { embedded?: boolean }) {
+function PhoneChangeCard() {
   const { user, refreshUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [phone, setPhone] = useState("");
@@ -530,14 +527,9 @@ function PhoneChangeCard({ embedded = false }: { embedded?: boolean }) {
 
   if (hasPhone && !editing) {
     return (
-      <div className={embedded ? ROW : CARD}>
-        <div className="flex items-center gap-2 text-brand-800 mb-1">
-          <Phone size={16} />
-          <span className="text-xs font-semibold">Phone</span>
-        </div>
-        <h2 className="text-sm font-bold text-brand-ink mb-3">เบอร์โทรศัพท์</h2>
+      <div className={ROW}>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-slate-600">{user.phone}</p>
+          <p className="text-xs text-slate-500">เบอร์โทรศัพท์</p>
           <button
             type="button"
             onClick={() => setEditing(true)}
@@ -546,6 +538,7 @@ function PhoneChangeCard({ embedded = false }: { embedded?: boolean }) {
             เปลี่ยนเบอร์โทร
           </button>
         </div>
+        <p className="text-sm text-brand-ink">{user.phone}</p>
       </div>
     );
   }
@@ -620,7 +613,7 @@ function PhoneChangeCard({ embedded = false }: { embedded?: boolean }) {
 
   if (justLinked) {
     return (
-      <div className={embedded ? ROW : CARD}>
+      <div className={ROW}>
         <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Phone size={16} />
           <span className="text-xs font-semibold">Phone</span>
@@ -634,7 +627,7 @@ function PhoneChangeCard({ embedded = false }: { embedded?: boolean }) {
   }
 
   return (
-    <div className={embedded ? ROW : CARD}>
+    <div className={ROW}>
       <div className="flex items-center gap-2 text-brand-800 mb-1">
         <Phone size={16} />
         <span className="text-xs font-semibold">Phone</span>
@@ -738,8 +731,8 @@ export default function ProfilePage() {
             running out of card halfway down the page. */}
         <div className="flex flex-col gap-4">
           <ProfileContent>
-            <EmailLinkCard embedded />
-            <PhoneChangeCard embedded />
+            <EmailLinkCard />
+            <PhoneChangeCard />
           </ProfileContent>
           <SettingsSummary />
         </div>
