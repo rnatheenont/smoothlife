@@ -1,5 +1,6 @@
 import { SALE_HREF } from "@/lib/sale-destination";
 import Link from "next/link";
+import { iconThemeSrc, type IconTheme } from "@/lib/category-icon-theme";
 import {
   AccessoriesIcon,
   FirstAidIcon,
@@ -28,23 +29,31 @@ type Shortcut = {
   href: string;
   label: string;
   Icon?: typeof SkincareIcon;
+  /** Which picture to use when the row is wearing a rendered theme. */
+  iconKey?: string;
   /** The sale disc carries a word instead of a mark, as in the design. */
   word?: string;
 };
 
 const shortcuts: Shortcut[] = [
   { href: SALE_HREF, label: "ลดราคาพิเศษ", word: "Sale" },
-  { href: "/brands", label: "แบรนด์แนะนำ", Icon: TopBrandIcon },
-  { href: "/shop/skincare", label: "สกินแคร์", Icon: SkincareIcon },
-  { href: "/shop/oral-care", label: "ดูแลช่องปาก", Icon: OralCareIcon },
-  { href: "/shop/wellness", label: "วิตามินและอาหารเสริม", Icon: WellnessIcon },
-  { href: "/shop/hair-care", label: "ดูแลเส้นผม", Icon: HairCareIcon },
-  { href: "/collections/for-men", label: "สำหรับผู้ชาย", Icon: ForMenIcon },
-  { href: "/collections/medical-equipment", label: "อุปกรณ์เสริม", Icon: AccessoriesIcon },
-  { href: "/collections/first-aid-smoothllife", label: "ปฐมพยาบาล", Icon: FirstAidIcon },
+  { href: "/brands", label: "แบรนด์แนะนำ", Icon: TopBrandIcon, iconKey: "top-brand" },
+  { href: "/shop/skincare", label: "สกินแคร์", Icon: SkincareIcon, iconKey: "skincare" },
+  { href: "/shop/oral-care", label: "ดูแลช่องปาก", Icon: OralCareIcon, iconKey: "oral-care" },
+  { href: "/shop/wellness", label: "วิตามินและอาหารเสริม", Icon: WellnessIcon, iconKey: "wellness" },
+  { href: "/shop/hair-care", label: "ดูแลเส้นผม", Icon: HairCareIcon, iconKey: "hair-care" },
+  { href: "/collections/for-men", label: "สำหรับผู้ชาย", Icon: ForMenIcon, iconKey: "for-men" },
+  { href: "/collections/medical-equipment", label: "อุปกรณ์เสริม", Icon: AccessoriesIcon, iconKey: "accessories" },
+  { href: "/collections/first-aid-smoothllife", label: "ปฐมพยาบาล", Icon: FirstAidIcon, iconKey: "first-aid" },
 ];
 
-export default function CategoryIconRow({ items = shortcuts }: { items?: Shortcut[] }) {
+export default function CategoryIconRow({
+  items = shortcuts,
+  theme = "line",
+}: {
+  items?: Shortcut[];
+  theme?: IconTheme;
+}) {
   return (
     <nav aria-label="หมวดหมู่สินค้า" className="bg-[#f8fffe]">
       {/* Nine across needs about 1200px. Below that the row scrolls rather
@@ -72,14 +81,39 @@ export default function CategoryIconRow({ items = shortcuts }: { items?: Shortcu
                 </span>
               ) : (
                 <span className="grid h-[68px] w-[68px] place-items-center rounded-full border border-slate-200/80 bg-white text-brand-1000 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-1 group-hover:border-brand-200 group-hover:shadow-card group-active:scale-95 lg:h-[88px] lg:w-[88px]">
-                  {s.Icon && (
-                    // The disc lifts; the mark inside it bobs. Both only on
-                    // hover, and the bob runs once — see iconBob.
-                    <s.Icon
-                      className="h-[42px] w-[42px] motion-safe:group-hover:animate-iconBob lg:h-14 lg:w-14"
-                      blobClassName="text-brand-200/70"
-                    />
-                  )}
+                  {(() => {
+                    // A rendered set when the row is wearing one and has a
+                    // picture for this key; the drawn mark otherwise. Falling
+                    // back rather than leaving a hole keeps a theme usable
+                    // before every category has been drawn for it.
+                    const src = iconThemeSrc(theme, s.iconKey);
+                    if (src) {
+                      // Plain <img>: images.unoptimized is on, so next/image
+                      // would emit the same single source and silently drop
+                      // sizes — see lib/shopify-image.ts.
+                      return (
+                        <img
+                          src={src}
+                          alt=""
+                          width={56}
+                          height={56}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-[46px] w-[46px] object-contain motion-safe:group-hover:animate-iconBob lg:h-[60px] lg:w-[60px]"
+                        />
+                      );
+                    }
+                    return (
+                      s.Icon && (
+                        // The disc lifts; the mark inside it bobs. Both only
+                        // on hover, and the bob runs once — see iconBob.
+                        <s.Icon
+                          className="h-[42px] w-[42px] motion-safe:group-hover:animate-iconBob lg:h-14 lg:w-14"
+                          blobClassName="text-brand-200/70"
+                        />
+                      )
+                    );
+                  })()}
                 </span>
               )}
               <span className="line-clamp-2 text-center text-[11px] font-medium leading-snug text-brand-ink transition-colors group-hover:text-brand-800 lg:text-sm">
