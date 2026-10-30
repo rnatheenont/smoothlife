@@ -49,8 +49,15 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
 
       <div className="container-page py-5 md:py-8">
 
-        <div className="flex flex-col gap-6">
-          <div className="min-w-0 flex-1">
+        {/* A rail on a desktop, the row it has always been on a phone. The
+            same single ShopFilters either way — it changes direction with
+            the container rather than being rendered twice, so only one of
+            them can ever have a menu open. */}
+        <div className="flex flex-col gap-6 lg:flex-row lg:gap-7">
+          {/* Full height, not content height: the sticky lives inside this
+              and sticky can only travel inside its own parent — a wrapper
+              the height of the toolbar makes it scroll away. */}
+          <div className="lg:w-60 lg:shrink-0">
             {/* One toolbar: what narrows the list on the left, how it is
                 ordered on the right. The filters had a row of their own
                 above the count, and two rows of controls for one list is
@@ -63,7 +70,7 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
                 the tall column, not a wrapper the height of the toolbar:
                 sticky can only travel inside its own parent. */}
             <StickyToolbar>
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2 lg:flex-col lg:items-stretch">
                 <ShopFilters
                   houseBrands={brandOptions().house}
                   otherBrands={brandOptions().other}
@@ -71,11 +78,16 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
                   counts={counts}
                   mobileExtra={<SortSelect current={searchParams} />}
                 />
-                <div className="hidden items-center gap-2 lg:flex">
-                  <SortMenu current={searchParams} />
-                </div>
               </div>
             </StickyToolbar>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            {/* Ordering is not a filter, so it sits over the grid it orders
+                rather than down in the rail with the things that narrow it. */}
+            <div className="mb-3 hidden justify-end lg:flex">
+              <SortMenu current={searchParams} />
+            </div>
 
             <ActiveFilterChips current={searchParams} brandNames={brandNames()} />
 

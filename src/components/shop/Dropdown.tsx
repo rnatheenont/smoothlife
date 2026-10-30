@@ -45,6 +45,7 @@ export default function Dropdown({
   onClose,
   align = "start",
   panelClassName,
+  triggerClassName,
   children,
 }: {
   label: ReactNode;
@@ -58,6 +59,9 @@ export default function Dropdown({
    *  opens inward instead of off the edge of the window. */
   align?: "start" | "end";
   panelClassName?: string;
+  /** For the pill itself. The filter row hands it a full-width, label-left
+   *  shape when it stacks into a column on a desktop. */
+  triggerClassName?: string;
   children: ReactNode;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
@@ -155,6 +159,7 @@ export default function Dropdown({
         onClick={onToggle}
         className={clsx(
           "flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-4 text-sm transition-colors",
+          triggerClassName,
           active
             ? "border-brand-emerald bg-brand-gradient-soft font-semibold text-brand-800"
             : // Glass only while it is doing nothing. A pill that is holding a

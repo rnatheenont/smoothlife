@@ -27,6 +27,15 @@ export default function StickyToolbar({ children }: { children: ReactNode }) {
       className={clsx(
         "bleed-page sticky top-(--app-header-h) z-30 mb-1.5 py-2",
         "transition-[background-color,max-width,border-radius,box-shadow,padding] duration-200",
+        // On a desktop this is the left rail, not a bar across the top: it
+        // keeps the sticky so the filters travel with a long grid, and drops
+        // everything that was about being a full-width band — the bleed, the
+        // cap, the centring, and the glass it only ever needed because the
+        // grid ran underneath it. The two bangs are for bleed-page, which
+        // sets margin-inline and padding-inline itself — without them the
+        // rail kept a 50px gutter on each side and the pills inside it came
+        // out content-width.
+        "lg:mx-0! lg:max-w-none lg:rounded-none lg:bg-transparent lg:px-0! lg:shadow-none lg:backdrop-blur-none",
         stuck
           // Pinned, it is a card over the grid like the header above it, so
           // it takes the header's shape: the same 1024px, centred, with the
