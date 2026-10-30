@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { iconThemeSrc } from "@/lib/category-icon-theme";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import type { MenuCategory } from "@/data/nav-menu";
@@ -32,8 +33,22 @@ export default function MobileShopMenu({ menu, onNavigate }: { menu: MenuCategor
                   onClick={onNavigate}
                   className="flex min-h-12 flex-1 items-center gap-3 rounded-xl px-2.5 text-sm font-medium text-slate-700"
                 >
-                  <span className="relative size-8 shrink-0 overflow-hidden rounded-full bg-surface-soft">
-                    <Image src={c.image} alt="" fill sizes="32px" className="object-cover" />
+                  {/* The same tile the header's menu uses — the rendered 3D
+                      mark on white, not the category's photograph. The photo
+                      is a crop of a product shot, which at 32px is a smear of
+                      colour; two different pictures for one category in two
+                      menus was also two things to keep in step. */}
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white ring-1 ring-slate-200/70">
+                    {(() => {
+                      const src = iconThemeSrc("3d", c.slug);
+                      return src ? (
+                        <Image src={src} alt="" width={64} height={64} className="size-7 object-contain" />
+                      ) : (
+                        <span className="relative size-7 overflow-hidden rounded-full">
+                          <Image src={c.image} alt="" fill sizes="28px" className="object-cover" />
+                        </span>
+                      );
+                    })()}
                   </span>
                   {c.label}
                 </Link>

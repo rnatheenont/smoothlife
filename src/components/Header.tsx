@@ -162,6 +162,13 @@ export default function Header({
       // so — inset, rounded, glass — reads as one layer rather than as the
       // page having a white stripe stuck to its forehead.
       //
+      // Narrower than the page once it detaches — 1024px centred rather
+      // than the full width inset by a margin. A bar that has become a card
+      // but still runs the width of the window reads as the old bar with
+      // rounded corners; pulling both ends in is what makes it a separate
+      // thing floating over the page. Only from lg: below that the window is
+      // already narrower than the cap and the bar just insets.
+      //
       // No overflow-hidden, whatever the rounding wants: the mega menu's
       // panel lives inside this element and hangs below it, and clipping to
       // the header's own box would cut the menu off at its first row. The
@@ -171,7 +178,7 @@ export default function Header({
         hideHeader && !open ? "-translate-y-full" : "translate-y-0"
       } ${
         scrolled
-          ? "top-2 mx-2 rounded-2xl border border-slate-200/70 bg-white/75 shadow-[0_12px_32px_-14px_rgba(0,53,41,0.3)] backdrop-blur-lg sm:mx-4 lg:top-3 lg:mx-6"
+          ? "top-2 mx-2 max-w-full rounded-2xl border border-slate-200/70 bg-white/75 shadow-[0_12px_32px_-14px_rgba(0,53,41,0.3)] backdrop-blur-lg sm:mx-4 lg:top-3 lg:mx-auto lg:max-w-5xl"
           : "top-0 mx-0 rounded-none border-b border-transparent bg-white/95 backdrop-blur-sm lg:border-b lg:border-slate-200"
       }`}
     >
@@ -453,29 +460,12 @@ export default function Header({
                 </button>
               </div>
 
-              {user ? (
-                <Link
-                  href="/account"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-card"
-                >
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-gradient text-white font-bold overflow-hidden ring-2 ring-white">
-                    <Avatar src={user.avatar} name={user.name} className="h-11 w-11" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold text-brand-ink truncate">{user.name.split(" ")[0]}</span>
-                    <span className="flex items-center gap-1.5 text-xs text-slate-500">
-                      {REWARDS_ACTIVITIES_ENABLED && <>{user.points} pts</>}
-                      <span
-                        className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${tierBadge[user.tier].className}`}
-                      >
-                        Lv.{tierBadge[user.tier].level}
-                      </span>
-                    </span>
-                  </span>
-                  <ChevronRight size={16} className="text-slate-300 shrink-0" />
-                </Link>
-              ) : (
+              {/* Nothing here when somebody is signed in: the bar this drawer
+                  opens from shows their name, points and tier a few pixels to
+                  the right, and the drawer was saying it a second time.
+                  Signed out is the other case — there the bar offers no way
+                  in, so the button stays. */}
+              {user ? null : (
                 <Button
                   size="lg"
                   fullWidth
