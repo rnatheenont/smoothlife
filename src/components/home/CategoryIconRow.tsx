@@ -1,3 +1,4 @@
+import { SALE_HREF } from "@/lib/sale-destination";
 import Link from "next/link";
 import {
   AccessoriesIcon,
@@ -32,7 +33,7 @@ type Shortcut = {
 };
 
 const shortcuts: Shortcut[] = [
-  { href: "/collections/sale-up-to-50-off", label: "ลดราคาพิเศษ", word: "Sale" },
+  { href: SALE_HREF, label: "ลดราคาพิเศษ", word: "Sale" },
   { href: "/brands", label: "แบรนด์แนะนำ", Icon: TopBrandIcon },
   { href: "/shop/skincare", label: "สกินแคร์", Icon: SkincareIcon },
   { href: "/shop/oral-care", label: "ดูแลช่องปาก", Icon: OralCareIcon },

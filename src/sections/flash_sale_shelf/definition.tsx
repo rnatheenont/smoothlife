@@ -70,7 +70,7 @@ export const flashSaleShelf: SectionDefinition<typeof schema> = {
   schema,
   defaults: { titleTh: "", endsAt: "", href: "", collection: "" },
   fields: [
-    { key: "collection", type: "text", label: "handle ของ collection", help: "เช่น sale-up-to-50-off" },
+    { key: "collection", type: "text", label: "handle ของ collection", help: "เช่น buy-1-get-1-free-deal" },
     { key: "titleTh", type: "text", label: "หัวข้อบนแบนเนอร์", help: "ว่างไว้ = ใช้ชื่อ collection" },
     { key: "endsAt", type: "datetime", label: "หมดเวลาเมื่อ", help: "ว่างไว้ = ไม่มีนาฬิกานับถอยหลัง" },
     { key: "href", type: "text", label: "ลิงก์เมื่อกดแบนเนอร์", help: "ว่างไว้ = ไปที่ collection นั้น" },

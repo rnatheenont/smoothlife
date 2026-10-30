@@ -47,7 +47,7 @@ const CONFIG_LABELS: Record<string, string> = {
   code: "โค้ดส่วนลด",
   href: "ลิงก์ปลายทาง (เช่น /collections/smooth-sale)",
   image: "ลิงก์รูปแบนเนอร์ (1512x260)",
-  collection: "handle ของ collection (เช่น sale-up-to-50-off)",
+  collection: "handle ของ collection (เช่น buy-1-get-1-free-deal)",
   titleTh: "หัวข้อบนแบนเนอร์ (ใช้เมื่อไม่ได้ใส่รูป)",
   colorFrom: "สีซ้ายของแถบ",
   colorTo: "สีขวาของแถบ",

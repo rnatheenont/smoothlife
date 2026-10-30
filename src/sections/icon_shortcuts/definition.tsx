@@ -1,3 +1,4 @@
+import { SALE_HREF } from "@/lib/sale-destination";
 import { z } from "zod";
 import CategoryIconRow from "@/components/home/CategoryIconRow";
 import { ICON_BY_KEY, ICON_KEYS } from "@/components/icons/CategoryIcons";
@@ -46,7 +47,7 @@ export const iconShortcuts: SectionDefinition<typeof schema> = {
   // The nine that were hard-coded in the component, in order.
   defaults: {
     items: [
-      { href: "/collections/sale-up-to-50-off", label: "ลดราคาพิเศษ", word: "Sale" },
+      { href: SALE_HREF, label: "ลดราคาพิเศษ", word: "Sale" },
       { href: "/brands", label: "แบรนด์แนะนำ", icon: "top-brand" },
       { href: "/shop/skincare", label: "สกินแคร์", icon: "skincare" },
       { href: "/shop/oral-care", label: "ดูแลช่องปาก", icon: "oral-care" },
