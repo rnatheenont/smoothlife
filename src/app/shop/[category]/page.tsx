@@ -84,7 +84,6 @@ async function CategoryPageWritten({
         title={categoryInfo.nameTh}
         subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
         count={items.length}
-        categorySlug={categoryInfo.slug}
       >
       </ShopHero>
 

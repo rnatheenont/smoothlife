@@ -35,7 +35,6 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
       title={active ? active.nameTh : settings.title}
       subtitle={settings.subtitle}
       count={count}
-      categorySlug={active?.slug}
     >
     </ShopHero>
   );

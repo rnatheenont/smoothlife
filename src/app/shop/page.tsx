@@ -43,7 +43,6 @@ async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParam
         title={activeCategory ? activeCategory.nameTh : "สินค้าทั้งหมด"}
         subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
         count={allItems.length}
-        categorySlug={activeCategory?.slug}
       >
       </ShopHero>
 
