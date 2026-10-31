@@ -482,21 +482,6 @@ export default function CartView() {
           )}
 
 
-          {bundleSuggestions.length > 0 && (
-            <div className="mt-2">
-              <h2 className="font-bold text-brand-ink mb-3">
-                {t("อาจสนใจ: เซ็ต Bundle จากแบรนด์ที่คุณเลือก", "You might like: bundle deals from brands in your cart")}
-              </h2>
-              {/* Four, not the six the full-width listings use: this block sits in
-                  the cart's lg:col-span-2 column, which is two thirds of the
-                  page, so six here would be ~118px cards. */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {bundleSuggestions.map((p) => (
-                  <ProductCard key={p.slug} product={p} />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* The gift progress card used to sit here, above the summary. It
@@ -623,6 +608,32 @@ export default function CartView() {
           </div>
         </div>
       </div>
+
+      {/* Below the whole grid, not inside the basket column.
+
+          On a phone the grid is one column, so anything in the basket column
+          renders before the summary — and this block of product cards sat
+          between the cart lines and the points, the coupon and the button
+          that completes the order. Someone scrolling down to pay met a shop
+          first. Out here it comes after the decision at every width, which is
+          also the only order the words make sense in: a suggestion belongs
+          after the basket, not in the middle of paying for it.
+
+          Six across rather than four. The four was measured against this
+          block sitting in a column two thirds of the page wide; at full width
+          six is the figure the rest of the shop's grids use. */}
+      {bundleSuggestions.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-3 font-bold text-brand-ink">
+            {t("อาจสนใจ: เซ็ต Bundle จากแบรนด์ที่คุณเลือก", "You might like: bundle deals from brands in your cart")}
+          </h2>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+            {bundleSuggestions.map((p) => (
+              <ProductCard key={p.slug} product={p} />
+            ))}
+          </div>
+        </div>
+      )}
 
       <MobileStickyBar hideWhenVisible={checkoutButtonRef}>
         <div className="min-w-0 shrink-0">
