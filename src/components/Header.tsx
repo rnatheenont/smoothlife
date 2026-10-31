@@ -505,7 +505,7 @@ export default function Header({
             // exactly what a staff sale with a day count is. The rim
             // replaces the border the pill drew for itself; two edges around
             // one pill is just a thicker edge.
-            <HaloField focused={false} className="shrink-0">
+            <HaloField focused={false} compact className="shrink-0">
             <Link
               href="/staff"
               // No colour and no weight of its own: the row sets text-sm

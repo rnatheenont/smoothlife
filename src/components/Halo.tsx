@@ -38,12 +38,18 @@ const RAILS = ["animate-haloA", "animate-haloB", "animate-haloC"] as const;
  * They start where they left off, which on a ring of drifting light reads as
  * the lights having been there all along.
  */
-function Lights({ shape, paused }: { shape: "pill" | "card"; paused?: boolean }) {
+function Lights({ shape, paused }: { shape: "pill" | "chip" | "card"; paused?: boolean }) {
   // A pill is lit from below: a ring lit evenly reads as a loading spinner,
   // lit from underneath it reads as something resting on a surface. A card is
   // too tall for that to reach the top corners, so its lights are the height
   // of the card and sweep across instead.
-  const field = shape === "pill" ? "absolute inset-x-0 bottom-0 h-2/3" : "absolute inset-0";
+  //
+  // A chip is a pill small enough that neither of those works. Lighting the
+  // bottom two thirds of a 30px pill leaves 20px for a light blurred over
+  // 24px, which arrives at the rim as almost no colour at all — measured on
+  // the staff button, where the ring was running the whole time and read as
+  // a plain grey border. It gets the full height and a quarter of the blur.
+  const field = shape === "card" ? "absolute inset-0" : shape === "chip" ? "absolute inset-0" : "absolute inset-x-0 bottom-0 h-2/3";
   // The pill widths are capped against the box as well as in px. A light
   // wider than the pill it travels along lights the whole rim at once, and a
   // rim lit all over does not read as moving — which is what happened the
@@ -53,13 +59,15 @@ function Lights({ shape, paused }: { shape: "pill" | "card"; paused?: boolean })
   // the figures it was tuned at (half of 460 is more than 192) and scales
   // the lights down for anything smaller.
   const sizes =
-    shape === "pill"
-      ? [
-          "-bottom-5 h-16 w-[min(12rem,50%)] blur-xl",
-          "-bottom-4 h-12 w-[min(8rem,33%)] blur-lg",
-          "-bottom-3 h-10 w-[min(6rem,25%)] blur-lg",
-        ]
-      : ["-inset-y-8 w-2/3 blur-xl", "-inset-y-6 w-1/2 blur-lg", "-inset-y-4 w-2/5 blur-lg"];
+    shape === "chip"
+      ? ["-inset-y-2 w-1/2 blur-[6px]", "-inset-y-1 w-1/3 blur-[5px]", "-inset-y-1 w-1/4 blur-[4px]"]
+      : shape === "pill"
+        ? [
+            "-bottom-5 h-16 w-[min(12rem,50%)] blur-xl",
+            "-bottom-4 h-12 w-[min(8rem,33%)] blur-lg",
+            "-bottom-3 h-10 w-[min(6rem,25%)] blur-lg",
+          ]
+        : ["-inset-y-8 w-2/3 blur-xl", "-inset-y-6 w-1/2 blur-lg", "-inset-y-4 w-2/5 blur-lg"];
   const gradients = [GRADIENTS.cool, GRADIENTS.warm, GRADIENTS.sky];
 
   return (
@@ -88,10 +96,15 @@ function Lights({ shape, paused }: { shape: "pill" | "card"; paused?: boolean })
 /** The AI field: a pill whose ring is always lit, brighter while focused. */
 export function HaloField({
   focused,
+  compact,
   children,
   className,
 }: {
   focused: boolean;
+  /** A pill the height of a line of text rather than of a search field. Its
+   *  lights are shorter and far less blurred, because the rim of a 30px pill
+   *  is too little of a window for a 24px blur to show any colour through. */
+  compact?: boolean;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -113,10 +126,10 @@ export function HaloField({
         aria-hidden="true"
         className={clsx(
           "pointer-events-none absolute inset-0 overflow-hidden rounded-full transition-opacity duration-300",
-          focused ? "opacity-100" : "opacity-80"
+          focused || compact ? "opacity-100" : "opacity-80"
         )}
       >
-        <Lights shape="pill" />
+        <Lights shape={compact ? "chip" : "pill"} />
       </span>
       {children}
     </div>
