@@ -131,7 +131,20 @@ export function HaloField({
       >
         <Lights shape={compact ? "chip" : "pill"} />
       </span>
-      {children}
+      {/* The child is positioned so that it covers the lights.
+      
+          Not a detail: the lights are absolutely positioned, and a positioned
+          descendant paints above the in-flow content of its stacking context
+          whatever the DOM order. A child that is not positioned itself ends
+          up *under* them — which on the staff button meant three coloured
+          blobs lying across the label. It went unseen while the lights were
+          blurred 24px at 80% and confined to the bottom third, because what
+          landed on the text there was a wash too faint to notice. The chip
+          shape made them crisp and the bug with it.
+          
+          A relative block changes no layout: the input it wraps on the AI
+          field is w-full either way. */}
+      <div className="relative">{children}</div>
     </div>
   );
 }
