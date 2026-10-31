@@ -45,6 +45,7 @@ import { formatTHB } from "@/lib/format";
 import { SALE_HREF } from "@/lib/sale-destination";
 import type { TickerProduct } from "@/lib/ticker-products";
 
+import { HaloField } from "@/components/Halo";
 import MegaMenu from "@/components/nav/MegaMenu";
 import MobileShopMenu from "@/components/nav/MobileShopMenu";
 import type { MenuCategory } from "@/data/nav-menu";
@@ -495,14 +496,24 @@ export default function Header({
             // a place everyone can go, it is a thing a few people are
             // entitled to for a few more days. Reading like the links beside
             // it made it the easiest item in the bar to miss.
+            // The ring of drifting light from a product card, lit all the
+            // time rather than only under the pointer. On a card it answers
+            // "which of these forty-eight is the cursor on"; here there is
+            // one of it in the row and nothing to disambiguate, so the job
+            // is the other one the same ring does around the AI field — an
+            // edge that moves says this is live and is closing, which is
+            // exactly what a staff sale with a day count is. The rim
+            // replaces the border the pill drew for itself; two edges around
+            // one pill is just a thicker edge.
+            <HaloField focused={false} className="shrink-0">
             <Link
               href="/staff"
               // No colour and no weight of its own: the row sets text-sm
               // font-medium text-slate-700 and every other item takes it. A
               // pill that also shouts in green reads as an advert rather
-              // than as one of the places you can go — the border and the
-              // day count are enough to set it apart.
-              className="flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 transition-colors hover:border-brand-teal hover:bg-brand-100 hover:text-brand-800"
+              // than as one of the places you can go — the ring and the day
+              // count are enough to set it apart.
+              className="flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 transition-colors hover:bg-brand-100 hover:text-brand-800"
             >
               {t("ร้านพนักงาน", "Staff Store")}
               {staff.ends_at && (
@@ -513,6 +524,7 @@ export default function Header({
                 />
               )}
             </Link>
+            </HaloField>
           )}
           {/* Support, not shopping — so it sits apart from the five above
               rather than sixth and seventh in the same run. */}
