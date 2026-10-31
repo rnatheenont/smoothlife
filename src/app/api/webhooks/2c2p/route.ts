@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { twoC2PConfigured, verifyPaymentCallback } from "@/lib/2c2p";
 import { createPaidShopifyOrder } from "@/lib/shopify-admin";
-import { linkedShopifyCustomerId } from "@/lib/link-shopify-customer";
+import { orderCustomerId } from "@/lib/link-shopify-customer";
 import { products } from "@/data/products";
 
 type ChargeRow = { id: string; subscription_id: string; cycle_number: number; amount: number };
@@ -197,10 +197,10 @@ export async function POST(req: NextRequest) {
         ? splitAmountByRealPrice(subscription.variant_ids, charge.amount).map((li) => ({ ...li, quantity: 1 }))
         : [{ variantId: subscription.variant_id!, quantity: 1, price: charge.amount }];
     const order = await createPaidShopifyOrder({
-      // Same as the cart checkout: without this the cycle's order is matched
-      // on the email alone and opens a second customer record for anyone
+      // Same rule as the cart checkout: without a customer the cycle's order
+      // is matched on the email alone and opens a second record for anyone
       // whose linked record has no email.
-      customerId: await linkedShopifyCustomerId(subscription.user_id),
+      customerId: await orderCustomerId(subscription.user_id, subscription.contact_email),
       email: subscription.contact_email ?? undefined,
       lineItems,
       currencyCode: subscription.currency_code,

@@ -7,7 +7,7 @@
 // never written into the structured address book automatically, since our
 // address form splits ตำบล/อำเภอ out and Shopify's address has no such
 // fields to split from reliably.
-import { supabaseRest } from "@/lib/supabase-server";
+import { supabaseRest, pgValue } from "@/lib/supabase-server";
 import { recalculateLoyaltyForUser } from "@/lib/loyalty-cron";
 import { linkOtherStores } from "@/lib/store-links";
 import {
@@ -75,28 +75,63 @@ async function verifiedPhone(uid: string): Promise<string | null> {
 }
 
 /**
- * The Shopify customer this account is linked to, for an order about to be
- * created on their behalf.
+ * Which Shopify customer an order about to be created belongs to.
  *
- * An order created with an email and no customer id is matched by Shopify on
- * the email alone, and when the linked record has no email — which is every
- * account that signed up by phone OTP — Shopify matches nothing and opens a
- * second customer record for the same person. The order then lives on a
- * record the account does not point at: the shopper's own history, the admin
- * customer page and the loyalty totals all read the linked one and find it
- * empty, while the money and the shipment are on the other.
+ * Two rules, in this order, and the order is the whole point.
  *
- * Measured on the live store before this was passed: ten of the thirty-five
- * most recent buyers had a linked record with zero orders, all of them
- * phone-only records, all of them with their purchases sitting on a separate
- * email-keyed twin.
+ * The owner of the email wins. orderCreate refuses an order that names one
+ * customer while carrying an address that belongs to another — "Customer
+ * email address has already been taken" — so naming the stored link when
+ * somebody else holds the address does not create the order on the wrong
+ * record, it fails to create the order at all, after the money has been
+ * taken. Same rule the staff sale reached on 30 Oct 2026 from the same
+ * collision; see resolveCustomerId in staff-order-shopify.ts, which still
+ * keeps its own copy because it also creates a customer when neither
+ * source answers.
+ *
+ * The account's stored link is the fallback. Passing it matters because an
+ * order created with an email and no customer id is matched on the email
+ * alone, and the linked record of anyone who signed up by phone OTP has no
+ * email at all — Shopify matches nothing and opens a second record for the
+ * same person. The order then lives where the account is not looking: the
+ * shopper's own history, the admin customer page and the loyalty totals all
+ * read the linked one and find it empty, while the money and the shipment
+ * are on the other. Measured on the live store before this was passed, ten
+ * of the thirty-five most recent buyers were in exactly that state.
+ *
+ * A stale link is left as it is rather than rewritten here. Which of
+ * someone's records is the real one is a question for a human with the
+ * merge button, not for a webhook creating an order.
  */
-export async function linkedShopifyCustomerId(userId: string | null | undefined): Promise<string | undefined> {
-  if (!userId) return undefined;
-  const rows = await supabaseRest<{ shopify_customer_id: string | null }[]>(
-    `users?id=eq.${userId}&select=shopify_customer_id&limit=1`
-  ).catch(() => []);
-  return rows?.[0]?.shopify_customer_id ?? undefined;
+export async function orderCustomerId(
+  userId: string | null | undefined,
+  email: string | null | undefined
+): Promise<string | undefined> {
+  const linked = userId
+    ? (
+        await supabaseRest<{ shopify_customer_id: string | null }[]>(
+          `users?id=eq.${pgValue(userId)}&select=shopify_customer_id&limit=1`
+        ).catch(() => [])
+      )?.[0]?.shopify_customer_id ?? null
+    : null;
+
+  if (!email) return linked ?? undefined;
+
+  const owner = (await findShopifyCustomerByEmail(email).catch(() => null))?.id ?? null;
+  if (owner) {
+    if (linked && linked !== owner) {
+      console.warn("[link-shopify-customer] two Shopify customers for one shopper", {
+        email,
+        linked,
+        usedInstead: owner,
+      });
+    }
+    return owner;
+  }
+
+  // Nobody owns the address, so carrying it alongside the stored link cannot
+  // clash — and it fills in the email the phone-only record never had.
+  return linked ?? undefined;
 }
 
 export async function linkOrCreateShopifyCustomer(

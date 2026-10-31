@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { twoC2PConfigured, verifyPaymentCallback } from "@/lib/2c2p";
 import { createPaidShopifyOrder } from "@/lib/shopify-admin";
-import { linkedShopifyCustomerId } from "@/lib/link-shopify-customer";
+import { orderCustomerId } from "@/lib/link-shopify-customer";
 import { giftOrderTags } from "@/lib/checkout-gifts-rules";
 import { confirmStock, releaseStock } from "@/lib/stock-reservation";
 import { notifyOrderPaid } from "@/lib/order-notify";
@@ -104,12 +104,11 @@ export async function POST(req: NextRequest) {
   try {
     const addr = transaction.shipping_address;
     const order = await createPaidShopifyOrder({
-      // The account's own Shopify record, so the order lands on it instead
-      // of on whatever the email matches — see linkedShopifyCustomerId.
-      // The flash sale and the staff sale have always passed this; the
-      // shop's main checkout never did, which is where the duplicate
-      // customer records came from.
-      customerId: await linkedShopifyCustomerId(transaction.user_id),
+      // Who the order belongs to: the owner of the email first, the
+      // account's stored link second — see orderCustomerId. The flash sale
+      // and the staff sale have always named a customer; the shop's main
+      // checkout never did, which is where the duplicate records came from.
+      customerId: await orderCustomerId(transaction.user_id, transaction.contact_email),
       email: transaction.contact_email ?? undefined,
       lineItems: transaction.line_items ?? [],
       currencyCode: transaction.currency_code,
