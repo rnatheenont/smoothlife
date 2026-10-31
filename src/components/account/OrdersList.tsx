@@ -125,6 +125,40 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
     void loadStaffPending();
   }, []);
 
+  // Keeps itself current without being asked.
+  //
+  // Everything on this page changes somewhere else: payment lands at the
+  // bank, the warehouse marks a parcel shipped, a staff order turns from
+  // waiting into an order. None of it reaches the browser on its own —
+  // Shopify has nothing to push to us — so the page asks again rather than
+  // showing a stale list until somebody reloads.
+  //
+  // Refreshing when the tab comes back is the half that actually matters: a
+  // payment is finished in another tab, and this is the moment somebody
+  // returns to look for it. The interval is the slow background half, and it
+  // only runs while the tab is visible — a page left open all afternoon
+  // should not keep asking Shopify about it.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      void loadOrders().catch(() => {});
+      void loadStaffPending();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    const timer = setInterval(refresh, 30_000);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", refresh);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", refresh);
+    };
+    // loadOrders/loadStaffPending are stable for the life of this component.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleRetryLink() {
     setLinking(true);
     try {

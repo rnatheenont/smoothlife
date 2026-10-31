@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
-import { getCustomerOrders, getCustomerTotals, shopifyAdminConfigured, storeLabel } from "@/lib/shopify-admin";
+import {
+  findShopifyCustomerByEmail,
+  getCustomerOrders,
+  getCustomerTotals,
+  shopifyAdminConfigured,
+  storeLabel,
+} from "@/lib/shopify-admin";
 import { linkOtherStores, otherStoreOrders } from "@/lib/store-links";
 import { recalculateLoyaltyForUser } from "@/lib/loyalty-cron";
 import { buildTracking } from "@/lib/tracking";
@@ -30,7 +36,25 @@ export async function GET(req: NextRequest) {
   const other = await linkOtherStores(uid);
   if (other.added) void recalculateLoyaltyForUser(uid).catch(() => {});
 
-  if (!row?.shopify_customer_id && other.links.length === 0) {
+  // The employee shop buys under the work email, which is its own Shopify
+  // customer in this same store — not the one the account is linked to. So a
+  // paid staff order is a real order on a customer this endpoint never asks
+  // about, and it was arriving nowhere: the staff endpoint only lists the
+  // unpaid ones, on the stated grounds that a paid one "shows up in the
+  // ordinary history". It does not, unless we go and get it.
+  //
+  // Keyed on the staff order's own email rather than on anything the account
+  // stores, so it only ever reaches a customer this user has actually bought
+  // through.
+  const [staffRow] = await supabaseRest<{ staff_email: string | null }[]>(
+    `staff_orders?user_id=eq.${uid}&shopify_order_id=not.is.null&select=staff_email&limit=1`
+  );
+  const staffEmail = staffRow?.staff_email?.trim() || null;
+  const staffCustomer = staffEmail ? await findShopifyCustomerByEmail(staffEmail) : null;
+  const staffCustomerId =
+    staffCustomer && staffCustomer.id !== row?.shopify_customer_id ? staffCustomer.id : null;
+
+  if (!row?.shopify_customer_id && !staffCustomerId && other.links.length === 0) {
     return NextResponse.json({ linked: false, orders: [] });
   }
 
@@ -40,7 +64,7 @@ export async function GET(req: NextRequest) {
   // their 21st, with nothing on screen to say anything was left out. Other
   // call sites of getCustomerOrders already pass 100 and 250, so the page
   // size itself is not a constraint.
-  const [orders, totals, others] = await Promise.all([
+  const [orders, totals, others, staffOrders] = await Promise.all([
     row?.shopify_customer_id ? getCustomerOrders(row.shopify_customer_id, 50) : Promise.resolve([]),
     // The customer record's own lifetime counters, which do not depend on our
     // token's reach. Shopify withholds orders older than sixty days from an
@@ -49,12 +73,16 @@ export async function GET(req: NextRequest) {
     // as "you lost my history", which is worse than saying what we can see.
     row?.shopify_customer_id ? getCustomerTotals(row.shopify_customer_id) : Promise.resolve(null),
     otherStoreOrders(other.links, 50),
+    staffCustomerId ? getCustomerOrders(staffCustomerId, 50) : Promise.resolve([]),
   ]);
 
   // One list, newest first, each order carrying the store it came from.
-  const all = [...(orders || []), ...others.flatMap((o) => o.orders)].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  // Deduped by id: the staff customer is a different record, but if an
+  // account is ever linked to it the same order would arrive twice.
+  const seen = new Set<string>();
+  const all = [...(orders || []), ...(staffOrders || []), ...others.flatMap((o) => o.orders)]
+    .filter((o) => (seen.has(o.id) ? false : (seen.add(o.id), true)))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   // Tracking is assembled here rather than in the browser because whether a
   // courier feed exists is a server-side fact (an API key), and a client that
