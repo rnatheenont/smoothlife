@@ -83,8 +83,13 @@ const payments = [
 // 4.5:1, exactly on the AA line with nothing to spare. 600 is 7.2:1.
 const linkClass =
   "text-sm text-slate-600 transition-colors hover:text-brand-800 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-action/40 rounded-sm";
-const headingClass =
-  "mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500";
+// Sentence case at body size, not 12px tracked capitals. Thai has no
+// capitals, so `uppercase` only ever reached the English words in a column
+// title and left the Thai ones alone — the row of headings was in two
+// registers. Measured on the footer's own ground (#edf4f1, not the #F4FAF8
+// the note above assumed) slate-500 came out at 4.3:1, under AA; 600 is
+// comfortably over.
+const headingClass = "mb-2 text-sm font-semibold text-slate-600";
 
 function LinkList({ links }: { links: FooterColumns[number]["links"] }) {
   return (
@@ -260,9 +265,7 @@ export default function Footer({ columns = FOOTER_COLUMNS_DEFAULT }: { columns?:
             the backing. */}
         <div className="mt-10 flex flex-col gap-4 border-t border-surface-line pt-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-              ชำระเงินปลอดภัย
-            </span>
+            <span className="text-sm font-semibold text-slate-600">ชำระเงินปลอดภัย</span>
             <ul className="flex flex-wrap items-center gap-2">
               {payments.map(({ label, Icon }) => (
                 <li

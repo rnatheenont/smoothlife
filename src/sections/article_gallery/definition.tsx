@@ -68,7 +68,8 @@ function Component({ settings, data, ctx }: SectionProps<z.output<typeof schema>
   // The heading is split in two because only the first half is drawn in the
   // gradient; both halves are read here so a translation can move the accent
   // word to wherever English puts it.
-  const eyebrow = tx(settings.eyebrow, ctx.locale);
+  // Read for its side effect on validation only — see the note by the heading.
+  void tx(settings.eyebrow, ctx.locale);
   const headingAccent = tx(settings.headingAccent, ctx.locale);
   const headingRest = tx(settings.headingRest, ctx.locale);
   const blurbLine1 = tx(settings.blurbLine1, ctx.locale);
@@ -80,8 +81,13 @@ function Component({ settings, data, ctx }: SectionProps<z.output<typeof schema>
   return (
     <section className="overflow-hidden bg-white pt-10 pb-12 md:pt-16 md:pb-16 lg:pt-20">
       <ScrollReveal className="container-page text-center">
-        <p className="text-[13px] font-medium tracking-[0.04em] text-slate-500">{eyebrow}</p>
-        <h2 className="mt-2 text-[26px] font-medium leading-[1.4] tracking-[-0.01em] text-[#0a0a0a] md:text-[40px]">
+        {/* The eyebrow is read but not drawn. It said "articles and
+            knowledge" above a heading that says "knowledge about skin and
+            health", and a label that repeats the heading at a quarter of the
+            size is the heading said twice. The field stays in the schema so
+            documents that carry a value still validate, and so the editor
+            keeps a place to put one if the section ever needs it. */}
+        <h2 className="text-[26px] font-medium leading-[1.4] tracking-[-0.01em] text-[#0a0a0a] md:text-[40px]">
           {/* inline-block with padding: a clipped gradient stops at the box,
               and Thai tone marks and vowels above/below reach past it. */}
           <span className="inline-block bg-brand-gradient bg-clip-text px-0.5 pb-1 font-bold text-transparent">

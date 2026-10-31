@@ -69,7 +69,7 @@ function LiffEntryContent() {
 
 export default function LiffEntryPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-dvh items-center justify-center">
       <Suspense fallback={<Loader2 size={20} className="animate-spin text-slate-400" />}>
         <LiffEntryContent />
       </Suspense>

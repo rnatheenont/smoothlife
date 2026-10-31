@@ -24,13 +24,14 @@ import SkyClouds from "@/components/SkyClouds";
 // go somewhere else"), now one.
 
 export default function ShopHero({
-  eyebrow = "PRODUCTS",
+  eyebrow: _eyebrow = "PRODUCTS",
   title,
   subtitle,
   count,
   countLabel = "รายการ",
   banner,
 }: {
+  /** Accepted and ignored — see the note in the heading stack. */
   eyebrow?: string;
   title: string;
   subtitle: string;
@@ -97,15 +98,13 @@ export default function ShopHero({
             loses its place in on the way back, and the longer the measure the
             worse a centred ragged edge reads. */}
         <div className="mx-auto max-w-2xl text-center">
-          {/* A rule either side of the eyebrow. Letterspaced caps centred on
-              their own are a line that does not look placed so much as left
-              there; the rules give it a width and make the stack read as one
-              thing with a top. */}
-          <p className="flex items-center justify-center gap-3 text-[11px] font-medium tracking-[0.3em] text-brand-800">
-            <span className="h-px w-7 bg-brand-800/25 md:w-10" aria-hidden />
-            {eyebrow}
-            <span className="h-px w-7 bg-brand-800/25 md:w-10" aria-hidden />
-          </p>
+          {/* The eyebrow is gone. It was "PRODUCTS" in 11px letterspaced
+              capitals, with a hairline either side, over a Thai heading that
+              said the same thing — English shouting a translation of the
+              word underneath it, on a page whose readers are reading Thai.
+              The prop stays: page_header and collection_header both pass one
+              from stored documents, and dropping it from the signature would
+              break them at the type level for nothing. */}
           {/* leading is set rather than inherited, and set to 1.5: Tailwind's
               text-5xl comes with 1.1 and text-2xl with 1.33, which are Latin
               figures. Thai stacks a tone mark above a vowel above the letter

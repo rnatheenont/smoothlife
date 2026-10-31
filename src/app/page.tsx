@@ -254,8 +254,10 @@ async function LegacyHomePage() {
           "Great talent. Easier to find." block on fastwork.co/for-business. */}
       <section className="overflow-hidden bg-white pt-10 pb-12 md:pt-16 md:pb-16 lg:pt-20">
         <ScrollReveal className="container-page text-center">
-          <p className="text-[13px] font-medium tracking-[0.04em] text-slate-500">บทความและความรู้</p>
-          <h2 className="mt-2 text-[26px] font-medium leading-[1.4] tracking-[-0.01em] text-[#0a0a0a] md:text-[40px]">
+          {/* No label over the heading: it said "articles and knowledge"
+              above a heading that says "knowledge about skin and health".
+              The standfirst under the heading is where that belongs. */}
+          <h2 className="text-[26px] font-medium leading-[1.4] tracking-[-0.01em] text-[#0a0a0a] md:text-[40px]">
             {/* Brand gradient on the site's own face. inline-block with
                 padding: a clipped gradient stops at the box, and Thai tone
                 marks and vowels above/below reach past it. */}

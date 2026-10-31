@@ -300,12 +300,17 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
 
       {/* Centred, unlike the other section headings: this stack is centred
           on the page and a heading hanging off to the left of it reads as
-          belonging to something else. The eyebrow / gradient headline /
-          two-line standfirst is the same build as the knowledge section's
-          header, so the two centred blocks on this page are one thing seen
-          twice rather than two headings that happen to be in the middle. */}
+          belonging to something else. The gradient headline over a two-line
+          standfirst is the same build as the knowledge section's header, so
+          the two centred blocks on this page are one thing seen twice rather
+          than two headings that happen to be in the middle.
+
+          There was a small grey line above the heading that read "clips from
+          social" over a heading that reads "what is hot on social" — the
+          same sentence at a quarter of the size. The standfirst below says
+          what the section is for, which is the job that line was pretending
+          to do. */}
       <div className="container-page text-center">
-        <p className="text-[13px] font-medium tracking-[0.04em] text-slate-500">คลิปจากโซเชียล</p>
         <h2 className="mt-2 text-[26px] font-medium leading-[1.4] tracking-[-0.01em] text-[#0a0a0a] md:text-[40px]">
           {/* Brand gradient on the site's own face. inline-block with
               padding: a clipped gradient stops at the box, and Thai tone

@@ -184,6 +184,12 @@ function blocks(html) {
 // Only used for shortDesc now (shown in product-grid cards, CSS line-clamp
 // handles the visual cutoff there) — cuts at the last whitespace before the
 // limit instead of mid-word, so it never reads as a broken/garbled sentence.
+/** The first line with Thai in it, or the first line. */
+function thaiFirst(list) {
+  if (!Array.isArray(list) || list.length === 0) return "";
+  return list.find((l) => /[\u0E00-\u0E7F]/.test(l || "")) || list[0] || "";
+}
+
 function clip(s, n) {
   if (!s) return "";
   if (s.length <= n) return s;
@@ -839,7 +845,12 @@ function toProduct(p, usedSlugs) {
     // (empty) prose result is authoritative — the old flat-line `prose`
     // would otherwise leak in an unrelated fragment like the registration
     // number line, which isn't a section heading but also isn't a benefit.
-    shortDesc: clip(struct.prose[0] || (isStructured ? struct.benefits[0] : prose[0]) || lines[0] || "", 130),
+    // Thai first, whatever order Shopify holds the paragraphs in. A fair
+    // number of products carry the manufacturer's English copy as their
+    // opening paragraph and the Thai a paragraph or two down, and the shop
+    // is read in Thai — the product page was opening with half an English
+    // sentence cut at 130 characters.
+    shortDesc: clip(thaiFirst(struct.prose) || (isStructured ? thaiFirst(struct.benefits) : thaiFirst(prose)) || lines[0] || "", 130),
     description: (struct.prose.length ? struct.prose : isStructured ? struct.benefits.slice(0, 4) : prose).join(" "),
     // The description's own paragraphs, kept apart so the product page can show
     // them in full. Empty when Shopify's description is only bullet lists.

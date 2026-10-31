@@ -172,9 +172,15 @@ export default function QuickChat() {
       // and it left the launcher sitting on a card's add-to-cart button for
       // the whole of a scroll back up a grid — which is the half of the
       // journey where somebody is looking for a particular card to press.
-      // Wide screens have room for both and keep it out of this, as the
-      // header's own collapse does.
-      if (window.innerWidth < 1024 && y > 80 && y !== lastScrollY.current) {
+      //
+      // Every width, not only below 1024. The exemption was written when the
+      // page stopped 1400px wide inside whatever window it was in, so the
+      // corner the launcher sits in was empty margin on a laptop. The page
+      // runs to within 1rem of the window now, so that corner is the last
+      // column of the grid: measured at 1440, a 96px launcher over the
+      // add-to-cart button of the sixth card, which is the same collision
+      // this rule was written for.
+      if (y > 80 && y !== lastScrollY.current) {
         setTucked(true);
         clearTimeout(idle);
         // Back as soon as the page settles. Long enough not to flicker

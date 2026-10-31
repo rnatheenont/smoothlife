@@ -137,7 +137,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://cdn.shopify.com" crossOrigin="" />
         <link rel="preconnect" href={SHOPIFY_STOREFRONT_ORIGIN} crossOrigin="" />
       </head>
-      <body className="min-h-screen flex flex-col antialiased font-sans">
+      <body className="min-h-dvh flex flex-col antialiased font-sans">
         <OldBrowserNotice />
         <script
           type="application/ld+json"

@@ -232,29 +232,14 @@ export default function SmoothieHeroBand({ theme = "sky" }: { theme?: HeroTheme 
       )}
     >
       {theme === "halloween" ? <HalloweenSky /> : <SkyClouds />}
-      {/* The wordmark drifts left on a loop rather than sitting still.
-          Two identical copies inside a track as wide as they are, moving
-          exactly -50%: the second copy is where the first was when the
-          animation restarts, so there is no seam to see. One pass takes 45
-          seconds — slow enough to be weather rather than a thing going past. */}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 left-0 -z-10 flex w-full items-center overflow-hidden select-none"
-      >
-        <span className="flex w-max animate-marquee" style={{ animationDuration: "45s" }}>
-          {[0, 1].map((copy) => (
-            <span
-              key={copy}
-              className={clsx(
-                "whitespace-nowrap pr-[0.25em] font-bold leading-none tracking-tight text-[clamp(7rem,27vw,17rem)]",
-                skin.wordmark,
-              )}
-            >
-              Smoothlife.com
-            </span>
-          ))}
-        </span>
-      </span>
+      {/* The drifting wordmark that used to run across this band at
+          clamp(7rem, 27vw, 17rem) is gone. Two things against it, both
+          visible in a screenshot rather than arguable: at white/55 over the
+          sky it read as a smudge behind the heading rather than as a word,
+          and it put 272px type under the one line on the page that has to be
+          read first. The band has the sky, the mascot, the heading and the
+          question in it; it was not short of anything the smudge was adding.
+          One span, if it is ever wanted back. */}
 
       {/* The heading is centred on the band, not on the space left over
           beside the mascot — as a flex sibling the mascot took 320px out of
@@ -263,16 +248,21 @@ export default function SmoothieHeroBand({ theme = "sky" }: { theme?: HeroTheme 
           beside the question without being measured into it. */}
       <div className="container-page relative flex flex-col justify-center md:min-h-[360px] lg:min-h-[403px]">
         <div className="mx-auto w-full max-w-[720px] py-10 text-center md:py-0">
-          <p className={clsx("text-sm md:text-base lg:text-lg", skin.eyebrow)}>
-            {t("ผู้ช่วยหาสินค้าที่ใช่สำหรับคุณ", "Your personal product finder")}
-          </p>
           {/* All five stacked in one grid cell, so the band's height is the
               tallest of them from the first paint and nothing below it ever
               moves. Only the line on show is readable; the rest are hidden
-              from assistive tech rather than announced on a timer. */}
-          <h2
+              from assistive tech rather than announced on a timer.
+
+              h1, and the only one on the page. It used to be an h2 under a
+              small line of text that said "your personal product finder" —
+              which is what the band already looks like, so the label was the
+              picture written out, and it left the home page with no h1 at
+              all. The line that says plainly what this shop is now sits
+              under the heading instead of above it, where a reader who does
+              not know the mascot can still answer "what is this". */}
+          <h1
             className={clsx(
-              "mt-2 grid text-[26px] font-bold leading-tight md:text-[34px] lg:text-[40px]",
+              "grid text-[26px] font-bold leading-tight md:text-[34px] lg:text-[40px]",
               skin.head,
             )}
           >
@@ -298,7 +288,14 @@ export default function SmoothieHeroBand({ theme = "sky" }: { theme?: HeroTheme 
                 {h.post}
               </span>
             ))}
-          </h2>
+          </h1>
+
+          <p className={clsx("mx-auto mt-2.5 max-w-[34rem] text-sm md:text-base", skin.eyebrow)}>
+            {t(
+              "ร้านสุขภาพและความงาม สกินแคร์ อาหารเสริม ของใช้ส่วนตัว ของแท้ ส่งฟรีทั่วไทย",
+              "Health and beauty: skincare, supplements and personal care. Genuine, free delivery across Thailand.",
+            )}
+          </p>
 
           <form ref={askRef} onSubmit={submit} className="relative z-20 mx-auto mt-5 w-full max-w-[460px] md:mt-7">
             <label htmlFor="smoothie-hero-ask" className="sr-only">

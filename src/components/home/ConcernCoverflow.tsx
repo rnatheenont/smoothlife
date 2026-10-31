@@ -124,12 +124,18 @@ export default function ConcernCoverflow({ byConcern }: { byConcern: Record<stri
   return (
     <section ref={sectionRef} className="overflow-hidden bg-brand-radial py-10 md:py-14 lg:py-16">
       <div className="container-page text-center">
-        <p className="text-sm font-medium text-brand-ink md:text-lg">ปัญหาผิวที่กังวล</p>
         {/* aria-live so the name arriving with a new card is announced; the
             cards themselves are links and say their own name. */}
-        <h2 aria-live="polite" className="mt-1 text-[26px] font-bold text-brand-teal md:text-[36px] lg:text-[40px]">
+        <h2 aria-live="polite" className="text-[26px] font-bold text-brand-teal md:text-[36px] lg:text-[40px]">
           {current.nameTh}
         </h2>
+        {/* Under the name, not above it. "ปัญหาผิวที่กังวล" was a small line
+            over a big one, which is the shape of a label and reads as one —
+            and a reader who meets "สิวและผิวแพ้ง่าย" cold needs the sentence
+            after the name, not a category before it. */}
+        <p className="mt-1.5 text-sm text-slate-600 md:text-base">
+          เลือกดูสินค้าตามปัญหาผิวที่กังวล
+        </p>
       </div>
 
       <div
