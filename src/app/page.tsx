@@ -42,18 +42,19 @@ export const revalidate = 1800;
 /** How many products sit under a chosen article. */
 const ARTICLE_SHELF = 10;
 
-/** The claim the page makes, for search engines and screen readers. It lives
- *  at the root rather than inside a section because a page has one h1 and
- *  sections are moveable — a heading that outranks the others should not be
- *  something an admin can drag into the middle of the page or delete. */
-function HomeHeading() {
-  return (
-    <h1 className="sr-only">
-      Smoothlife — ของดีที่ใช้ได้จริง คัดมาให้แล้ว: สกินแคร์ อาหารเสริม ดูแลช่องปากและเส้นผม
-      จากแบรนด์ที่วางขายจริงในไทย ของแท้ 100% มี อย. ส่งฟรีทั่วไทยไม่มีขั้นต่ำ และสะสมคะแนนได้ทุกการช้อป
-    </h1>
-  );
-}
+/* The page's h1 used to be here: a sr-only paragraph of keywords at the root
+   of the document, written when the hero's own line was an h2 and the page
+   had no visible heading at all.
+   
+   The hero band carries a real h1 now, and the sentence under it says in
+   plain Thai what this shop sells, where the hidden one was saying it to
+   nobody. Two h1s is worse than either alone — the first one in the document
+   is the one a crawler and this project's own design inspector take as the
+   title, and that was the invisible one.
+   
+   The cost is that the heading now lives in a section an admin can remove.
+   If smoothie_ask ever comes off the home document, the page's h1 goes with
+   it and the heading has to move to whatever opens the page instead. */
 
 /**
  * The home page, assembled from the document the team edits.
@@ -74,8 +75,11 @@ async function StoredHomePage() {
     isPreview: false,
   });
   return (
-    <div className="bg-[#FAFAF8]">
-      <HomeHeading />
+    // The site's own ground, not a yellow-cream of its own. #FAFAF8 was the
+    // one page on the site that did not sit on --color-surface-page, and
+    // against the white sections on it the difference read as a tint rather
+    // than as a step.
+    <div className="bg-surface-page">
       {sections}
     </div>
   );
@@ -180,10 +184,8 @@ async function LegacyHomePage() {
           a thumb can hit them, and that row is already all the separation
           the banners need. */}
       <section className="relative bg-white lg:pb-12">
-        <h1 className="sr-only">
-          Smoothlife — ของดีที่ใช้ได้จริง คัดมาให้แล้ว: สกินแคร์ อาหารเสริม ดูแลช่องปากและเส้นผม
-          จากแบรนด์ที่วางขายจริงในไทย ของแท้ 100% มี อย. ส่งฟรีทั่วไทยไม่มีขั้นต่ำ และสะสมคะแนนได้ทุกการช้อป
-        </h1>
+        {/* No sr-only h1 ahead of the band — see the note where it used to
+            be defined. The band's own heading is the page's h1. */}
         <SmoothieHeroBand />
         {/* Three across on a wide screen, one full-bleed slide on a phone —
             two components rather than one with a mode, see HeroTrio. */}

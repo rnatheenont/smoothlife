@@ -262,11 +262,24 @@ export default function SmoothieHeroBand({ theme = "sky" }: { theme?: HeroTheme 
               not know the mascot can still answer "what is this". */}
           <h1
             className={clsx(
-              "grid text-[26px] font-bold leading-tight md:text-[34px] lg:text-[40px]",
+              // 52px on a wide screen, up from 40. With the drifting wordmark
+              // gone the band had no dominant element left: the largest type
+              // on the first screen was 2.8vw and no picture held a third of
+              // it. The lines are whitespace-nowrap and the longest of them
+              // measures under the 720px the stack is capped at, so none of
+              // them wraps at this size.
+              "grid text-[26px] font-bold leading-tight md:text-[34px] lg:text-[52px]",
               skin.head,
             )}
           >
-            {headlines.map((h, i) => (
+            {headlines.map((h, i) =>
+              // Only the line on show and the one leaving it. All five used
+              // to be in the h1 at once, hidden from assistive tech but not
+              // from anything that reads the element's text — so the page's
+              // one heading was nineteen words of five alternative headlines
+              // run together, for a crawler and for any tool that measures
+              // the title. Two is all the cross-fade needs.
+              i !== cur && i !== prev ? null : (
               <span
                 key={h.pre + h.post}
                 aria-hidden={i !== cur || undefined}
@@ -287,7 +300,8 @@ export default function SmoothieHeroBand({ theme = "sky" }: { theme?: HeroTheme 
                 </span>
                 {h.post}
               </span>
-            ))}
+              ),
+            )}
           </h1>
 
           <p className={clsx("mx-auto mt-2.5 max-w-[34rem] text-sm md:text-base", skin.eyebrow)}>

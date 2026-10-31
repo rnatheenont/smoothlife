@@ -203,7 +203,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
               slate-500 — so the vendor was the loudest thing on the card and
               the product was the faintest, which is backwards for the one
               line a shopper reads to decide. */}
-          <span translate="no" className="truncate text-[12px] font-semibold uppercase tracking-[0.02em] text-slate-500">
+          <span translate="no" className="truncate text-[13px] font-semibold uppercase tracking-[0.02em] text-slate-500">
             {product.brand}
           </span>
           <Link href={`/product/${product.slug}`}>
