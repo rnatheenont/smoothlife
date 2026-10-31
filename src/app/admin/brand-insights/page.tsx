@@ -564,8 +564,8 @@ export default function BrandInsightsPage() {
                     <th className="w-10">#</th>
                     <th>คำค้นหา</th>
                     <th className="w-40">โอกาส</th>
-                    <th className="w-20">Trends</th>
-                    <th className="w-28">ค้นในเว็บ</th>
+                    <th className="w-20 text-right">Trends</th>
+                    <th className="w-28 text-right">ค้นในเว็บ</th>
                     <th className="w-24">การแข่งขัน</th>
                     <th className="w-[26rem]">ควรทำอะไร</th>
                   </tr>
@@ -605,14 +605,14 @@ export default function BrandInsightsPage() {
                           </span>
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-xs tabular-nums text-slate-500">
+                      <td className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-500">
                         {o.search_volume_estimate ?? (
                           <span title="Google Trends ไม่มีข้อมูลสำหรับคำนี้">
                             ไม่มีข้อมูล
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 text-xs tabular-nums text-slate-500">
+                      <td className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-500">
                         {o.site_searches}
                         {o.site_searches_without_results > 0 && (
                           <span className="ml-1 text-amber-700">

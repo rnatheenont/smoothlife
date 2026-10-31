@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Bot, Sparkles, ClipboardList, Plus } from "lucide-react";
 import { Button, Input } from "@heroui/react";
-import { Panel } from "@/components/admin/layout-kit";
+import { PageHeader, Panel } from "@/components/admin/layout-kit";
 
 // Whether opening the FAQ to search is working.
 //
@@ -126,6 +126,14 @@ export default function SeoVisibilityPage() {
 
   return (
     <div className="space-y-4">
+      {/* The page opened straight into its first panel, so the only heading
+          on screen was that panel's — which names one of the three questions
+          and not the page. */}
+      <PageHeader
+        icon={<Sparkles size={18} className="text-brand-emerald" />}
+        title="หน้าเว็บถูกค้นเจอแค่ไหน"
+        subtitle="บอทมาเก็บหรือยัง มีใครมาจากตรงนั้นไหม และ AI เอ่ยถึงร้านเราหรือเปล่า"
+      />
       <Panel
         title={`ใครมาอ่านหน้า /faq บ้าง (${data?.days ?? 30} วันล่าสุด)`}
         icon={<Bot size={15} className="text-brand-emerald" />}
