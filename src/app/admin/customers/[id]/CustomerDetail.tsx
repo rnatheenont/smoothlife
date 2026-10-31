@@ -454,11 +454,17 @@ export default function CustomerDetail({ userId }: { userId: string }) {
       canReadAllOrders: null,
       adminHandle: null,
     };
-    fetch(`/api/admin/customers/orders?id=${encodeURIComponent(shopifyId)}`)
+    // The app user goes along with the Shopify id. An employee has two
+    // customer records in the one store — the account's and the one that owns
+    // their work email, which is where a staff-shop order lands — and the
+    // endpoint can only find the second one if it knows who to look up.
+    fetch(
+      `/api/admin/customers/orders?id=${encodeURIComponent(shopifyId)}&user=${encodeURIComponent(userId)}`,
+    )
       .then((r) => r.json())
       .then((d) => setOrders(d.ok ? d : blank))
       .catch(() => setOrders(blank));
-  }, [tab, shopifyId]);
+  }, [tab, shopifyId, userId]);
 
   const [scans, setScans] = useState<AdminSkinScan[] | null>(null);
   useEffect(() => {

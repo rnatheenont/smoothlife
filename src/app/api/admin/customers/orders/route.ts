@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { getCustomerOrders, ordersByCustomerId, orderProbe, grantedScopes, shopifyAdminConfigured, storeAdminHandle } from "@/lib/shopify-admin";
+import { staffShopifyCustomerId } from "@/lib/staff-customer";
 
 // Exactly what the customer's own order page would show them.
 //
@@ -35,13 +36,26 @@ export async function GET(req: NextRequest) {
   // change. The granted scopes come back too — "which orders may we read" is
   // decided by that list and nothing else.
   const probeId = (req.nextUrl.searchParams.get("order") || "").replace(/\D/g, "");
-  const [viaCustomer, viaOrderSearch, scopes, probe] = await Promise.all([
+
+  // The app user behind this Shopify record, when the page knows it. An
+  // employee's staff-shop orders sit on the customer that owns their work
+  // email, not on the one the account is linked to — so support looking at
+  // this page was being shown a history with the staff orders missing, which
+  // is the same list the customer was seeing and the same reason.
+  const userId = (req.nextUrl.searchParams.get("user") || "").trim() || null;
+  const staffId = await staffShopifyCustomerId(userId, id).catch(() => null);
+
+  const [viaCustomer, viaOrderSearch, scopes, probe, viaStaff] = await Promise.all([
     getCustomerOrders(id, 50),
     ordersByCustomerId(numericId, 50),
     grantedScopes(),
     probeId ? orderProbe(probeId) : Promise.resolve(null),
+    staffId ? getCustomerOrders(staffId, 50) : Promise.resolve([]),
   ]);
-  const orders = viaCustomer;
+  const seen = new Set<string>();
+  const orders = [...(viaCustomer || []), ...(viaStaff || [])]
+    .filter((o) => (seen.has(o.id) ? false : (seen.add(o.id), true)))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   return NextResponse.json({
     ok: true,
     visible: orders?.length ?? 0,

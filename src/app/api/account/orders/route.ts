@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import {
-  findShopifyCustomerByEmail,
   getCustomerOrders,
   getCustomerTotals,
   shopifyAdminConfigured,
   storeLabel,
 } from "@/lib/shopify-admin";
 import { linkOtherStores, otherStoreOrders } from "@/lib/store-links";
+import { staffShopifyCustomerId } from "@/lib/staff-customer";
 import { recalculateLoyaltyForUser } from "@/lib/loyalty-cron";
 import { buildTracking } from "@/lib/tracking";
 import { trackingForOrders } from "@/lib/shipment-sync";
@@ -37,22 +37,12 @@ export async function GET(req: NextRequest) {
   if (other.added) void recalculateLoyaltyForUser(uid).catch(() => {});
 
   // The employee shop buys under the work email, which is its own Shopify
-  // customer in this same store — not the one the account is linked to. So a
-  // paid staff order is a real order on a customer this endpoint never asks
-  // about, and it was arriving nowhere: the staff endpoint only lists the
-  // unpaid ones, on the stated grounds that a paid one "shows up in the
-  // ordinary history". It does not, unless we go and get it.
-  //
-  // Keyed on the staff order's own email rather than on anything the account
-  // stores, so it only ever reaches a customer this user has actually bought
-  // through.
-  const [staffRow] = await supabaseRest<{ staff_email: string | null }[]>(
-    `staff_orders?user_id=eq.${uid}&shopify_order_id=not.is.null&select=staff_email&limit=1`
-  );
-  const staffEmail = staffRow?.staff_email?.trim() || null;
-  const staffCustomer = staffEmail ? await findShopifyCustomerByEmail(staffEmail) : null;
-  const staffCustomerId =
-    staffCustomer && staffCustomer.id !== row?.shopify_customer_id ? staffCustomer.id : null;
+  // customer in this same store — see staffShopifyCustomerId. Without this a
+  // paid staff order is a real order on a record this endpoint never asks
+  // about, and it arrives nowhere: the staff endpoint lists only the unpaid
+  // ones, on the stated grounds that a paid one "shows up in the ordinary
+  // history". It does not, unless we go and get it.
+  const staffCustomerId = await staffShopifyCustomerId(uid, row?.shopify_customer_id);
 
   if (!row?.shopify_customer_id && !staffCustomerId && other.links.length === 0) {
     return NextResponse.json({ linked: false, orders: [] });
