@@ -327,6 +327,16 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
           const shipping = stillShipping(o);
           const refunded = Number(o.refunded) > 0;
           const stalled = stalledOrder(o);
+          const detailHref = `/account/orders/${orderIdFromGid(o.id)}${o.store && o.store !== "smoothlife" ? `?store=${o.store}` : ""}`;
+          // Three lines of the order, not all of them. A seven-item staff
+          // order drew seven 56px rows before the tracker even started, so
+          // the second order on the page began a screen and a half down and
+          // the list stopped being a list. Three is enough to recognise which
+          // order this is, which is the only job the card has — the rest is
+          // what the detail page is for, and the line that counts them goes
+          // there.
+          const lines = o.items.slice(0, 3);
+          const moreLines = o.items.length - lines.length;
           return (
             <div key={`${o.store}-${o.id}`} className="rounded-xl2 bg-white p-5 shadow-card">
               <div className="flex items-center justify-between mb-3">
@@ -335,7 +345,7 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
                       people reach for, and a separate "details" link would be
                       one more thing to aim at on a phone. */}
                   <Link
-                    href={`/account/orders/${orderIdFromGid(o.id)}${o.store && o.store !== "smoothlife" ? `?store=${o.store}` : ""}`}
+                    href={detailHref}
                     className="group inline-flex items-center gap-1 rounded-s focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                   >
                     <span className="text-sm font-bold text-brand-ink group-hover:text-brand-800">{o.name}</span>
@@ -374,7 +384,7 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
               </div>
 
               <div className="flex flex-col gap-2 mb-3">
-                {o.items.map((it, i) => {
+                {lines.map((it, i) => {
                   const product = it.slug ? bySlug.get(it.slug) : undefined;
                   return (
                     <div key={i} className="flex items-center gap-2.5">
@@ -410,6 +420,14 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
                     </div>
                   );
                 })}
+                {moreLines > 0 && (
+                  <Link
+                    href={detailHref}
+                    className="rounded-lg px-1 py-1 text-xs font-semibold text-brand-800 hover:underline"
+                  >
+                    ดูอีก {moreLines} รายการ
+                  </Link>
+                )}
               </div>
 
               {/* No tracker on an order that will never ship. Five grey steps
