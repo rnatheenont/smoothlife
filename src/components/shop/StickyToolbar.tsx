@@ -10,7 +10,10 @@ import { useStuck } from "./use-stuck";
 // The room under it is small on purpose: the bar's own padding and its
 // margin were stacking into a 26px band of nothing between the filters and
 // the first row of cards, which read as a missing element rather than as
-// space.
+// space. Trimmed too far, though — at 8px of padding the chips sat hard
+// against the glass band's own top and bottom edges once the bar pinned,
+// which reads as a crop rather than as a bar. 12px inside, 8px under: 20px
+// to the cards, where 26 was too much and 14 too little.
 //
 // At the top of the page the bar is sitting in the page like anything else,
 // and a tinted band there is a band across the middle of the banner with
@@ -25,7 +28,7 @@ export default function StickyToolbar({ children }: { children: ReactNode }) {
     <div
       ref={bar}
       className={clsx(
-        "bleed-page sticky top-(--app-header-h) z-30 mb-1.5 py-2",
+        "bleed-page sticky top-(--app-header-h) z-30 mb-2 py-3",
         "transition-[background-color,max-width,border-radius,box-shadow,padding] duration-200",
         stuck
           // Pinned, it is a card over the grid like the header above it, so
