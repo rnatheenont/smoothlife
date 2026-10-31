@@ -44,9 +44,21 @@ function Lights({ shape, paused }: { shape: "pill" | "card"; paused?: boolean })
   // too tall for that to reach the top corners, so its lights are the height
   // of the card and sweep across instead.
   const field = shape === "pill" ? "absolute inset-x-0 bottom-0 h-2/3" : "absolute inset-0";
+  // The pill widths are capped against the box as well as in px. A light
+  // wider than the pill it travels along lights the whole rim at once, and a
+  // rim lit all over does not read as moving — which is what happened the
+  // first time this went on the staff button: 192px of light on a 160px pill
+  // came out as a static wash of colour, next to an AI field 460px wide
+  // where the same light plainly runs. The min() leaves the field at exactly
+  // the figures it was tuned at (half of 460 is more than 192) and scales
+  // the lights down for anything smaller.
   const sizes =
     shape === "pill"
-      ? ["-bottom-5 h-16 w-48 blur-xl", "-bottom-4 h-12 w-32 blur-lg", "-bottom-3 h-10 w-24 blur-lg"]
+      ? [
+          "-bottom-5 h-16 w-[min(12rem,50%)] blur-xl",
+          "-bottom-4 h-12 w-[min(8rem,33%)] blur-lg",
+          "-bottom-3 h-10 w-[min(6rem,25%)] blur-lg",
+        ]
       : ["-inset-y-8 w-2/3 blur-xl", "-inset-y-6 w-1/2 blur-lg", "-inset-y-4 w-2/5 blur-lg"];
   const gradients = [GRADIENTS.cool, GRADIENTS.warm, GRADIENTS.sky];
 
