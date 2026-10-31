@@ -198,11 +198,22 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
           {/* Brand leads the card now, the way it does in the design: on a
               shelf of five bottles the vendor is what tells them apart faster
               than the first forty characters of five similar names. */}
-          <span translate="no" className="truncate text-[13px] font-bold uppercase text-brand-ink">
+          {/* Quieter than the name under it. Brand still leads the card, but
+              it was 13px bold in the full ink over a name at the same size in
+              slate-500 — so the vendor was the loudest thing on the card and
+              the product was the faintest, which is backwards for the one
+              line a shopper reads to decide. */}
+          <span translate="no" className="truncate text-[12px] font-semibold uppercase tracking-[0.02em] text-slate-500">
             {product.brand}
           </span>
           <Link href={`/product/${product.slug}`}>
-            <h3 translate="no" className="line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-slate-500 transition-colors hover:text-brand-800">
+            {/* 14px in the full ink. Thai stacks a tone mark above a vowel
+                above the letter, so 13px of it carries less readable ink than
+                13px of Latin, and this is the most-read text on the site.
+                min-h-10, because two lines at 14/snug is 38.5px and the 36px
+                floor let the price jump a row between a one-line and a
+                two-line name. */}
+            <h3 translate="no" className="line-clamp-2 min-h-10 text-[14px] font-medium leading-snug text-brand-ink transition-colors hover:text-brand-800">
               {product.name}
             </h3>
           </Link>

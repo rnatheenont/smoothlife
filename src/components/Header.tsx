@@ -315,16 +315,20 @@ export default function Header({
                       <span className="relative block h-7 w-7 shrink-0 overflow-hidden rounded-full bg-slate-100">
                         <Image src={shopifyImage(p.image, 96)} alt="" fill sizes="28px" className="object-cover" />
                       </span>
-                      <span translate="no" className="max-w-[210px] truncate text-[13px] font-medium text-slate-600">
+                      <span translate="no" className="max-w-[210px] truncate text-[14px] font-medium text-slate-600">
                         {p.name}
                       </span>
-                      <span translate="no" className="text-[13px] font-bold tabular-nums text-brand-800">
+                      <span translate="no" className="text-[14px] font-bold tabular-nums text-brand-800">
                         {formatTHB(p.price)}
                       </span>
                       {p.compareAtPrice && (
+                        // 12px, the same as the struck price on a product
+                        // card. It was 11px here and 12px there — one figure
+                        // doing one job at two sizes — and this strip carries
+                        // more small type than anything else on the page.
                         <span
                           translate="no"
-                          className="text-[11px] tabular-nums text-slate-500 line-through"
+                          className="text-[12px] tabular-nums text-slate-500 line-through"
                         >
                           {formatTHB(p.compareAtPrice)}
                         </span>
