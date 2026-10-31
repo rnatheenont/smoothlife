@@ -193,6 +193,16 @@ export default function Header({
       // thing floating over the page. Only from lg: below that the window is
       // already narrower than the cap and the bar just insets.
       //
+      // The cap is --page-max, the figure .container-page is built on, so the
+      // card ends where the page's own content ends and the row inside it
+      // lines up with the grid underneath. It was max-w-5xl, which is 1024
+      // against content that is 1400 — a card 376px narrower than everything
+      // it floats over, with the burger starting a long way inside the first
+      // product card. min() rather than a plain max-width because the two
+      // have to agree below that figure as well: there the container is the
+      // window less its gutter, and the card keeps a 1rem inset of its own
+      // instead of reaching the edges.
+      //
       // No overflow-hidden, whatever the rounding wants: the mega menu's
       // panel lives inside this element and hangs below it, and clipping to
       // the header's own box would cut the menu off at its first row. The
@@ -202,7 +212,7 @@ export default function Header({
         hideHeader && !open ? "-translate-y-full" : "translate-y-0"
       } ${
         scrolled
-          ? "top-2 mx-2 max-w-full rounded-2xl border border-white/70 bg-white/60 shadow-[inset_0_1px_0_rgb(255_255_255/0.9),inset_0_-1px_0_rgb(255_255_255/0.3),0_12px_32px_-14px_rgb(0_53_41/0.3)] backdrop-blur-xl backdrop-saturate-[1.8] sm:mx-4 lg:top-3 lg:mx-auto lg:max-w-5xl"
+          ? "top-2 mx-2 max-w-full rounded-2xl border border-white/70 bg-white/60 shadow-[inset_0_1px_0_rgb(255_255_255/0.9),inset_0_-1px_0_rgb(255_255_255/0.3),0_12px_32px_-14px_rgb(0_53_41/0.3)] backdrop-blur-xl backdrop-saturate-[1.8] sm:mx-4 lg:top-3 lg:mx-auto lg:w-[min(100%-2rem,var(--page-max))]"
           : "top-0 mx-0 rounded-none border-b border-transparent bg-transparent"
       }`}
     >
