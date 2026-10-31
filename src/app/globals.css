@@ -280,13 +280,27 @@
    the figure and drifting out of step, which is how the site ended up with a
    1512 header sitting over 1280 content. */
 :root {
-  /* Pulled in tighter than either laptop it is read on: a 14-inch MacBook
-     is 1512 CSS pixels wide and a 16-inch is 1728, and the page sits inside
-     both rather than reaching for the edges of either. Above this width
-     every screen shows the same box of content — only the empty margin
-     around it grows — which is what makes the shop look like one thing on
-     a laptop and on a monitor. */
-  --page-max: 1400px;
+  /* How wide the page is allowed to get, and how close to the window it is
+     allowed to come.
+
+     It was a flat 1400px, chosen so a 14-inch MacBook (1512) and a 16-inch
+     (1728) showed the same box of content and only the empty margin around
+     it grew. In practice that margin was the thing people saw: 164px of
+     nothing either side of the bars on a 16-inch, with the page looking
+     like it had been pushed away from its own window.
+
+     Two terms instead. The cap is the ceiling, so a monitor still shows a
+     box rather than a line of text a metre wide. The 100vw term is a floor
+     under the margin — 1rem either side, always — so the page comes right
+     up to the window on anything narrower than the cap without the bars
+     ever touching the edges, which is the one thing the floating header is
+     there to avoid. Both the header and the shop's filter bar are sized
+     from this figure, so all three move together.
+
+     Not a percentage: this is read inside a .container-page as well as by
+     one, and a percentage would resolve against the container and inset the
+     row inside it a second time. */
+  --page-max: min(100vw - 2rem, 1600px);
   /* Overwritten by Header on every resize and every show/hide. The 0 here is
      what server-rendered HTML and a JS-less page get: a sticky bar flush with
      the top, which is wrong by the height of the bar for one frame and never
