@@ -513,14 +513,17 @@ export default function Header({
               // pill that also shouts in green reads as an advert rather
               // than as one of the places you can go — the ring and the day
               // count are enough to set it apart.
-              className="flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 transition-colors hover:bg-brand-100 hover:text-brand-800"
+              className="flex items-center gap-2 rounded-full bg-white px-3 py-1 transition-colors hover:bg-brand-50 hover:text-brand-800"
             >
               {t("ร้านพนักงาน", "Staff Store")}
               {staff.ends_at && (
                 <Countdown
                   to={staff.ends_at}
                   daysOnly
-                  className="whitespace-nowrap rounded-full bg-white/80 px-2 py-0.5 text-xs font-semibold text-brand-800"
+                  // brand-50, now that the pill it sits on is white. It was
+                  // white at 80% against a mint fill; on white that is white
+                  // on white and the day count stopped reading as a chip.
+                  className="whitespace-nowrap rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-800"
                 />
               )}
             </Link>
