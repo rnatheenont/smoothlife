@@ -15,6 +15,13 @@ import { useStuck } from "./use-stuck";
 // which reads as a crop rather than as a bar. 12px inside, 8px under: 20px
 // to the cards, where 26 was too much and 14 too little.
 //
+// 16px of that padding on a phone, and 12 from lg. The desktop figure was
+// settled against a bar that runs the width of the page; on a phone the
+// same 12px around a 40px chip made a 65px band that read as the chips with
+// the bar shrink-wrapped to them rather than as a bar holding them. 16
+// gives 72px, which is the same proportion the desktop bar has at its own
+// width.
+//
 // At the top of the page the bar is sitting in the page like anything else,
 // and a tinted band there is a band across the middle of the banner with
 // nothing behind it to be glass over. The moment it pins to the top edge it
@@ -28,7 +35,7 @@ export default function StickyToolbar({ children }: { children: ReactNode }) {
     <div
       ref={bar}
       className={clsx(
-        "bleed-page sticky top-(--app-header-h) z-30 mb-2 py-3",
+        "bleed-page sticky top-(--app-header-h) z-30 mb-2 py-4 lg:py-3",
         "transition-[background-color,max-width,border-radius,box-shadow,padding] duration-200",
         stuck
           // Pinned, it is a card over the grid like the header above it, so
