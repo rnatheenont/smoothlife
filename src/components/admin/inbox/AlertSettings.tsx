@@ -184,7 +184,7 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
                         setSettings({ ...settings, lineTo: g.group_id })
                       }
                       className={clsx(
-                        "rounded-full px-2 py-0.5 font-mono text-[10px] ring-1 transition-colors",
+                        "rounded-full px-2 py-0.5 font-mono text-[11px] ring-1 transition-colors",
                         settings.lineTo === g.group_id
                           ? "bg-brand-50 text-brand-800 ring-brand-200"
                           : "bg-white text-slate-600 ring-slate-200 hover:bg-surface-soft",

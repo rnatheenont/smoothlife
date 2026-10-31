@@ -323,7 +323,7 @@ export default function AdminGiftCardsPage() {
                           </span>
                         </p>
                         <span
-                          className={`inline-block text-[10px] font-bold rounded-full px-2 py-0.5 mt-1 ${
+                          className={`inline-block text-[11px] font-bold rounded-full px-2 py-0.5 mt-1 ${
                             g.enabled
                               ? "bg-brand-gradient-soft text-brand-800"
                               : "bg-slate-100 text-slate-400"

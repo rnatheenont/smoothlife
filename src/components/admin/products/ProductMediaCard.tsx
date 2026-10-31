@@ -829,7 +829,7 @@ function RebuildNotice() {
 
 function Badge({ children }: { children: string }) {
   return (
-    <span className="absolute inset-x-0 bottom-0 bg-brand-ink/75 py-0.5 text-center text-[10px] font-semibold text-white">
+    <span className="absolute inset-x-0 bottom-0 bg-brand-ink/75 py-0.5 text-center text-[11px] font-semibold text-white">
       {children}
     </span>
   );

@@ -230,7 +230,7 @@ function ProductCardView({ slug, card }: { slug: string; card: ProductCard }) {
             {baht(card.price)}
           </span>
           {card.compareAtPrice ? (
-            <span className="text-[10px] text-slate-500 line-through">
+            <span className="text-[11px] text-slate-500 line-through">
               {baht(card.compareAtPrice)}
             </span>
           ) : null}
@@ -766,7 +766,7 @@ export default function AdminInboxPage() {
                   "รอตอบ" is a place you have to click to find out. */}
                   {countFor(f.key, counts) > 0 && (
                     <span
-                      className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] ${
+                      className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] ${
                         filter === f.key
                           ? "bg-white/25"
                           : "bg-slate-100 text-slate-500"
@@ -948,16 +948,16 @@ export default function AdminInboxPage() {
                           {c.customerName || c.channel_user_id.slice(0, 12)}
                         </span>
                         {c.urgency === "urgent" && (
-                          <span className="shrink-0 rounded-full bg-rose-50 px-1.5 text-[10px] font-semibold text-rose-500">
+                          <span className="shrink-0 rounded-full bg-rose-50 px-1.5 text-[11px] font-semibold text-rose-500">
                             ด่วน
                           </span>
                         )}
                         {c.unread > 0 && (
-                          <span className="shrink-0 rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                          <span className="shrink-0 rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-white">
                             {c.unread}
                           </span>
                         )}
-                        <span className="ms-auto shrink-0 text-[10px] text-slate-500">
+                        <span className="ms-auto shrink-0 text-[11px] text-slate-500">
                           {sinceLabel(c.last_message_at)}
                         </span>
                       </span>
@@ -1031,7 +1031,7 @@ export default function AdminInboxPage() {
                   </button>
                 )}
                 {quietHint && (
-                  <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-700">
+                  <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-700">
                     {quietHint}
                   </span>
                 )}
@@ -1053,7 +1053,7 @@ export default function AdminInboxPage() {
                   find out what the case was about. */}
               {caseRequest && (
                 <div className="border-b border-amber-200 bg-amber-50 px-4 py-2.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">
                     เรื่องที่แจ้ง
                   </p>
                   <p className="mt-0.5 text-xs leading-relaxed text-slate-700">
@@ -1079,7 +1079,7 @@ export default function AdminInboxPage() {
                         {newDay && (
                           <div className="my-3 flex items-center gap-2">
                             <span className="h-px flex-1 bg-slate-100" />
-                            <span className="text-[10px] font-medium text-slate-500">
+                            <span className="text-[11px] font-medium text-slate-500">
                               {dayLabel(m.created_at)}
                             </span>
                             <span className="h-px flex-1 bg-slate-100" />
@@ -1088,14 +1088,14 @@ export default function AdminInboxPage() {
                         <div
                           className={`flex flex-col gap-0.5 ${fromCustomer ? "items-start" : "items-end"}`}
                         >
-                          <span className="px-1 text-[10px] text-slate-500">
+                          <span className="px-1 text-[11px] text-slate-500">
                             {senderLabel(m.sender_type)} ·{" "}
                             {timeLabel(m.created_at)}
                           </span>
                           {m.content === "— เรื่องใหม่จากลูกค้า —" ? (
                             <span className="my-1 flex w-full items-center gap-2">
                               <span className="h-px flex-1 bg-amber-200" />
-                              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                                 เรื่องใหม่จากลูกค้า
                               </span>
                               <span className="h-px flex-1 bg-amber-200" />
@@ -1179,7 +1179,7 @@ export default function AdminInboxPage() {
                                   <button
                                     onClick={() => translate(m.id)}
                                     disabled={translating === m.id}
-                                    className="mt-1.5 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 hover:bg-surface-soft disabled:opacity-50"
+                                    className="mt-1.5 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-surface-soft disabled:opacity-50"
                                   >
                                     {translating === m.id ? (
                                       <Spinner
@@ -1222,7 +1222,7 @@ export default function AdminInboxPage() {
                                       promoted.includes(m.id)
                                     }
                                     title="เก็บคำตอบนี้ไว้ให้ AI ใช้ตอบครั้งหน้า (บันทึกเป็นฉบับร่าง)"
-                                    className={`mt-1.5 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                    className={`mt-1.5 flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                                       m.sender_type === "staff"
                                         ? "bg-white/20 text-white hover:bg-white/30"
                                         : "border border-slate-200 bg-white text-slate-500 hover:bg-surface-soft"
@@ -1318,7 +1318,7 @@ export default function AdminInboxPage() {
                         }, {}),
                       ).map(([category, items]) => (
                         <div key={category}>
-                          <p className="sticky top-0 bg-surface-soft px-2 py-1 text-[10px] font-semibold text-slate-500">
+                          <p className="sticky top-0 bg-surface-soft px-2 py-1 text-[11px] font-semibold text-slate-500">
                             {category}
                           </p>
                           {items.map((c) => (
@@ -1353,11 +1353,11 @@ export default function AdminInboxPage() {
 
                 {pendingTranslation && (
                   <div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5">
-                    <p className="text-[10px] font-semibold text-amber-800">
+                    <p className="text-[11px] font-semibold text-amber-800">
                       ลูกค้าคุยเป็นภาษาอื่น — นี่คือข้อความที่จะส่งไปจริง ๆ
                       (แก้ไขได้ก่อนส่ง)
                     </p>
-                    <p className="mt-1.5 text-[10px] text-slate-500">
+                    <p className="mt-1.5 text-[11px] text-slate-500">
                       ที่พิมพ์ไว้: {pendingTranslation.original}
                     </p>
                     <TextArea
@@ -1489,7 +1489,7 @@ export default function AdminInboxPage() {
                     )}
                   </Button>
                 </div>
-                <p className="mt-1.5 text-[10px] text-slate-500">
+                <p className="mt-1.5 text-[11px] text-slate-500">
                   Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่
                 </p>
               </div>

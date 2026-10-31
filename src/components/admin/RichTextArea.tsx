@@ -118,7 +118,7 @@ export default function RichTextArea({
             <List size={14} aria-hidden />
           </button>
         )}
-        <span className="ms-auto pe-1 text-[10px] text-slate-400">
+        <span className="ms-auto pe-1 text-[11px] text-slate-400">
           {showList
             ? "**หนา** · *เอียง* · ขึ้นบรรทัดด้วย - คือหัวข้อย่อย"
             : "**หนา** · *เอียง* · บรรทัดละ 1 รายการ"}

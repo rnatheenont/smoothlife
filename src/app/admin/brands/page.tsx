@@ -120,7 +120,7 @@ export default function AdminBrandsPage() {
                         {row.name}
                       </span>
                       {row.isHouse && (
-                        <span className="shrink-0 rounded-full bg-brand-gradient px-2 py-0.5 text-[10px] font-bold text-white">
+                        <span className="shrink-0 rounded-full bg-brand-gradient px-2 py-0.5 text-[11px] font-bold text-white">
                           แบรนด์ในเครือ
                         </span>
                       )}

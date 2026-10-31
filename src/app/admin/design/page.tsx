@@ -220,10 +220,10 @@ export default function AdminDesignSystemPage() {
                     <p className="mt-1 text-body-xs font-semibold text-brand-ink">
                       {group}-{step}
                     </p>
-                    <p className="text-[10px] text-slate-400">{value}</p>
+                    <p className="text-[11px] text-slate-400">{value}</p>
                     {ratio !== null && (
                       <p
-                        className={`text-[10px] ${readable ? "text-brand-800" : "text-slate-400"}`}
+                        className={`text-[11px] ${readable ? "text-brand-800" : "text-slate-400"}`}
                       >
                         {ratio.toFixed(2)}{" "}
                         {readable ? "· อ่านได้" : "· พื้น/UI เท่านั้น"}
@@ -260,7 +260,7 @@ export default function AdminDesignSystemPage() {
               >
                 สวัสดี Smoothlife
               </span>
-              <span className="ml-auto shrink-0 text-[10px] text-slate-400">
+              <span className="ml-auto shrink-0 text-[11px] text-slate-400">
                 {size}
               </span>
             </div>
@@ -280,7 +280,7 @@ export default function AdminDesignSystemPage() {
                 style={{ borderRadius: value }}
               />
               <p className="mt-1 text-[11px] text-slate-500">rounded-{name}</p>
-              <p className="text-[10px] text-slate-400">{value}</p>
+              <p className="text-[11px] text-slate-400">{value}</p>
             </div>
           ))}
         </div>

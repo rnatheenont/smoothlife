@@ -301,7 +301,7 @@ export default function CustomerPanel({
           >
             {t.label}
             {typeof t.count === "number" && t.count > 0 && (
-              <span className="ml-1 text-[10px] font-normal text-slate-400">
+              <span className="ml-1 text-[11px] font-normal text-slate-400">
                 {t.count}
               </span>
             )}
@@ -325,7 +325,7 @@ export default function CustomerPanel({
                 สรุปจากบอท
               </p>
               {insight && (
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[11px] text-slate-400">
                   {thaiDate(insight.analyzedAt)}
                 </span>
               )}
@@ -373,7 +373,7 @@ export default function CustomerPanel({
                     {MOOD[insight.mood ?? "neutral"]?.emoji}{" "}
                     {MOOD[insight.mood ?? "neutral"]?.label}
                   </span>
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-[11px] text-slate-400">
                     ความมั่นใจ {CONFIDENCE[insight.confidence ?? "low"] ?? "—"}
                   </span>
                 </p>
@@ -406,14 +406,14 @@ export default function CustomerPanel({
                 {/* Whether the reading was right, from the person who can tell.
                     Kept so "how often is it wrong" is answerable later. */}
                 <div className="mt-1.5 flex items-center gap-1.5 border-t border-slate-100 pt-1.5">
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-[11px] text-slate-400">
                     สรุปตรงไหม?
                   </span>
                   <button
                     onClick={() => sendVerdict("agree")}
                     aria-pressed={verdict === "agree"}
                     className={clsx(
-                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]",
+                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]",
                       verdict === "agree"
                         ? "bg-emerald-50 text-emerald-700"
                         : "text-slate-400 hover:text-brand-ink",
@@ -425,7 +425,7 @@ export default function CustomerPanel({
                     onClick={() => sendVerdict("disagree")}
                     aria-pressed={verdict === "disagree"}
                     className={clsx(
-                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]",
+                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]",
                       verdict === "disagree"
                         ? "bg-rose-50 text-rose-700"
                         : "text-slate-400 hover:text-brand-ink",
@@ -436,7 +436,7 @@ export default function CustomerPanel({
                   <button
                     onClick={analyze}
                     disabled={analyzing}
-                    className="ml-auto text-[10px] text-slate-400 underline hover:text-brand-ink"
+                    className="ml-auto text-[11px] text-slate-400 underline hover:text-brand-ink"
                   >
                     {analyzing ? "กำลังวิเคราะห์…" : "วิเคราะห์ใหม่"}
                   </button>
@@ -525,11 +525,11 @@ export default function CustomerPanel({
                         {o.name}
                       </span>
                     )}
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[11px] text-slate-400">
                       {thaiDate(o.createdAt)}
                     </span>
                   </div>
-                  <p className="mt-0.5 flex flex-wrap gap-1.5 text-[10px]">
+                  <p className="mt-0.5 flex flex-wrap gap-1.5 text-[11px]">
                     {o.cancelledAt ? (
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">
                         ยกเลิกแล้ว
@@ -579,7 +579,7 @@ export default function CustomerPanel({
                       </div>
                     ))}
                     {o.items.length > 3 && (
-                      <p className="text-[10px] text-slate-400">
+                      <p className="text-[11px] text-slate-400">
                         และอีก {o.items.length - 3} รายการ
                       </p>
                     )}
@@ -689,7 +689,7 @@ function ProductGroup({
                       {baht(card.price)}
                     </span>
                     {card.inStock === false && (
-                      <span className="rounded-full bg-rose-50 px-1.5 text-[10px] text-rose-600">
+                      <span className="rounded-full bg-rose-50 px-1.5 text-[11px] text-rose-600">
                         หมด
                       </span>
                     )}

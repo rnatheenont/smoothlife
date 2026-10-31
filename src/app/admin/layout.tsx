@@ -426,7 +426,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 className="hidden items-center gap-2 rounded-xl border border-surface-line px-2.5 py-1.5 text-xs text-slate-400 hover:text-brand-ink md:flex"
               >
                 <Search size={13} /> ไปที่หน้า…
-                <kbd className="rounded border border-surface-line px-1 py-0.5 text-[10px]">
+                <kbd className="rounded border border-surface-line px-1 py-0.5 text-[11px]">
                   ⌘K
                 </kbd>
               </button>
@@ -556,7 +556,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                                 unread.messages > 0 && (
                                   <span
                                     aria-label={`ยังไม่ได้อ่าน ${unread.messages} ข้อความ`}
-                                    className={`ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white ${
+                                    className={`ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-white ${
                                       unread.urgent > 0
                                         ? "bg-rose-500"
                                         : "bg-brand-action"

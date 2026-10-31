@@ -316,7 +316,7 @@ export default function ProductContentEditPage() {
                   return (
                     <div key={i} className={b.hidden ? "opacity-45" : undefined}>
                       {b.hidden && (
-                        <p className="mb-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                        <p className="mb-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
                           <EyeOff size={11} /> ซ่อนจากลูกค้า
                         </p>
                       )}
@@ -591,7 +591,7 @@ function BlockEditor({
         <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
           {typeLabel}
           {hidden && (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-slate-500">
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold normal-case tracking-normal text-slate-500">
               ซ่อนจากลูกค้า
             </span>
           )}

@@ -235,7 +235,7 @@ export default function AdminLineRichMenuPage() {
                     <p className="text-xs font-semibold text-brand-ink">
                       {b.label}
                     </p>
-                    <p className="mt-0.5 text-[10px] text-slate-400">
+                    <p className="mt-0.5 text-[11px] text-slate-400">
                       {b.path}
                     </p>
                   </div>

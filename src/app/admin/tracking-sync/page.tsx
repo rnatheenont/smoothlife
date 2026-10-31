@@ -439,7 +439,7 @@ function ResultTag({ row }: { row: TrackingSyncRow }) {
       </Badge>
       {row.action === "conflict" && (row.seen_count ?? 1) > 1 && (
         <span
-          className="mt-1 block text-[10px] text-slate-400"
+          className="mt-1 block text-[11px] text-slate-400"
           title={
             row.last_seen_at ? `ล่าสุด ${fmt(row.last_seen_at)}` : undefined
           }
@@ -992,7 +992,7 @@ export default function AdminTrackingSyncPage() {
                       shopDomain={data?.shopDomain ?? null}
                     />
                     {(r.seen_count ?? 1) > 1 && (
-                      <span className="ml-1.5 text-[10px] font-medium text-slate-400">
+                      <span className="ml-1.5 text-[11px] font-medium text-slate-400">
                         เจอซ้ำ {r.seen_count} รอบ
                       </span>
                     )}
@@ -1099,7 +1099,7 @@ export default function AdminTrackingSyncPage() {
                       name={r.resolved_order_name || r.order_ref}
                       shopDomain={data?.shopDomain ?? null}
                     />
-                    <span className="ml-1.5 font-mono text-[10px] font-medium text-slate-400">
+                    <span className="ml-1.5 font-mono text-[11px] font-medium text-slate-400">
                       {r.order_ref}
                     </span>
                   </p>
@@ -1241,7 +1241,7 @@ export default function AdminTrackingSyncPage() {
                               </span>
                             )}
                             {boxes > 1 && (
-                              <span className="ml-1.5 whitespace-nowrap rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-800">
+                              <span className="ml-1.5 whitespace-nowrap rounded-full bg-brand-50 px-1.5 py-0.5 text-[11px] font-semibold text-brand-800">
                                 {boxes} กล่อง
                               </span>
                             )}
@@ -1254,7 +1254,7 @@ export default function AdminTrackingSyncPage() {
                         {/* The warehouse's own ref, shown only inside a set —
                             it is the only thing that tells the boxes apart. */}
                         {boxes > 1 && (
-                          <span className="mt-0.5 block font-mono text-[10px] text-slate-400">
+                          <span className="mt-0.5 block font-mono text-[11px] text-slate-400">
                             {r.order_ref}
                           </span>
                         )}
@@ -1316,12 +1316,12 @@ export default function AdminTrackingSyncPage() {
                           `↳ กล่อง ${box}`
                         )}
                         {firstOfSet && !r.resolved_order_name && (
-                          <span className="ml-1 text-[10px] font-normal text-slate-400">
+                          <span className="ml-1 text-[11px] font-normal text-slate-400">
                             (ไม่พบ)
                           </span>
                         )}
                         {firstOfSet && boxes > 1 && (
-                          <span className="ml-1.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-800">
+                          <span className="ml-1.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-[11px] font-semibold text-brand-800">
                             {boxes} กล่อง
                           </span>
                         )}
@@ -1331,7 +1331,7 @@ export default function AdminTrackingSyncPage() {
                         {/* Inside a set, the warehouse's own ref is the only
                             thing that tells the boxes apart. */}
                         {boxes > 1 && (
-                          <span className="ml-1.5 text-[10px] text-slate-400">
+                          <span className="ml-1.5 text-[11px] text-slate-400">
                             {r.order_ref}
                           </span>
                         )}
@@ -1339,7 +1339,7 @@ export default function AdminTrackingSyncPage() {
                     </div>
                     <div className="shrink-0 text-right">
                       <ResultTag row={r} />
-                      <p className="mt-1 text-[10px] text-slate-400">
+                      <p className="mt-1 text-[11px] text-slate-400">
                         {fmt(r.received_at)}
                       </p>
                     </div>

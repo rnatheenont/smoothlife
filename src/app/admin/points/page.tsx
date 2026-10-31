@@ -428,7 +428,7 @@ export default function AdminPointsPage() {
                 <p className="text-xs text-rose-500 mb-3">{adjustError}</p>
               )}
 
-              <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">
+              <p className="text-[11px] font-bold text-slate-400 uppercase mb-2">
                 ประวัติล่าสุด
               </p>
               {ledger.length === 0 ? (
@@ -444,7 +444,7 @@ export default function AdminPointsPage() {
                         <p className="text-slate-600">
                           {describeReason(entry.reason)}
                         </p>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[11px] text-slate-400">
                           {new Date(entry.created_at).toLocaleString("th-TH")}
                         </p>
                       </div>

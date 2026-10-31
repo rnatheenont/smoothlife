@@ -107,7 +107,7 @@ export default function CommandPalette({
             aria-label="ค้นหาเมนูหลังบ้าน"
             className="min-h-12 w-full bg-transparent text-sm text-brand-ink outline-none"
           />
-          <kbd className="hidden shrink-0 rounded border border-surface-line px-1.5 py-0.5 text-[10px] text-slate-400 sm:block">
+          <kbd className="hidden shrink-0 rounded border border-surface-line px-1.5 py-0.5 text-[11px] text-slate-400 sm:block">
             esc
           </kbd>
         </div>

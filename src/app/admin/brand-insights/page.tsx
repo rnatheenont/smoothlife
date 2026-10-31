@@ -330,7 +330,7 @@ export default function BrandInsightsPage() {
                   <ol className="mt-1.5 space-y-1.5 text-sm text-slate-600">
                     {(latest.recommendations ?? []).map((t, i) => (
                       <li key={t} className="flex gap-2">
-                        <span className="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full bg-brand-800 text-[10px] font-bold text-white">
+                        <span className="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full bg-brand-800 text-[11px] font-bold text-white">
                           {i + 1}
                         </span>
                         <span>{t}</span>

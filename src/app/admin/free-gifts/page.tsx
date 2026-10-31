@@ -282,7 +282,7 @@ function SubConditions({
         <div className="mt-2 space-y-3 rounded-lg border border-surface-line p-3">
           <div>
             <p className="text-[11px] font-semibold text-brand-ink">ยกเว้นสินค้า</p>
-            <p className="mb-1.5 text-[10px] text-slate-400">
+            <p className="mb-1.5 text-[11px] text-slate-400">
               สินค้าที่เลือกไว้จะไม่ถูกนับเข้ายอด — ใช้กันไม่ให้ของแถมจ่ายค่าตัวเอง
             </p>
             {form.excludedProductSlugs.length > 0 && (
@@ -290,7 +290,7 @@ function SubConditions({
                 {form.excludedProductSlugs.map((slug) => (
                   <span
                     key={slug}
-                    className="flex items-center gap-1 rounded-full bg-surface-soft px-2 py-0.5 text-[10px] text-brand-ink"
+                    className="flex items-center gap-1 rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-brand-ink"
                   >
                     {getProductBySlug(slug)?.name ?? slug}
                     <button
@@ -323,7 +323,7 @@ function SubConditions({
 
           <div>
             <p className="text-[11px] font-semibold text-brand-ink">เฉพาะลูกค้ากลุ่มนี้</p>
-            <p className="mb-1.5 text-[10px] text-slate-400">
+            <p className="mb-1.5 text-[11px] text-slate-400">
               ไม่เลือกเลย = ทุกคน (แอปบน Shopify ใช้ customer segment — ของเราใช้ระดับสมาชิกที่ร้านมีจริง)
             </p>
             <div className="flex flex-wrap items-center gap-1">
@@ -332,7 +332,7 @@ function SubConditions({
                   key={tier}
                   type="button"
                   onClick={() => setForm({ ...form, customerTiers: toggleIn(form.customerTiers, tier) })}
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
                     form.customerTiers.includes(tier)
                       ? "bg-brand-gradient text-white"
                       : "bg-surface-soft text-slate-500"
@@ -344,7 +344,7 @@ function SubConditions({
               <button
                 type="button"
                 onClick={() => setForm({ ...form, firstOrderOnly: !form.firstOrderOnly })}
-                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
                   form.firstOrderOnly ? "bg-brand-gradient text-white" : "bg-surface-soft text-slate-500"
                 }`}
               >
@@ -355,7 +355,7 @@ function SubConditions({
 
           <div>
             <p className="text-[11px] font-semibold text-brand-ink">และต้องซื้อครบกี่ชิ้น</p>
-            <p className="mb-1.5 text-[10px] text-slate-400">
+            <p className="mb-1.5 text-[11px] text-slate-400">
               เงื่อนไขที่สอง ต้องเข้าพร้อมกับเงื่อนไขหลัก — ไม่กรอก = ไม่บังคับจำนวน
             </p>
             <input
@@ -372,7 +372,7 @@ function SubConditions({
 
           <div>
             <p className="text-[11px] font-semibold text-brand-ink">นับเฉพาะแบรนด์ / หมวด</p>
-            <p className="mb-1.5 text-[10px] text-slate-400">
+            <p className="mb-1.5 text-[11px] text-slate-400">
               ไม่เลือกเลย = นับทั้งร้าน (แอปบน Shopify ใช้ collection — ของเราใช้แบรนด์กับหมวดที่บรรทัดตะกร้ามีจริง)
             </p>
             <div className="flex flex-wrap gap-1">
@@ -381,7 +381,7 @@ function SubConditions({
                   key={brand}
                   type="button"
                   onClick={() => setForm({ ...form, scopeBrands: toggleIn(form.scopeBrands, brand) })}
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
                     form.scopeBrands.includes(brand)
                       ? "bg-brand-gradient text-white"
                       : "bg-surface-soft text-slate-500"
@@ -399,7 +399,7 @@ function SubConditions({
                   onClick={() =>
                     setForm({ ...form, scopeCategories: toggleIn(form.scopeCategories, category) })
                   }
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
                     form.scopeCategories.includes(category)
                       ? "bg-brand-gradient text-white"
                       : "bg-surface-soft text-slate-500"
@@ -980,7 +980,7 @@ export default function AdminFreeGiftsPage() {
                           {p.active ? "กำลังใช้งานจริง" : "ร่าง — ยังไม่เปิด"}
                         </Badge>
                         {(p.shopifyDiscountId || tierDiscountsLinked) && (
-                          <span className="mt-1 flex items-center gap-1 text-[10px] text-brand-800">
+                          <span className="mt-1 flex items-center gap-1 text-[11px] text-brand-800">
                             <Check size={11} /> เชื่อมส่วนลดใน Shopify แล้ว
                           </span>
                         )}
@@ -1087,7 +1087,7 @@ export default function AdminFreeGiftsPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span
-                          className={`flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-0.5 ${
+                          className={`flex items-center gap-1 text-[11px] font-bold rounded-full px-2 py-0.5 ${
                             p.active
                               ? "bg-brand-gradient-soft text-brand-800"
                               : "bg-slate-100 text-slate-400"
@@ -1100,7 +1100,7 @@ export default function AdminFreeGiftsPage() {
                             ? "กำลังใช้งานจริง"
                             : "ร่าง — ยังไม่เปิดใช้งาน"}
                         </span>
-                        <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                        <span className="flex items-center gap-1 text-[11px] text-slate-400">
                           <KindIcon size={11} /> {kindLabel}
                         </span>
                       </div>
@@ -1117,7 +1117,7 @@ export default function AdminFreeGiftsPage() {
                         )}
                       </p>
                       {(p.shopifyDiscountId || tierDiscountsLinked) && (
-                        <p className="flex items-center gap-1 text-[10px] text-brand-800 mt-1">
+                        <p className="flex items-center gap-1 text-[11px] text-brand-800 mt-1">
                           <Check size={11} /> เชื่อมกับส่วนลดจริงใน Shopify แล้ว
                         </p>
                       )}
@@ -1232,7 +1232,7 @@ export default function AdminFreeGiftsPage() {
                     >
                       <span className="text-xs font-bold text-brand-ink">{preset.title}</span>
                       <span className="mt-1 text-[11px] leading-snug text-slate-500">{preset.blurb}</span>
-                      <span className="mt-2 rounded-lg bg-surface-soft px-2 py-1 text-[10px] text-brand-800">
+                      <span className="mt-2 rounded-lg bg-surface-soft px-2 py-1 text-[11px] text-brand-800">
                         {preset.example}
                       </span>
                     </button>
@@ -1322,7 +1322,7 @@ export default function AdminFreeGiftsPage() {
                           </div>
                           <div className="grid gap-2 sm:grid-cols-2">
                             <label className="block">
-                              <span className="mb-1 block text-[10px] text-slate-400">เริ่ม</span>
+                              <span className="mb-1 block text-[11px] text-slate-400">เริ่ม</span>
                               <input
                                 type="datetime-local"
                                 value={w.starts}
@@ -1335,7 +1335,7 @@ export default function AdminFreeGiftsPage() {
                               />
                             </label>
                             <label className="block">
-                              <span className="mb-1 block text-[10px] text-slate-400">สิ้นสุด</span>
+                              <span className="mb-1 block text-[11px] text-slate-400">สิ้นสุด</span>
                               <input
                                 type="datetime-local"
                                 value={w.ends}
@@ -1471,7 +1471,7 @@ export default function AdminFreeGiftsPage() {
                       }`}
                     >
                       <span className="block text-xs font-bold text-brand-ink">{title}</span>
-                      <span className="mt-0.5 block text-[10px] text-slate-500">{desc}</span>
+                      <span className="mt-0.5 block text-[11px] text-slate-500">{desc}</span>
                     </button>
                   ))}
                 </div>
@@ -1531,7 +1531,7 @@ export default function AdminFreeGiftsPage() {
                     <p className="text-xs font-bold text-brand-ink">
                       ซื้อครบยอด
                     </p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
+                    <p className="text-[11px] text-slate-500 mt-0.5">
                       ซื้ออะไรก็ได้ครบยอดที่กำหนด
                     </p>
                   </button>
@@ -1548,7 +1548,7 @@ export default function AdminFreeGiftsPage() {
                     <p className="text-xs font-bold text-brand-ink">
                       ซื้อครบจำนวน
                     </p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
+                    <p className="text-[11px] text-slate-500 mt-0.5">
                       ต้องซื้อสินค้าที่กำหนดครบจำนวน
                     </p>
                   </button>
@@ -1565,7 +1565,7 @@ export default function AdminFreeGiftsPage() {
                     <p className="text-xs font-bold text-brand-ink">
                       แบบขั้นบันได
                     </p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
+                    <p className="text-[11px] text-slate-500 mt-0.5">
                       ยิ่งซื้อเยอะ ยิ่งได้ของแถมมากขึ้น
                     </p>
                   </button>
@@ -1778,7 +1778,7 @@ export default function AdminFreeGiftsPage() {
                               </span>
                               <span className="min-w-0">
                                 <span className="block text-[11px] font-semibold text-brand-ink">{label}</span>
-                                <span className="block text-[10px] leading-snug text-slate-400">{hint}</span>
+                                <span className="block text-[11px] leading-snug text-slate-400">{hint}</span>
                               </span>
                             </button>
                           ))}
@@ -1912,7 +1912,7 @@ export default function AdminFreeGiftsPage() {
                   ? form.tiers.some((t) => t.gifts.length > 0)
                   : form.gifts.length > 0) && (
                   <div className="rounded-xl bg-brand-gradient-soft p-3">
-                    <p className="text-[10px] font-bold text-brand-800 uppercase mb-1">
+                    <p className="text-[11px] font-bold text-brand-800 uppercase mb-1">
                       ตัวอย่างที่ลูกค้าจะเห็น
                     </p>
                     <p className="text-xs text-brand-ink">
@@ -1920,7 +1920,7 @@ export default function AdminFreeGiftsPage() {
                       {form.kind !== "tiered" && ` → รับฟรี ${describeGifts(form.gifts, shelfNameFor)}`}
                     </p>
                     {form.kind === "tiered" && (
-                      <p className="mt-1 text-[10px] font-semibold text-brand-800">
+                      <p className="mt-1 text-[11px] font-semibold text-brand-800">
                         {form.tierMode === "highest"
                           ? "ผ่านหลายระดับ → ได้เฉพาะระดับสูงสุด"
                           : "ผ่านหลายระดับ → ได้ของทุกระดับรวมกัน"}

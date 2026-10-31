@@ -77,7 +77,7 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center flex-1">
               <div
-                className={`grid h-7 w-7 place-items-center rounded-full text-[10px] font-bold ${i === 1 ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-400"}`}
+                className={`grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold ${i === 1 ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-400"}`}
               >
                 {i}
               </div>
@@ -89,8 +89,8 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
     case "flash_sale_bar":
       return (
         <div className="flex items-center justify-between rounded-lg bg-[linear-gradient(90deg,#0b6b4f,#1bb57a)] px-2 py-1.5 text-white">
-          <span className="text-[10px] font-extrabold italic leading-none">Flash Sale</span>
-          <span className="text-[10px] font-bold tabular-nums">02 : 11 : 40 : 09</span>
+          <span className="text-[11px] font-extrabold italic leading-none">Flash Sale</span>
+          <span className="text-[11px] font-bold tabular-nums">02 : 11 : 40 : 09</span>
           <span className="rounded-full bg-white px-1.5 py-0.5 text-[9px] font-bold text-brand-800">Code</span>
         </div>
       );
@@ -108,7 +108,7 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
     case "deal_of_day":
       return (
         <div className="rounded-lg bg-brand-gradient-soft p-2">
-          <p className="text-[10px] font-bold text-brand-ink">ดีลวันนี้ รับของแถมได้เลย</p>
+          <p className="text-[11px] font-bold text-brand-ink">ดีลวันนี้ รับของแถมได้เลย</p>
           <div className="mt-1 flex items-end gap-1">
             {[
               ["02", "วัน"],
@@ -116,7 +116,7 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
               ["40", "นาที"],
             ].map(([v, l]) => (
               <span key={l} className="flex flex-col items-center gap-0.5">
-                <span className="rounded bg-brand-ink px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white">{v}</span>
+                <span className="rounded bg-brand-ink px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-white">{v}</span>
                 <span className="text-[7px] font-semibold text-brand-800">{l}</span>
               </span>
             ))}
@@ -167,7 +167,7 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
       );
     case "promotion_badge":
       return (
-        <span className="inline-block text-[10px] font-bold px-2 py-1 rounded-full bg-brand-teal text-white">
+        <span className="inline-block text-[11px] font-bold px-2 py-1 rounded-full bg-brand-teal text-white">
           ของแถม
         </span>
       );
@@ -181,15 +181,15 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
       return (
         <div className="flex items-center gap-2 rounded-full bg-brand-gradient py-1.5 pl-1.5 pr-3 text-white">
           <span className="grid h-6 w-6 place-items-center rounded-full bg-white/20 text-[11px]">🎉</span>
-          <span className="flex-1 text-[10px] font-semibold">ปลดล็อกของแถมแล้ว!</span>
-          <span className="text-[10px] opacity-70">✕</span>
+          <span className="flex-1 text-[11px] font-semibold">ปลดล็อกของแถมแล้ว!</span>
+          <span className="text-[11px] opacity-70">✕</span>
         </div>
       );
     case "floating_button":
       return (
         <div className="relative mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-gradient text-lg text-white ring-2 ring-brand-teal/40">
           🎁
-          <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+          <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[11px] font-bold text-white ring-2 ring-white">
             3
           </span>
         </div>
@@ -515,7 +515,7 @@ export default function WidgetsPanel() {
 
           {previewKey === w.key && (
             <div className="mt-3 border-t border-slate-100 pt-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">
+              <p className="text-[11px] font-bold text-slate-400 uppercase mb-2">
                 ตัวอย่าง
               </p>
               <PreviewMock widgetKey={w.key} />

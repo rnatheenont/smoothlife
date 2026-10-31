@@ -676,7 +676,7 @@ export default function ItemsTab({
                               className="object-contain"
                             />
                           ) : (
-                            <span className="grid h-full w-full place-items-center text-[10px] text-slate-300">
+                            <span className="grid h-full w-full place-items-center text-[11px] text-slate-300">
                               ไม่มีรูป
                             </span>
                           )}
@@ -693,7 +693,7 @@ export default function ItemsTab({
                           {/* Kept, quietly: the slug and the variant id are
                               what a Shopify or database lookup needs when a
                               row is in dispute. */}
-                          <p className="font-mono text-[10px] text-slate-300">
+                          <p className="font-mono text-[11px] text-slate-300">
                             {item.product_slug} · {item.variant_id.split("/").pop()}
                           </p>
                           {(!item.enabled || item.fills_allowance) && (

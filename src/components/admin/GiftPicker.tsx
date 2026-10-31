@@ -154,7 +154,7 @@ export default function GiftPicker({
                       back to the warehouse, and a picker that matches on it
                       silently leaves the operator unsure they picked right. */}
                   {g.sku && (
-                    <span className="block truncate font-mono text-[10px] text-slate-400">{g.sku}</span>
+                    <span className="block truncate font-mono text-[11px] text-slate-400">{g.sku}</span>
                   )}
                 </span>
                 <span

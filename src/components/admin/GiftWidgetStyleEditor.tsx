@@ -118,7 +118,7 @@ export default function GiftWidgetStyleEditor({
                       aria-label={field.label}
                       className="size-7 cursor-pointer rounded border border-surface-line bg-white"
                     />
-                    <code className="text-[10px] text-slate-400">{String(value)}</code>
+                    <code className="text-[11px] text-slate-400">{String(value)}</code>
                   </span>
                 </label>
               );
@@ -149,14 +149,14 @@ export default function GiftWidgetStyleEditor({
                   aria-label={field.label}
                   className="min-w-0 flex-1 accent-brand-emerald"
                 />
-                <span className="w-14 shrink-0 text-right text-[10px] tabular-nums text-slate-500">
+                <span className="w-14 shrink-0 text-right text-[11px] tabular-nums text-slate-500">
                   {Number(value)} {field.unit}
                 </span>
               </label>
             );
           })}
           {tab === "content" && (
-            <p className="rounded-lg bg-surface-soft p-2 text-[10px] leading-relaxed text-slate-500">
+            <p className="rounded-lg bg-surface-soft p-2 text-[11px] leading-relaxed text-slate-500">
               ใส่ตัวแปรได้: <code className="font-semibold">{"{{amount_left}}"}</code> คือยอดที่ยังขาด
               และ <code className="font-semibold">{"{{nearest_reward}}"}</code> คือของรางวัลชิ้นถัดไป
               — ตัวแปรที่พิมพ์ผิดจะแสดงตามที่พิมพ์ จะได้มองเห็นว่าผิด
@@ -179,7 +179,7 @@ export default function GiftWidgetStyleEditor({
                 key={key}
                 type="button"
                 onClick={() => setDevice(key)}
-                className={`flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold ${
+                className={`flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold ${
                   device === key ? "bg-white text-brand-ink shadow-card" : "text-slate-500"
                 }`}
               >
@@ -188,7 +188,7 @@ export default function GiftWidgetStyleEditor({
             ))}
           </div>
           <label className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="shrink-0 text-[10px] text-slate-400">เลื่อนดูความคืบหน้า</span>
+            <span className="shrink-0 text-[11px] text-slate-400">เลื่อนดูความคืบหน้า</span>
             <input
               type="range"
               min={0}

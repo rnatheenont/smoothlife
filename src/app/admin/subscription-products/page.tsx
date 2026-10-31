@@ -359,7 +359,7 @@ export default function AdminSubscriptionProductsPage() {
                     {/* Shown rather than hidden behind the other tab: switching tabs
                     to check would mean losing your place in this list. */}
                     {other && (
-                      <span className="hidden shrink-0 rounded-full bg-surface-soft px-2 py-0.5 text-[10px] text-slate-400 sm:block">
+                      <span className="hidden shrink-0 rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-slate-400 sm:block">
                         {otherLabel} เปิดอยู่
                       </span>
                     )}

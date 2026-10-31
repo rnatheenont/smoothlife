@@ -1062,7 +1062,7 @@ export default function AdminCustomersPage() {
                           <span className="flex min-w-0 items-center gap-1.5">
                             <span
                               className={clsx(
-                                "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                                "shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-bold",
                                 c.store === "smoothlife"
                                   ? "bg-emerald-100 text-emerald-800"
                                   : c.store === "smoothe"
@@ -1198,7 +1198,7 @@ export default function AdminCustomersPage() {
                       <span className="flex min-w-0 items-center gap-1.5">
                         <span
                           className={clsx(
-                            "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                            "shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-bold",
                             c.store === "smoothlife"
                               ? "bg-emerald-100 text-emerald-800"
                               : c.store === "smoothe"

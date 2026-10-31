@@ -85,7 +85,7 @@ export default function ChannelBadge({
       title={compact ? label : undefined}
       aria-label={compact ? label : undefined}
       className={clsx(
-        "inline-flex items-center text-[10px] font-bold ring-1 ring-inset",
+        "inline-flex items-center text-[11px] font-bold ring-1 ring-inset",
         compact
           ? `size-5 justify-center ${c?.shape ?? "rounded-full"}`
           : "gap-1 rounded-full px-2 py-0.5",
