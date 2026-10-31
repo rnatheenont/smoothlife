@@ -646,8 +646,16 @@ export default function ShopFilters({
           with overflow-x: auto clips its children on both axes, so a panel
           anchored inside it would open into a 40px-tall slot. bleed-page
           lets the row scroll under the gutters rather than stopping short
-          of them, and nets out to nothing once it wraps. */}
-      <div className="bleed-page scrollbar-none flex items-center gap-2 overflow-x-auto lg:flex-wrap lg:overflow-x-visible">
+          of them, and nets out to nothing once it wraps.
+          
+          -my-2 py-2 is the other half of that same clipping. The pills carry
+          a soft drop shadow that reaches about 6px below them, and a box
+          that scrolls sideways cuts it off flat along the bottom edge — the
+          shadow looked sliced rather than soft. The padding gives the shadow
+          room inside the scrolling box and the negative margin takes the
+          same 8px back out of the layout, so the bar's height does not
+          change. */}
+      <div className="bleed-page scrollbar-none -my-2 flex items-center gap-2 overflow-x-auto py-2 lg:flex-wrap lg:overflow-x-visible">
         <FilterMenu
           label="หมวดหมู่"
           openMenu={openMenu}
