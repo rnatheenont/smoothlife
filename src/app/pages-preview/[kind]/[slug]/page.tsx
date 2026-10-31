@@ -126,7 +126,7 @@ export default async function PagePreview(props: {
   // The same canvas the home page paints on, so what is in the frame is what
   // would be on the site.
   return (
-    <div className="bg-[#FAFAF8]">
+    <div className="bg-surface-page">
       {sections}
       {picker}
     </div>

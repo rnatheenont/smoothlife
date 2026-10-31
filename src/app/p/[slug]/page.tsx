@@ -42,5 +42,5 @@ export default async function BuiltPage(props: { params: Promise<{ slug: string 
     isPreview: false,
   });
 
-  return <div className="bg-[#FAFAF8]">{sections}</div>;
+  return <div className="bg-surface-page">{sections}</div>;
 }

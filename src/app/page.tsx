@@ -165,7 +165,7 @@ async function LegacyHomePage() {
     // now belongs to the page, and only the two sections that are genuinely
     // a change of subject (membership, and the reading at the end) break out
     // of it. The same components look considerably more expensive for it.
-    <div className="bg-[#FAFAF8]">
+    <div className="bg-surface-page">
       {/* Hero — the campaign artwork, edge to edge, and nothing beside it.
           This was a half-width card with the shop's claim in a column next to
           it. The banners are full-width creatives that already carry their own
