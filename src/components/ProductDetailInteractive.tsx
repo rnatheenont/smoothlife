@@ -714,12 +714,31 @@ export default function ProductDetailInteractive({
             )}
 
             {purchaseMode === "once" ? (
-              // Container query, not a breakpoint: this column is 344px wide at
-              // 768 (two-column layout) and 358px on a phone, and in both the
-              // qty + heart + share leave the add button ~100px — a pill that
-              // wraps "เพิ่มลงตะกร้า" onto three lines. Below 27rem the button
-              // takes its own full-width line under the qty / heart / share row.
-              <div className="@container mt-3">
+              // The add button sits next to the quantity and takes whatever is
+              // left; the heart and the share wrap to a line of their own when
+              // there is not room for all three.
+              //
+              // It used to be the other way round — the button went full-width
+              // onto its own line below and the two icon buttons stayed up on
+              // the first one, pushed right by ml-auto. That left a 100px hole
+              // between the quantity and the heart, which is the shape of a
+              // missing control. The measurement behind the old arrangement
+              // was right and is worth keeping: at 390 the row is 326px, and
+              // qty + heart + share really do leave the button only 100px,
+              // where it needs 147 to hold "เพิ่มลงตะกร้า" with its icon. The
+              // conclusion was the wrong one. What has to give is the pair of
+              // icon buttons, not the one control the page exists for.
+              //
+              // min-w on the button is what makes the wrap happen: flex-wrap
+              // breaks a line on an item's hypothetical size, and a flex-1
+              // item with no minimum has a hypothetical size of zero, so all
+              // three would stay on one line and the button would be squeezed
+              // to 100px again. At 9.5rem the three of them no longer fit
+              // under about 378px and the icons drop. Measured on the live
+              // page: 390 and 768 both put the button at ~212px on the first
+              // line with the icons beneath it, and 1440 fits all three with
+              // the button at 404.
+              <div className="mt-3">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center border border-slate-200 rounded-full">
                   <button
@@ -754,7 +773,7 @@ export default function ProductDetailInteractive({
                   onClick={handleAdd}
                   disabled={!selectedVariant.inStock}
                   size="lg"
-                  className="relative order-last w-full whitespace-nowrap @[27rem]:order-none @[27rem]:w-auto @[27rem]:flex-1"
+                  className="relative min-w-[9.5rem] flex-1 whitespace-nowrap"
                 >
                   {/* The icon is taken out of the flow and pinned to the left
                       so the words are what sits in the middle of the button.
@@ -777,7 +796,10 @@ export default function ProductDetailInteractive({
                       ? "เพิ่มลงตะกร้า"
                       : "สินค้าหมด"}
                 </Button>
-                <div className="ml-auto flex items-center gap-3 @[27rem]:ml-0">
+                {/* ml-auto so that on the line of their own they finish at
+                    the button's right edge rather than floating under the
+                    quantity. */}
+                <div className="ml-auto flex items-center gap-3">
                 <button
                   onClick={() => toggle(product.slug)}
                   className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-slate-200"
