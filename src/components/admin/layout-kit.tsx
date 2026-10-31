@@ -351,13 +351,30 @@ export const adminTable = {
    * being columns, so the wrapper above scrolls instead.
    */
   table: "w-full min-w-[560px] text-left text-[13px] leading-[1.45]",
+  /**
+   * 12px sentence case in slate-500.
+   *
+   * It was 10px, uppercase, tracked out 0.08em, in slate-400 — the one
+   * header style on every table in the console, so each of those is three
+   * problems at once: 10px is under the floor for anything meant to be read,
+   * slate-400 on this band measures 4.3:1 where AA wants 4.5, and capitals
+   * reach no further than the English words in a Thai column name, so a row
+   * of headings came out in two registers.
+   *
+   * The band stays. A plain header is the better shape, but this header is
+   * sticky and the rows scroll under it; without an opaque ground they show
+   * through it.
+   */
   thead:
-    "sticky top-0 z-10 bg-surface-soft text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 [&_tr]:border-b [&_tr]:border-slate-200 [&_th]:px-3 [&_th]:py-2.5",
+    "sticky top-0 z-10 bg-surface-soft text-[12px] font-semibold text-slate-500 [&_tr]:border-b [&_tr]:border-slate-200 [&_th]:px-3 [&_th]:py-2.5",
   row: "align-middle border-t border-slate-100 transition-colors hover:bg-brand-50/40",
   /** py-3 rather than py-2.5: half these cells hold two lines, and 10px of
    *  padding around a 40px stack reads as one run-on block. */
   cell: "px-3 py-3",
   /** For a tracking number, an id, an amount — anything read digit by digit. */
   mono: "px-3 py-3 font-mono text-[12px] text-slate-700",
-  muted: "px-3 py-3 text-[12px] text-slate-400",
+  muted: "px-3 py-3 text-[12px] text-slate-500",
+  /** A figure column: right-aligned, tabular, so the digits line up down the
+   *  column and a 1,000 reads as ten times a 100 without being counted. */
+  num: "px-3 py-3 text-right tabular-nums",
 } as const;
