@@ -32,19 +32,19 @@ export default function StickyToolbar({ children }: { children: ReactNode }) {
         "transition-[background-color,max-width,border-radius,box-shadow,padding] duration-200",
         stuck
           // Pinned, it is a card over the grid like the header above it, so
-          // it takes the header's shape: the same 1024px, centred, with the
-          // same corners. Running the full width while the bar above it had
-          // pulled its ends in made the two read as unrelated layers.
+          // it takes the header's shape — which is the page container, and
+          // is what bleed-page already gives this box. So the pinned state
+          // adds glass and corners and nothing else: no cap, no margin, no
+          // padding of its own.
           //
-          // px-4 replaces what bleed-page's padding was doing once the box
-          // stops being full-bleed, and the lg: prefixes keep the phone as it
-          // was — there the header insets by a margin rather than capping its
-          // width, and so does this.
-          //
-          // mx-auto! because bleed-page sets margin-inline itself, to a
-          // negative gutter, and plain mx-auto lost to it: the bar came out
-          // the right width and still hard against the left edge.
-          ? "glass-bar lg:mx-auto! lg:max-w-5xl lg:rounded-2xl lg:px-4"
+          // It used to cap at max-w-5xl and re-pad with px-4, from when the
+          // header was 1024 wide and this had to match it. Against a header
+          // that is now the container, that cap left this bar 376px narrower
+          // than the one directly above it, and the filters ran out of room
+          // and wrapped the sort menu onto a second line. Keeping bleed-page's
+          // own gutter is also what lines the first chip up with the burger
+          // above it and the first product card below.
+          ? "glass-bar lg:rounded-2xl"
           : "",
       )}
     >
